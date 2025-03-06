@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@react-google-maps/api": "^2.20.6",
-    "@types/three": "^0.174.0",
     "3d-tiles-renderer": "^0.4.7",
+    "@react-google-maps/api": "^2.20.6",
+    "@react-three/drei": "^10.0.4",
+    "@react-three/fiber": "^9.0.4",
+    "@types/three": "^0.174.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "three": "^0.174.0"

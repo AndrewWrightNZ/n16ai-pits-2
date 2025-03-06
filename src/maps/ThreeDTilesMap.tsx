@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
+import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TilesRenderer } from "3d-tiles-renderer";
 import {
   GLTFExtensionsPlugin,
@@ -84,71 +85,267 @@ const buttonStyle = {
   width: "100%",
 };
 
-const PhotorealisticTilesMap = () => {
-  const mountRef = useRef<HTMLDivElement | null>(null);
-  const sceneRef = useRef<THREE.Scene | null>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
-  const controlsRef = useRef<OrbitControls | null>(null);
+// Define locations
+const locations = {
+  sanFrancisco: {
+    lat: 37.7749,
+    lng: -122.4194,
+    altitude: 500,
+    heading: 0,
+    description: "San Francisco",
+  },
+  newYork: {
+    lat: 40.7128,
+    lng: -74.006,
+    altitude: 500,
+    heading: 45,
+    description: "New York",
+  },
+  paris: {
+    lat: 48.8566,
+    lng: 2.3522,
+    altitude: 500,
+    heading: 30,
+    description: "Paris",
+  },
+  tokyo: {
+    lat: 35.6762,
+    lng: 139.6503,
+    altitude: 500,
+    heading: 0,
+    description: "Tokyo",
+  },
+};
+
+// Main TilesScene component that handles the 3D content
+const TilesScene = ({
+  currentLocation,
+  isOrbiting,
+  setTileCount,
+  setCopyrightInfo,
+  setIsLoading,
+  setError,
+  setLoadingProgress,
+}: any) => {
   const tilesRendererRef = useRef<ExtendedTilesRenderer | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-  const [copyrightInfo, setCopyrightInfo] = useState("");
-  const [isOrbiting, setIsOrbiting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const orbitIntervalRef = useRef<number | null>(null);
-  const [tileCount, setTileCount] = useState(0);
-  const [debug, setDebug] = useState<any>({});
+  const processedUrls = useRef(new Map());
+  const currentSessionId = useRef("");
+  const orbitIntervalRef = useRef(null);
+  const debugRef = useRef({});
 
-  // Define location type
-  type Location = {
-    lat: number;
-    lng: number;
-    altitude: number;
-    heading: number;
-    description: string;
-  };
+  // Get Three.js objects from R3F
+  const { scene, camera, gl: renderer } = useThree();
 
-  // Define locations map type with string keys
-  type LocationsMap = {
-    [key: string]: Location;
-  };
+  // Reference to orbit controls for manual update
+  const controlsRef = useRef(null);
 
-  // Predefine some interesting 3D locations
-  const locations: LocationsMap = {
-    sanFrancisco: {
-      lat: 37.7749,
-      lng: -122.4194,
-      altitude: 500, // Increased altitude
-      heading: 0,
-      description: "San Francisco",
-    },
-    newYork: {
-      lat: 40.7128,
-      lng: -74.006,
-      altitude: 500, // Increased altitude
-      heading: 45,
-      description: "New York",
-    },
-    paris: {
-      lat: 48.8566,
-      lng: 2.3522,
-      altitude: 500, // Increased altitude
-      heading: 30,
-      description: "Paris",
-    },
-    tokyo: {
-      lat: 35.6762,
-      lng: 139.6503,
-      altitude: 500, // Increased altitude
-      heading: 0,
-      description: "Tokyo",
-    },
-  };
+  // Initialize tiles renderer
+  useEffect(() => {
+    console.log("Initializing tiles renderer");
 
-  // Current location state
-  const [currentLocation, setCurrentLocation] = useState("sanFrancisco");
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Add axes helper for debugging
+      const axesHelper = new THREE.AxesHelper(10000);
+      scene.add(axesHelper);
+
+      // Load the Google 3D Tiles
+      const rootUrl = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${API_KEY}`;
+      console.log("Initializing tiles renderer with URL:", rootUrl);
+      console.log("API Key (first 5 chars):", API_KEY.substring(0, 5) + "...");
+
+      // Create tiles renderer
+      const tilesRenderer = new TilesRenderer(rootUrl);
+
+      // Add plugin configuration
+      tilesRenderer.registerPlugin(new TileCompressionPlugin());
+      tilesRenderer.registerPlugin(new TilesFadePlugin());
+      tilesRenderer.registerPlugin(
+        new GLTFExtensionsPlugin({
+          dracoLoader: new DRACOLoader().setDecoderPath(
+            "https://unpkg.com/three@0.153.0/examples/jsm/libs/draco/gltf/"
+          ),
+        })
+      );
+
+      // Improve renderer configuration for better visibility
+      tilesRenderer.errorTarget = 24;
+      tilesRenderer.maxDepth = 20;
+      tilesRenderer.displayActiveTiles = true;
+
+      // Modified preprocessURL function with logging
+      tilesRenderer.preprocessURL = (url) => {
+        const urlString = url.toString();
+
+        if (urlString.startsWith("blob:")) {
+          return urlString;
+        }
+
+        if (processedUrls.current.has(urlString)) {
+          return processedUrls.current.get(urlString);
+        }
+
+        const sessionMatch = urlString.match(/[?&]session=([^&]+)/);
+        if (sessionMatch && sessionMatch[1]) {
+          currentSessionId.current = sessionMatch[1];
+          console.log("Found session ID:", currentSessionId.current);
+        }
+
+        let processedUrl = urlString;
+        if (urlString.toLowerCase().endsWith(".glb")) {
+          if (urlString.includes(`key=${API_KEY}`)) {
+            if (currentSessionId.current && !urlString.includes("session=")) {
+              const hasParams = urlString.includes("?");
+              const joinChar = hasParams ? "&" : "?";
+              processedUrl = `${urlString}${joinChar}session=${currentSessionId.current}`;
+            }
+          } else {
+            let modified = urlString;
+            if (!modified.includes(`key=${API_KEY}`)) {
+              const hasParams = modified.includes("?");
+              const joinChar = hasParams ? "&" : "?";
+              modified = `${modified}${joinChar}key=${API_KEY}`;
+            }
+
+            if (currentSessionId.current && !modified.includes("session=")) {
+              modified = `${modified}&session=${currentSessionId.current}`;
+            }
+            processedUrl = modified;
+          }
+        } else {
+          if (!processedUrl.includes(`key=${API_KEY}`)) {
+            const hasParams = processedUrl.includes("?");
+            const joinChar = hasParams ? "&" : "?";
+            processedUrl = `${processedUrl}${joinChar}key=${API_KEY}`;
+          }
+
+          if (currentSessionId.current && !processedUrl.includes("session=")) {
+            processedUrl = `${processedUrl}&session=${currentSessionId.current}`;
+          }
+        }
+
+        // Log URL processing (but hide the API key from logs)
+        const logUrl = processedUrl.replace(API_KEY, "API_KEY");
+        console.log(`Processed URL: ${urlString} → ${logUrl}`);
+
+        processedUrls.current.set(urlString, processedUrl);
+        return processedUrl;
+      };
+
+      // Add event listener for errors
+      tilesRenderer.addEventListener("load-error", (event: any) => {
+        console.error("Tiles error:", event.error);
+        setError(
+          `Tiles loading error: ${event.error.message || "Unknown error"}`
+        );
+      });
+
+      // Add event listener for tile set loading
+      tilesRenderer.addEventListener("load-tile-set", (event) => {
+        console.log("TileSet loaded:", event.tileSet);
+        const numTiles = tilesRenderer.group.children.length;
+        console.log("Number of tiles in group:", numTiles);
+        setTileCount(numTiles);
+
+        // If tiles are loaded, check visibility
+        setTimeout(() => {
+          checkVisibility();
+          debugSceneState();
+        }, 1000);
+      });
+
+      tilesRenderer.setCamera(camera);
+      tilesRenderer.setResolutionFromRenderer(camera, renderer);
+
+      // Make sure the tiles group is visible
+      tilesRenderer.group.visible = true;
+
+      // Add the tiles group to the scene
+      scene.add(tilesRenderer.group);
+      // @ts-ignore
+      tilesRendererRef.current = tilesRenderer;
+
+      // Monitor tile loading progress
+      const checkLoadProgress = () => {
+        if (tilesRenderer.loadProgress !== undefined) {
+          const progress = Math.round(tilesRenderer.loadProgress * 100);
+          setLoadingProgress(progress);
+          console.log(`Loading progress: ${progress}%`);
+        }
+
+        if (tilesRenderer.rootTileSet !== null) {
+          console.log("Tileset loaded:", tilesRenderer.rootTileSet);
+          setIsLoading(false);
+
+          // After loading, check if tiles are visible
+          setTimeout(() => {
+            checkVisibility();
+            debugSceneState();
+          }, 2000);
+        } else {
+          setTimeout(checkLoadProgress, 100);
+        }
+      };
+
+      checkLoadProgress();
+
+      // Initially position the camera based on the selected location
+      positionCameraAtLocation(currentLocation);
+
+      return () => {
+        // Clean up resources when the component unmounts
+        if (tilesRendererRef.current) {
+          scene.remove(tilesRendererRef.current.group);
+          tilesRendererRef.current.dispose();
+          tilesRendererRef.current = null;
+        }
+
+        scene.remove(axesHelper);
+      };
+    } catch (err: any) {
+      console.error("Error initializing 3D tiles renderer:", err);
+      setError("Failed to initialize 3D renderer: " + err.message);
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Effect for handling location changes
+  useEffect(() => {
+    if (tilesRendererRef.current) {
+      positionCameraAtLocation(currentLocation);
+    }
+  }, [currentLocation]);
+
+  // Effect for handling orbiting
+  useEffect(() => {
+    if (orbitIntervalRef.current !== null) {
+      window.clearInterval(orbitIntervalRef.current);
+      orbitIntervalRef.current = null;
+    }
+
+    if (isOrbiting && controlsRef.current) {
+      // @ts-ignore
+      controlsRef.current.autoRotate = true;
+      // @ts-ignore
+      controlsRef.current.autoRotateSpeed = 2.0;
+    } else if (controlsRef.current) {
+      // @ts-ignore
+      controlsRef.current.autoRotate = false;
+    }
+
+    return () => {
+      if (orbitIntervalRef.current !== null) {
+        window.clearInterval(orbitIntervalRef.current);
+        orbitIntervalRef.current = null;
+      }
+      if (controlsRef.current) {
+        // @ts-ignore
+        controlsRef.current.autoRotate = false;
+      }
+    };
+  }, [isOrbiting]);
 
   // Enhanced check for tile visibility with logging
   const checkVisibility = () => {
@@ -169,7 +366,7 @@ const PhotorealisticTilesMap = () => {
       tilesRendererRef.current.group.visible = true;
 
       // Make sure all tiles are visible by traversing the entire tree
-      tilesRendererRef.current.group.traverse((child: THREE.Object3D) => {
+      tilesRendererRef.current.group.traverse((child) => {
         if (!child.visible) {
           console.log("Found invisible child, making visible:", child);
           child.visible = true;
@@ -188,7 +385,8 @@ const PhotorealisticTilesMap = () => {
       };
 
       console.log("Tile bounding box:", boxInfo);
-      setDebug((prev: any) => ({ ...prev, boundingBox: boxInfo }));
+      // @ts-ignore
+      debugRef.current.boundingBox = boxInfo;
 
       // Check if the box is valid
       if (box.isEmpty() || box.getSize(new THREE.Vector3()).length() === 0) {
@@ -199,24 +397,21 @@ const PhotorealisticTilesMap = () => {
 
   // Enhanced debug function with detailed information
   const debugSceneState = () => {
-    if (!sceneRef.current || !cameraRef.current || !tilesRendererRef.current)
-      return;
+    if (!camera || !tilesRendererRef.current) return;
 
-    const cameraPos = cameraRef.current.position.toArray();
-    const cameraDir = cameraRef.current
-      .getWorldDirection(new THREE.Vector3())
-      .toArray();
+    const cameraPos = camera.position.toArray();
+    const cameraDir = new THREE.Vector3();
+    camera.getWorldDirection(cameraDir);
+    const cameraDirArray = cameraDir.toArray();
 
     console.log("Camera position:", cameraPos);
-    console.log("Camera lookAt:", cameraDir);
+    console.log("Camera lookAt:", cameraDirArray);
 
-    setDebug((prev: any) => ({
-      ...prev,
-      camera: {
-        position: cameraPos,
-        direction: cameraDir,
-      },
-    }));
+    // @ts-ignore
+    debugRef.current.camera = {
+      position: cameraPos,
+      direction: cameraDirArray,
+    };
 
     // Check the bounding box of all tiles
     if (
@@ -239,14 +434,14 @@ const PhotorealisticTilesMap = () => {
       console.log("Tiles bounding box:", boxInfo);
 
       // Calculate distance between camera and center of tiles
-      const distance = cameraRef.current.position.distanceTo(center);
+      const distance = camera.position.distanceTo(center);
       console.log("Distance to tile center:", distance);
 
       // Check if the tiles group is in the camera frustum
       const frustum = new THREE.Frustum();
       const matrix = new THREE.Matrix4().multiplyMatrices(
-        cameraRef.current.projectionMatrix,
-        cameraRef.current.matrixWorldInverse
+        camera.projectionMatrix,
+        camera.matrixWorldInverse
       );
       frustum.setFromProjectionMatrix(matrix);
 
@@ -256,14 +451,12 @@ const PhotorealisticTilesMap = () => {
       const inFrustum = frustum.intersectsSphere(sphere);
       console.log("Tiles in frustum:", inFrustum);
 
-      setDebug((prev: any) => ({
-        ...prev,
-        tiles: {
-          boundingBox: boxInfo,
-          distance,
-          inFrustum,
-        },
-      }));
+      // @ts-ignore
+      debugRef.current.tiles = {
+        boundingBox: boxInfo,
+        distance,
+        inFrustum,
+      };
 
       // If not in frustum, try to adjust camera to see tiles
       if (!inFrustum) {
@@ -278,34 +471,34 @@ const PhotorealisticTilesMap = () => {
     // Log tile stats if available
     if (tilesRendererRef.current.stats) {
       console.log("Tiles stats:", tilesRendererRef.current.stats);
-      setDebug((prev: any) => ({
-        ...prev,
-        stats: { ...tilesRendererRef.current?.stats },
-      }));
+      // @ts-ignore
+      debugRef.current.stats = { ...tilesRendererRef.current.stats };
     }
   };
 
   // Enhanced positioning for camera and tiles
-  const positionCameraAtLocation = (locationKey: string) => {
-    if (!cameraRef.current || !tilesRendererRef.current) return;
+  const positionCameraAtLocation = (locationKey: any) => {
+    if (!camera || !tilesRendererRef.current || !controlsRef.current) return;
 
+    // @ts-ignore
     const location = locations[locationKey];
 
     console.log(`Positioning at ${locationKey}:`, location);
 
     // Use setLatLonToYUp to transform coordinates
-    tilesRendererRef.current.setLatLonToYUp(
-      location.lat * THREE.MathUtils.DEG2RAD,
-      location.lng * THREE.MathUtils.DEG2RAD
-    );
+    if (tilesRendererRef.current.setLatLonToYUp) {
+      tilesRendererRef.current.setLatLonToYUp(
+        location.lat * THREE.MathUtils.DEG2RAD,
+        location.lng * THREE.MathUtils.DEG2RAD
+      );
 
-    console.log(
-      "Group position after setLatLonToYUp:",
-      tilesRendererRef.current.group.position.toArray()
-    );
+      console.log(
+        "Group position after setLatLonToYUp:",
+        tilesRendererRef.current.group.position.toArray()
+      );
+    }
 
     // IMPORTANT: Set camera to a higher altitude to ensure visibility
-    const camera = cameraRef.current;
     const viewingAltitude = Math.max(location.altitude, 2000); // Higher minimum altitude
 
     // Position camera looking down at an angle (not directly overhead)
@@ -328,9 +521,13 @@ const PhotorealisticTilesMap = () => {
 
     // Reset OrbitControls target
     if (controlsRef.current) {
+      // @ts-ignore
       controlsRef.current.target.set(0, 0, 0);
+      // @ts-ignore
       controlsRef.current.minDistance = 100; // Allow closer zoom
+      // @ts-ignore
       controlsRef.current.maxDistance = 1000000; // Allow farther zoom out
+      // @ts-ignore
       controlsRef.current.update();
     }
 
@@ -358,24 +555,89 @@ const PhotorealisticTilesMap = () => {
     }
   };
 
-  // Enhanced reset view function
+  // Function to extract copyright info from tiles
+  const extractCopyrightInfo = () => {
+    if (!tilesRendererRef.current) return;
+
+    try {
+      // @ts-ignore
+      const attributions = [];
+      // @ts-ignore
+      tilesRendererRef.current.getAttributions(attributions);
+      const copyrightSet = new Set();
+      // @ts-ignore
+      attributions.forEach((attribution) => {
+        if (
+          attribution &&
+          attribution.value &&
+          typeof attribution.value === "string"
+        ) {
+          const copyrights = attribution.value.split(";");
+          copyrights.forEach((copyright: any) => {
+            copyrightSet.add(copyright.trim());
+          });
+        }
+      });
+      const combinedCopyright = Array.from(copyrightSet).join("; ");
+      setCopyrightInfo(combinedCopyright);
+    } catch (error) {
+      console.warn("Could not extract copyright information:", error);
+    }
+  };
+
+  // Animation frame with React Three Fiber's useFrame
+  useFrame(() => {
+    if (tilesRendererRef.current) {
+      tilesRendererRef.current.update();
+
+      // Update tile count and debug info occasionally
+      if (Math.random() < 0.01) {
+        // Approximately once per second
+        const newTileCount = tilesRendererRef.current.group.children.length;
+        setTileCount(newTileCount);
+
+        // Check if tiles are visible in the scene
+        if (
+          tilesRendererRef.current.group &&
+          tilesRendererRef.current.group.children.length > 0 &&
+          tilesRendererRef.current.stats
+        ) {
+          // Log stats occasionally
+          console.log("Tiles stats:", {
+            visible: tilesRendererRef.current.stats.visible,
+            active: tilesRendererRef.current.stats.active,
+            loading: tilesRendererRef.current.stats.loading,
+            pending: tilesRendererRef.current.stats.pending,
+          });
+        }
+      }
+
+      extractCopyrightInfo();
+    }
+  });
+
+  // Reset view function
   const resetView = () => {
-    if (!tilesRendererRef.current || !cameraRef.current) return;
+    if (!tilesRendererRef.current || !camera || !controlsRef.current) return;
 
     console.log("Resetting view...");
 
     // Reset camera to a higher position looking down
-    cameraRef.current.position.set(0, 50000, 0);
-    cameraRef.current.lookAt(0, 0, 0);
-    cameraRef.current.near = 1;
-    cameraRef.current.far = 10000000;
-    cameraRef.current.updateProjectionMatrix();
+    camera.position.set(0, 50000, 0);
+    camera.lookAt(0, 0, 0);
+    camera.near = 1;
+    camera.far = 10000000;
+    camera.updateProjectionMatrix();
 
     // Reset controls
     if (controlsRef.current) {
+      // @ts-ignore
       controlsRef.current.target.set(0, 0, 0);
+      // @ts-ignore
       controlsRef.current.minDistance = 100;
+      // @ts-ignore
       controlsRef.current.maxDistance = 500000;
+      // @ts-ignore
       controlsRef.current.update();
     }
 
@@ -392,525 +654,99 @@ const PhotorealisticTilesMap = () => {
     }, 2000);
   };
 
-  // Helper to fit the camera to view the object
-  const fitCameraToObject = (
-    camera: THREE.PerspectiveCamera,
-    controls: OrbitControls,
-    object: THREE.Object3D,
-    offset = 1.5 // Increased offset for better visibility
-  ) => {
-    const boundingBox = new THREE.Box3().setFromObject(object);
-
-    // Check if box is valid
-    if (boundingBox.isEmpty()) {
-      console.warn("Cannot fit camera to empty bounding box");
-      return;
-    }
-
-    const center = boundingBox.getCenter(new THREE.Vector3());
-    const size = boundingBox.getSize(new THREE.Vector3());
-
-    // Compute the distance required for the camera to fully contain the object
-    const maxSize = Math.max(size.x, size.y, size.z);
-    const fitHeightDistance =
-      maxSize / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov * 0.5)));
-    const fitWidthDistance = fitHeightDistance / camera.aspect;
-    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
-
-    // Use a direction that's slightly offset to avoid looking straight down
-    const direction = new THREE.Vector3(0.5, 1, 0.5).normalize();
-
-    // Position the camera
-    camera.position.copy(direction.multiplyScalar(distance).add(center));
-    camera.lookAt(center);
-
-    // Update near and far planes based on distance
-    camera.near = distance / 100;
-    camera.far = distance * 100;
-    camera.updateProjectionMatrix();
-
-    // Update controls
-    controls.target.copy(center);
-    controls.update();
-
-    console.log("Fitted camera to object:", {
-      center: center.toArray(),
-      size: size.toArray(),
-      distance,
-      cameraPos: camera.position.toArray(),
-    });
-  };
-
-  // Function to extract copyright info from tiles
-  const extractCopyrightInfo = (tilesRenderer: ExtendedTilesRenderer) => {
-    if (!tilesRenderer) return;
-
-    try {
-      const attributions: Array<{ type: string; value: any }> = [];
-      tilesRenderer.getAttributions(attributions);
-      const copyrightSet = new Set<string>();
-      attributions.forEach((attribution) => {
-        if (
-          attribution &&
-          attribution.value &&
-          typeof attribution.value === "string"
-        ) {
-          const copyrights = attribution.value.split(";");
-          copyrights.forEach((copyright) => {
-            copyrightSet.add(copyright.trim());
-          });
-        }
-      });
-      const combinedCopyright = Array.from(copyrightSet).join("; ");
-      setCopyrightInfo(combinedCopyright);
-    } catch (error) {
-      console.warn("Could not extract copyright information:", error);
-    }
-  };
-
-  useEffect(() => {
-    // Log when the component mounts or currentLocation changes
-    console.log("PhotorealisticTilesMap useEffect triggered", {
-      currentLocation,
-    });
-
-    if (!mountRef.current) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Initialize the scene
-      const scene = new THREE.Scene();
-      sceneRef.current = scene;
-
-      // Add ambient light
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // Increased ambient light
-      scene.add(ambientLight);
-
-      // Add directional light
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-      directionalLight.position.set(1, 1, 1);
-      directionalLight.castShadow = true;
-      scene.add(directionalLight);
-
-      // Add axes helper for debugging
-      const axesHelper = new THREE.AxesHelper(10000);
-      scene.add(axesHelper);
-
-      // Set up the camera with improved frustum settings
-      const camera = new THREE.PerspectiveCamera(
-        45, // Reduced FOV for better depth perception
-        mountRef.current.clientWidth / mountRef.current.clientHeight,
-        1, // Standard near plane
-        100000000 // Very large far plane
-      );
-      cameraRef.current = camera;
-
-      // Set up the renderer
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        logarithmicDepthBuffer: true, // Add logarithmic depth buffer for better depth precision
-      });
-      renderer.setSize(
-        mountRef.current.clientWidth,
-        mountRef.current.clientHeight
-      );
-      renderer.setClearColor(0x87ceeb); // Sky blue background
-      renderer.shadowMap.enabled = true;
-      rendererRef.current = renderer;
-
-      // Set up OrbitControls
-      const controls = new OrbitControls(camera, renderer.domElement);
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.1;
-      controls.screenSpacePanning = false;
-      controls.maxPolarAngle = Math.PI / 2;
-      controls.minDistance = 100;
-      controls.maxDistance = 1000000; // Increased max distance
-      controlsRef.current = controls;
-
-      // Append renderer DOM element
-      mountRef.current.appendChild(renderer.domElement);
-
-      // Load the Google 3D Tiles
-      const rootUrl = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${API_KEY}`;
-      console.log("Initializing tiles renderer with URL:", rootUrl);
-      console.log("API Key (first 5 chars):", API_KEY.substring(0, 5) + "...");
-
-      // Create tiles renderer
-      const tilesRenderer = new TilesRenderer(rootUrl) as ExtendedTilesRenderer;
-
-      // Add plugin configuration
-      tilesRenderer.registerPlugin(new TileCompressionPlugin());
-      tilesRenderer.registerPlugin(new TilesFadePlugin());
-      tilesRenderer.registerPlugin(
-        new GLTFExtensionsPlugin({
-          dracoLoader: new DRACOLoader().setDecoderPath(
-            "https://unpkg.com/three@0.153.0/examples/jsm/libs/draco/gltf/"
-          ),
-        })
-      );
-
-      // Improve renderer configuration for better visibility
-      tilesRenderer.errorTarget = 24; // Increased from 12 to ensure we load more tiles
-      tilesRenderer.maxDepth = 20; // Increased from 10 to allow deeper traversal
-      tilesRenderer.displayActiveTiles = true; // Show tiles as they become active
-
-      // Modified preprocessURL function with logging
-      let processedUrls = new Map();
-      let currentSessionId = "";
-
-      tilesRenderer.preprocessURL = (url: string | URL) => {
-        const urlString = url.toString();
-
-        if (urlString.startsWith("blob:")) {
-          return urlString;
-        }
-
-        if (processedUrls.has(urlString)) {
-          return processedUrls.get(urlString);
-        }
-
-        const sessionMatch = urlString.match(/[?&]session=([^&]+)/);
-        if (sessionMatch && sessionMatch[1]) {
-          currentSessionId = sessionMatch[1];
-          console.log("Found session ID:", currentSessionId);
-        }
-
-        let processedUrl = urlString;
-        if (urlString.toLowerCase().endsWith(".glb")) {
-          if (urlString.includes(`key=${API_KEY}`)) {
-            if (currentSessionId && !urlString.includes("session=")) {
-              const hasParams = urlString.includes("?");
-              const joinChar = hasParams ? "&" : "?";
-              processedUrl = `${urlString}${joinChar}session=${currentSessionId}`;
-            }
-          } else {
-            let modified = urlString;
-            if (!modified.includes(`key=${API_KEY}`)) {
-              const hasParams = modified.includes("?");
-              const joinChar = hasParams ? "&" : "?";
-              modified = `${modified}${joinChar}key=${API_KEY}`;
-            }
-
-            if (currentSessionId && !modified.includes("session=")) {
-              modified = `${modified}&session=${currentSessionId}`;
-            }
-            processedUrl = modified;
-          }
-        } else {
-          if (!processedUrl.includes(`key=${API_KEY}`)) {
-            const hasParams = processedUrl.includes("?");
-            const joinChar = hasParams ? "&" : "?";
-            processedUrl = `${processedUrl}${joinChar}key=${API_KEY}`;
-          }
-
-          if (currentSessionId && !processedUrl.includes("session=")) {
-            processedUrl = `${processedUrl}&session=${currentSessionId}`;
-          }
-        }
-
-        // Log URL processing (but hide the API key from logs)
-        const logUrl = processedUrl.replace(API_KEY, "API_KEY");
-        console.log(`Processed URL: ${urlString} → ${logUrl}`);
-
-        processedUrls.set(urlString, processedUrl);
-        return processedUrl;
-      };
-
-      // Add event listener for errors
-      tilesRenderer.addEventListener("load-error", (event: any) => {
-        console.error("Tiles error:", event.error);
-        setError(
-          `Tiles loading error: ${event.error.message || "Unknown error"}`
-        );
-      });
-
-      // Add event listener for tile set loading
-      tilesRenderer.addEventListener("load-tile-set", (event: any) => {
-        console.log("TileSet loaded:", event.tileSet);
-        const numTiles = tilesRenderer.group.children.length;
-        console.log("Number of tiles in group:", numTiles);
-        setTileCount(numTiles);
-
-        // If tiles are loaded, check visibility
-        setTimeout(() => {
-          checkVisibility();
-          debugSceneState();
-        }, 1000);
-      });
-
-      tilesRenderer.setCamera(camera);
-      tilesRenderer.setResolutionFromRenderer(camera, renderer);
-
-      // Make sure the tiles group is visible
-      tilesRenderer.group.visible = true;
-
-      // Add the tiles group to the scene
-      scene.add(tilesRenderer.group);
-      tilesRendererRef.current = tilesRenderer;
-
-      // Monitor tile loading progress
-      const checkLoadProgress = () => {
-        if (tilesRenderer.loadProgress !== undefined) {
-          const progress = Math.round(tilesRenderer.loadProgress * 100);
-          setLoadingProgress(progress);
-          console.log(`Loading progress: ${progress}%`);
-        }
-
-        if (tilesRenderer.rootTileSet !== null) {
-          console.log("Tileset loaded:", tilesRenderer.rootTileSet);
-          setIsLoading(false);
-
-          // After loading, check if tiles are visible
-          setTimeout(() => {
-            checkVisibility();
-            debugSceneState();
-
-            // Use the helper to fit the camera to the tiles group
-            if (
-              cameraRef.current &&
-              controlsRef.current &&
-              tilesRenderer.group &&
-              tilesRenderer.group.children.length > 0
-            ) {
-              console.log("Fitting camera to tiles group");
-              fitCameraToObject(
-                cameraRef.current,
-                controlsRef.current,
-                tilesRenderer.group
-              );
-            } else {
-              console.log("Not fitting camera - no tiles or missing refs");
-            }
-          }, 2000);
-        } else {
-          setTimeout(checkLoadProgress, 100);
-        }
-      };
-
-      checkLoadProgress();
-
-      // Initially position the camera based on the selected location
-      positionCameraAtLocation(currentLocation);
-
-      // Animation loop
-      const animate = () => {
-        animationFrameRef.current = requestAnimationFrame(animate);
-
-        if (controlsRef.current) {
-          controlsRef.current.update();
-        }
-
-        if (tilesRendererRef.current) {
-          tilesRendererRef.current.update();
-
-          // Update tile count and debug info occasionally
-          if (Math.random() < 0.01) {
-            // Approximately once per second
-            const newTileCount = tilesRendererRef.current.group.children.length;
-            if (newTileCount !== tileCount) {
-              setTileCount(newTileCount);
-            }
-
-            // Check if tiles are visible in the scene
-            if (
-              tilesRendererRef.current.group &&
-              tilesRendererRef.current.group.children.length > 0 &&
-              tilesRendererRef.current.stats
-            ) {
-              // Log stats occasionally
-              console.log("Tiles stats:", {
-                visible: tilesRendererRef.current.stats.visible,
-                active: tilesRendererRef.current.stats.active,
-                loading: tilesRendererRef.current.stats.loading,
-                pending: tilesRendererRef.current.stats.pending,
-              });
-            }
-          }
-
-          extractCopyrightInfo(tilesRendererRef.current);
-        }
-
-        if (rendererRef.current && cameraRef.current && sceneRef.current) {
-          rendererRef.current.render(sceneRef.current, cameraRef.current);
-        }
-      };
-
-      animate();
-
-      // Handle resize events
-      const handleResize = () => {
-        if (!mountRef.current) return;
-
-        const width = mountRef.current.clientWidth;
-        const height = mountRef.current.clientHeight;
-
-        camera.aspect = width / height;
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(width, height);
-        tilesRenderer.setResolutionFromRenderer(camera, renderer);
-      };
-
-      window.addEventListener("resize", handleResize);
-
-      // Cleanup on unmount
-      return () => {
-        window.removeEventListener("resize", handleResize);
-
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-
-        if (orbitIntervalRef.current) {
-          clearInterval(orbitIntervalRef.current);
-        }
-
-        if (rendererRef.current && mountRef.current) {
-          mountRef.current.removeChild(rendererRef.current.domElement);
-        }
-
-        if (tilesRendererRef.current) {
-          tilesRendererRef.current.dispose();
-        }
-
-        if (rendererRef.current) {
-          rendererRef.current.dispose();
-        }
-      };
-    } catch (err: any) {
-      console.error("Error initializing 3D tiles renderer:", err);
-      setError("Failed to initialize 3D renderer: " + err.message);
-      setIsLoading(false);
-    }
-  }, [currentLocation]);
-
-  // Handle orbit toggle
-  useEffect(() => {
-    if (orbitIntervalRef.current !== null) {
-      window.clearInterval(orbitIntervalRef.current);
-      orbitIntervalRef.current = null;
-    }
-
-    if (isOrbiting && controlsRef.current && cameraRef.current) {
-      if ("autoRotate" in controlsRef.current) {
-        // @ts-ignore
-        controlsRef.current.autoRotate = true;
-        // @ts-ignore
-        controlsRef.current.autoRotateSpeed = 2.0;
-      } else {
-        const center = new THREE.Vector3();
-        const cameraPosition = cameraRef.current.position.clone();
-        const radius = cameraPosition.distanceTo(center);
-        let angle = Math.atan2(cameraPosition.x, cameraPosition.z);
-
-        orbitIntervalRef.current = window.setInterval(() => {
-          if (cameraRef.current) {
-            angle += 0.01;
-            cameraRef.current.position.x = Math.sin(angle) * radius;
-            cameraRef.current.position.z = Math.cos(angle) * radius;
-            cameraRef.current.lookAt(center);
-
-            if (controlsRef.current) {
-              controlsRef.current.update();
-            }
-          }
-        }, 50);
-      }
-    } else if (controlsRef.current && "autoRotate" in controlsRef.current) {
-      // @ts-ignore
-      controlsRef.current.autoRotate = false;
-    }
-
-    return () => {
-      if (orbitIntervalRef.current !== null) {
-        window.clearInterval(orbitIntervalRef.current);
-        orbitIntervalRef.current = null;
-      }
-      if (controlsRef.current && "autoRotate" in controlsRef.current) {
-        // @ts-ignore
-        controlsRef.current.autoRotate = false;
-      }
-    };
-  }, [isOrbiting]);
+  return (
+    <>
+      {/* Scene lighting */}
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[1, 1, 1]} intensity={1} castShadow />
+
+      {/* Orbit controls */}
+      <OrbitControls
+        ref={controlsRef}
+        enableDamping
+        dampingFactor={0.1}
+        screenSpacePanning={false}
+        maxPolarAngle={Math.PI / 2}
+        minDistance={100}
+        maxDistance={1000000}
+      />
+    </>
+  );
+};
+
+// Using React Three Fiber's Html component for UI overlays
+// @ts-ignore
+const Html = ({ children, position }) => {
+  // const { camera } = useThree();
+  // const vec = new THREE.Vector3(...position);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: "0",
+        top: "0",
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          transform: "translate(-50%, -50%)",
+          pointerEvents: "auto",
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Main component
+const PhotorealisticTilesMap = () => {
+  const [currentLocation, setCurrentLocation] = useState("sanFrancisco");
+  const [isOrbiting, setIsOrbiting] = useState(false);
+  const [copyrightInfo, setCopyrightInfo] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [error, setError] = useState(null);
+  const [tileCount, setTileCount] = useState(0);
+  const [debug, setDebug] = useState({});
 
   // Function to change location
-  const changeLocation = (locationKey: string) => {
+  const changeLocation = (locationKey: any) => {
     setCurrentLocation(locationKey);
-    if (tilesRendererRef.current && cameraRef.current) {
-      positionCameraAtLocation(locationKey);
-    }
-  };
-
-  // Toggle shadows
-  const toggleShadows = () => {
-    if (!rendererRef.current) return;
-    const newShadowState = !rendererRef.current.shadowMap.enabled;
-    rendererRef.current.shadowMap.enabled = newShadowState;
-    if (sceneRef.current) {
-      const lights = sceneRef.current.children.filter(
-        (child) => child instanceof THREE.DirectionalLight
-      );
-      lights.forEach((light) => {
-        if (light instanceof THREE.DirectionalLight) {
-          light.castShadow = newShadowState;
-        }
-      });
-    }
-  };
-
-  // Change time of day (adjust lighting)
-  const changeTimeOfDay = (time: string) => {
-    if (!sceneRef.current) return;
-    const lights = sceneRef.current.children.filter(
-      (child) => child instanceof THREE.DirectionalLight
-    );
-    if (lights.length === 0) return;
-    const light = lights[0] as THREE.DirectionalLight;
-    switch (time) {
-      case "morning":
-        light.position.set(-1, 0.5, 1);
-        light.intensity = 0.8;
-        break;
-      case "noon":
-        light.position.set(0, 1, 0);
-        light.intensity = 1.0;
-        break;
-      case "evening":
-        light.position.set(1, 0.3, -1);
-        light.intensity = 0.7;
-        break;
-      case "night":
-        light.position.set(0, -1, 0);
-        light.intensity = 0.2;
-        break;
-    }
   };
 
   return (
     <div style={{ position: "relative" }}>
-      <div ref={mountRef} style={containerStyle}>
-        {/* RESET button for debugging */}
-        <button
-          onClick={resetView}
-          style={{
-            position: "absolute",
-            top: "10px",
-            right: "10px",
-            padding: "10px 15px",
-            backgroundColor: "red",
-            color: "white",
-            fontWeight: "bold",
-            border: "none",
-            borderRadius: "4px",
-            zIndex: 1000,
-            cursor: "pointer",
+      <div style={containerStyle}>
+        <Canvas
+          shadows
+          camera={{
+            fov: 45,
+            near: 1,
+            far: 100000000,
+            position: [0, 5000, 0],
+          }}
+          onCreated={({ gl }) => {
+            gl.setClearColor(0x87ceeb);
+            gl.setPixelRatio(window.devicePixelRatio);
+            gl.shadowMap.enabled = true;
           }}
         >
-          RESET VIEW
-        </button>
+          <TilesScene
+            currentLocation={currentLocation}
+            isOrbiting={isOrbiting}
+            setTileCount={setTileCount}
+            setCopyrightInfo={setCopyrightInfo}
+            setIsLoading={setIsLoading}
+            setError={setError}
+            setLoadingProgress={setLoadingProgress}
+          />
+        </Canvas>
 
         {/* Loading indicator */}
         {isLoading && (
@@ -1039,49 +875,6 @@ const PhotorealisticTilesMap = () => {
               {isOrbiting ? "Stop Orbit" : "Start Orbit"}
             </button>
           </div>
-
-          {/* Lighting controls */}
-          <div style={{ marginBottom: "10px" }}>
-            <p style={{ margin: "5px 0", fontWeight: "bold" }}>
-              Lighting & Shadows:
-            </p>
-            <button onClick={toggleShadows} style={buttonStyle}>
-              Toggle Shadows
-            </button>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "5px",
-                marginTop: "5px",
-              }}
-            >
-              <button
-                onClick={() => changeTimeOfDay("morning")}
-                style={buttonStyle}
-              >
-                Morning
-              </button>
-              <button
-                onClick={() => changeTimeOfDay("noon")}
-                style={buttonStyle}
-              >
-                Noon
-              </button>
-              <button
-                onClick={() => changeTimeOfDay("evening")}
-                style={buttonStyle}
-              >
-                Evening
-              </button>
-              <button
-                onClick={() => changeTimeOfDay("night")}
-                style={buttonStyle}
-              >
-                Night
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Google logo attribution */}
@@ -1095,45 +888,6 @@ const PhotorealisticTilesMap = () => {
 
         {/* Copyright information */}
         {copyrightInfo && <div style={attributionStyle}>{copyrightInfo}</div>}
-
-        {/* Debug information panel */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "60px",
-            right: "10px",
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            color: "white",
-            padding: "10px",
-            borderRadius: "4px",
-            fontSize: "10px",
-            maxWidth: "300px",
-            maxHeight: "150px",
-            overflowY: "auto",
-            zIndex: 100,
-            display: Object.keys(debug).length > 0 ? "block" : "none",
-          }}
-        >
-          <div>
-            <strong>Debug Info:</strong>
-          </div>
-          <div>Tiles Count: {tileCount}</div>
-          {debug.camera && (
-            <div>
-              Camera: {JSON.stringify(debug.camera.position).substring(0, 40)}
-              ...
-            </div>
-          )}
-          {debug.tiles && (
-            <div>In Frustum: {debug.tiles.inFrustum ? "Yes" : "No"}</div>
-          )}
-          {debug.stats && (
-            <div>
-              Stats: Visible {debug.stats.visible || 0}, Active{" "}
-              {debug.stats.active || 0}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
