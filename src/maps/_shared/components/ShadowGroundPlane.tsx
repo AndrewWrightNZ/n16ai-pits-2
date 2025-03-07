@@ -39,8 +39,6 @@ export default function ShadowGroundPlane() {
     planeRef.current = plane;
     setIsInitialized(true);
 
-    console.log("Added shadow ground plane");
-
     return () => {
       if (planeRef.current) {
         scene.remove(planeRef.current);
@@ -57,12 +55,6 @@ export default function ShadowGroundPlane() {
 
     // Get camera position
     const cameraPos = camera.position.clone();
-
-    // Cast a ray down from the camera
-    const raycaster = new THREE.Raycaster(
-      cameraPos,
-      new THREE.Vector3(0, -1, 0)
-    );
 
     // Find where the ray hits the plane
     const planeY = 0; // Default ground level

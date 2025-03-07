@@ -46,8 +46,6 @@ export default function SimpleShadowProvider() {
     scene.add(debugGroup);
     objectsRef.current = debugGroup;
 
-    console.log("Added shadow debug test objects:", debugGroup);
-
     return () => {
       if (objectsRef.current) {
         scene.remove(objectsRef.current);

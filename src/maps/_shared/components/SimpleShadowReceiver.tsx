@@ -33,8 +33,6 @@ export default function SimpleShadowReceiver() {
     scene.add(mesh);
     meshRef.current = mesh;
 
-    console.log("Created DEBUG shadow receiver at y=0", mesh);
-
     return () => {
       if (meshRef.current) {
         scene.remove(meshRef.current);

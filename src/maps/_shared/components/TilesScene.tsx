@@ -15,9 +15,6 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { CSM } from "../csm"; // or wherever your CSM code is
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
-// Import the immediate shadow test component
-import ImmediateShadowTest from "./ImmediateShadowTest";
-
 // Import the new TilesShadowWrapper component
 import TilesShadowWrapper from "./TilesShadowWrapper";
 
@@ -65,11 +62,7 @@ export default function TilesScene({
 
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
-  const [sunLightOpacity, setSunLightOpacity] = useState(0.6);
   const [tilesLoaded, setTilesLoaded] = useState(false);
-
-  // Enable shadow testing
-  const [enableShadowTest, setEnableShadowTest] = useState(true);
 
   // Shadow opacity based on time of day
   const [shadowOpacity, setShadowOpacity] = useState(0.3);
@@ -295,13 +288,10 @@ export default function TilesScene({
 
     // Adjust shadow opacity based on time of day - with higher values for more visible shadows
     if (hours < 6 || hours > 20) {
-      setSunLightOpacity(0.8);
       setShadowOpacity(0.8); // Much stronger shadows at night
     } else if (hours < 8 || hours > 18) {
-      setSunLightOpacity(0.6);
       setShadowOpacity(0.7); // Stronger shadows at dawn/dusk
     } else {
-      setSunLightOpacity(0.4);
       setShadowOpacity(0.6); // Stronger shadows during day
     }
   }, [timeOfDay]);
@@ -480,11 +470,6 @@ export default function TilesScene({
         color={0xffffff}
       />
 
-      {/* Add a helper to visualize the light's shadow camera */}
-      {enableShadowTest && fallbackLightRef.current && (
-        <cameraHelper args={[fallbackLightRef.current.shadow.camera]} />
-      )}
-
       {/* Add our shadow wrapper to make tiles receive shadows */}
       {tilesLoaded && tilesRendererRef.current && (
         <TilesShadowWrapper
@@ -504,44 +489,18 @@ export default function TilesScene({
         maxDistance={1000000}
       />
 
-      {/* Add immediate shadow test */}
-      {enableShadowTest && <ImmediateShadowTest />}
-
-      {/* Fixed shadow debug sphere - guaranteed to cast visible shadow */}
-      {enableShadowTest && (
-        <mesh castShadow position={[0, 80, 0]}>
-          <sphereGeometry args={[30, 32, 32]} />
-          <meshStandardMaterial color="red" />
+      {/* Additional shadow-receiving planes at different heights */}
+      {[5, 20, 40, 60].map((height) => (
+        <mesh
+          key={`shadow-plane-${height}`}
+          receiveShadow
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, height, 0]}
+        >
+          <planeGeometry args={[500, 500]} />
+          <shadowMaterial transparent opacity={0.8} color={0x000000} />
         </mesh>
-      )}
-
-      {/* Add several shadow-receiving planes at different heights */}
-      {enableShadowTest && (
-        <>
-          {/* Main ground plane */}
-          <mesh
-            receiveShadow
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, -10, 0]}
-          >
-            <planeGeometry args={[5000, 5000]} />
-            <shadowMaterial transparent opacity={0.8} color={0x000000} />
-          </mesh>
-
-          {/* Additional shadow-receiving planes at different heights */}
-          {[5, 20, 40, 60].map((height) => (
-            <mesh
-              key={`shadow-plane-${height}`}
-              receiveShadow
-              rotation={[-Math.PI / 2, 0, 0]}
-              position={[0, height, 0]}
-            >
-              <planeGeometry args={[500, 500]} />
-              <shadowMaterial transparent opacity={0.8} color={0x000000} />
-            </mesh>
-          ))}
-        </>
-      )}
+      ))}
     </>
   );
 }

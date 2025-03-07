@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -18,8 +18,6 @@ export default function DynamicBuildingShadows({ tilesGroup }: any) {
     shadowGroup.name = "building-shadow-receivers";
     scene.add(shadowGroup);
     shadowGroupRef.current = shadowGroup;
-
-    console.log("Created building shadow receivers group");
 
     return () => {
       // Clean up on unmount
@@ -85,7 +83,6 @@ export default function DynamicBuildingShadows({ tilesGroup }: any) {
   const processBuildings = (tilesGroup: any) => {
     if (!tilesGroup) return;
 
-    console.log("Processing tiles group for building shadows");
     let newShadowsCount = 0;
     // @ts-ignore
     const buildingCandidates = [];
@@ -110,8 +107,6 @@ export default function DynamicBuildingShadows({ tilesGroup }: any) {
       }
     });
 
-    console.log(`Found ${buildingCandidates.length} potential buildings`);
-
     // Step 2: Create shadow receivers for buildings
     // Process in batches to avoid freezing the UI
     const batchSize = 20;
@@ -125,10 +120,6 @@ export default function DynamicBuildingShadows({ tilesGroup }: any) {
         newShadowsCount++;
       }
     });
-
-    console.log(
-      `Added ${newShadowsCount} new shadow receivers. Total: ${shadowGroupRef.current.children.length}`
-    );
 
     // Return remaining buildings for future processing
     // @ts-ignore
