@@ -11,6 +11,7 @@ import {
   Vignette,
   BrightnessContrast,
 } from "@react-three/postprocessing";
+import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 
 export default function PhotorealisticTilesMap() {
   const [currentLocation, setCurrentLocation] = useState<string>(
@@ -26,11 +27,6 @@ export default function PhotorealisticTilesMap() {
   // Time-of-day
   const [timeOfDay, setTimeOfDay] = useState<Date>(new Date());
   const [timeSpeed, setTimeSpeed] = useState<number>(0);
-
-  // Visual
-  const [brightnessValue, setBrightnessValue] = useState<number>(-0.2);
-  const [vignetteDarkness, setVignetteDarkness] = useState<number>(0.7);
-  const [skyColor, setSkyColor] = useState<string>("#050505");
 
   const changeLocation = (locKey: string) => {
     setCurrentLocation(locKey);
@@ -54,31 +50,9 @@ export default function PhotorealisticTilesMap() {
     return () => clearInterval(handle);
   }, [timeSpeed]);
 
-  // Daylight-based color changes
-  useEffect(() => {
-    const hour = timeOfDay.getHours();
-    const minute = timeOfDay.getMinutes();
-    const timeVal = hour + minute / 60;
-    if (timeVal < 6 || timeVal > 20) {
-      setBrightnessValue(-0.5);
-      setVignetteDarkness(0.8);
-      setSkyColor("#000000");
-    } else if (timeVal < 7 || timeVal > 19) {
-      const isMorning = timeVal < 12;
-      const t = isMorning ? timeVal - 6 : 20 - timeVal;
-      setBrightnessValue(-0.5 + t * 0.3);
-      setVignetteDarkness(0.8 - t * 0.3);
-      setSkyColor(isMorning ? "#1a0f30" : "#1a0922");
-    } else {
-      const noonDist = Math.abs(12 - timeVal);
-      const dayBrightness = Math.max(0, 0.1 - noonDist * 0.01);
-      setBrightnessValue(-0.2 + dayBrightness);
-      setVignetteDarkness(0.5);
-      if (timeVal < 10) setSkyColor("#0a1a40");
-      else if (timeVal < 16) setSkyColor("#0a1a33");
-      else setSkyColor("#0a162b");
-    }
-  }, [timeOfDay]);
+  // Use the custom lighting hook
+  const { brightnessValue, vignetteDarkness, skyColor } =
+    useDaylightLighting(timeOfDay);
 
   const formattedTime = timeOfDay.toLocaleTimeString([], {
     hour: "2-digit",
@@ -128,6 +102,7 @@ export default function PhotorealisticTilesMap() {
 
           {/* Basic post-processing */}
           <EffectComposer>
+            {/* Golden hour may go here */}
             <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
             <Vignette eskil={false} offset={0.1} darkness={vignetteDarkness} />
           </EffectComposer>
