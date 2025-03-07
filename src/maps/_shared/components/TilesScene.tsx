@@ -165,29 +165,29 @@ export default function TilesScene({
     };
 
     // Set up shadow casting and receiving for the tiles group
-    // Replace the current setupShadowsForTiles function in TilesScene.tsx with this optimized version:
+    // Replace the setupShadowsForTiles function in TilesScene.tsx with this version
+    // that preserves original materials
 
-    // Set up shadow casting and receiving for the tiles group
     const setupShadowsForTiles = () => {
       console.log("Setting up shadows for tiles group...");
 
-      // Use a Set to track processed materials to avoid duplicate conversions
+      // Track processed materials to avoid duplicates
       const processedMaterials = new Set();
 
       tilesRenderer.group.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          // Allow meshes to cast shadows
+          // Allow meshes to cast shadows only
           child.castShadow = true;
+          child.receiveShadow = false; // Important: Don't make tiles receive shadows
 
-          // Ensure materials are set up for shadows
+          // NO material conversion needed - we'll keep the original materials
           if (child.material) {
-            // Handle both single materials and material arrays
             const materials = Array.isArray(child.material)
               ? child.material
               : [child.material];
 
             materials.forEach((material) => {
-              // Skip already processed materials using their UUID
+              // Skip already processed materials
               if (material.uuid && processedMaterials.has(material.uuid)) {
                 return;
               }
@@ -197,44 +197,18 @@ export default function TilesScene({
                 processedMaterials.add(material.uuid);
               }
 
-              // Force material updates
+              // Just make sure materials update properly
               material.needsUpdate = true;
 
-              // Some materials like MeshBasicMaterial don't respond to lighting
-              // If it's one of these, try to upgrade it
-              if (material instanceof THREE.MeshBasicMaterial) {
-                console.log(
-                  "Converting MeshBasicMaterial to MeshStandardMaterial for better shadows"
-                );
-                const color = material.color
-                  ? material.color.clone()
-                  : new THREE.Color(0xcccccc);
-                const newMaterial = new THREE.MeshStandardMaterial({
-                  color: color,
-                  roughness: 0.7,
-                  metalness: 0.0,
-                });
-
-                // Copy important properties from the original material
-                newMaterial.transparent = material.transparent;
-                newMaterial.opacity = material.opacity;
-                newMaterial.side = material.side;
-
-                // Replace the material
-                if (Array.isArray(child.material)) {
-                  const index = child.material.indexOf(material);
-                  if (index !== -1) child.material[index] = newMaterial;
-                } else {
-                  child.material = newMaterial;
-                }
-              }
+              // DON'T convert materials - this was causing the black appearance
+              // Leave MeshBasicMaterial as is
             });
           }
         }
       });
 
-      // Schedule another check for new tiles less frequently
-      setTimeout(setupShadowsForTiles, 5000);
+      // Schedule another check less frequently
+      setTimeout(setupShadowsForTiles, 10000); // Reduced frequency (10 seconds)
     };
 
     // Start the shadow setup process

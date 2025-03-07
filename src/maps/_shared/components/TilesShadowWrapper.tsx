@@ -9,7 +9,7 @@ interface TilesShadowWrapperProps {
 
 /**
  * Component that enables shadows for Google 3D Tiles
- * Streamlined version that prevents duplicate processing
+ * This version preserves original materials while allowing shadow visualization
  */
 export default function TilesShadowWrapper({
   tilesGroup,
@@ -18,8 +18,6 @@ export default function TilesShadowWrapper({
   const { scene } = useThree();
   const shadowGroupRef = useRef<THREE.Group | null>(null);
   const processingTimeoutRef = useRef<number | null>(null);
-
-  // Track which meshes we've already processed to avoid duplicates
   const processedMeshesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -63,8 +61,7 @@ export default function TilesShadowWrapper({
     const shadowPlane = createShadowPlane();
     shadowGroup.add(shadowPlane);
 
-    // Add smaller shadow-receiving planes at different heights to catch
-    // shadows from elevated objects
+    // Add elevated shadow planes
     const addElevatedPlanes = () => {
       const heights = [20, 50, 100, 200];
       const sizes = [500, 400, 300, 200];
@@ -75,7 +72,7 @@ export default function TilesShadowWrapper({
           new THREE.PlaneGeometry(planeSize, planeSize),
           new THREE.ShadowMaterial({
             color: 0x000000,
-            opacity: shadowOpacity * 0.8, // Slightly more transparent
+            opacity: shadowOpacity * 0.8,
             transparent: true,
             side: THREE.DoubleSide,
           })
@@ -90,11 +87,9 @@ export default function TilesShadowWrapper({
       });
     };
 
-    // Add elevated planes only if we have a shadow group
     addElevatedPlanes();
 
-    // This function only enables shadow casting on meshes
-    // but does NOT modify materials (leaving that to TilesScene)
+    // This function only enables shadow casting on meshes but preserves original materials
     const enableShadowCasting = () => {
       if (!tilesGroup) return;
 
@@ -109,29 +104,51 @@ export default function TilesShadowWrapper({
             // Mark as processed
             processedMeshesRef.current.add(object.uuid);
 
-            // Make the mesh cast shadows but not receive them
+            // IMPORTANT: Only enable shadow casting, don't modify materials
             object.castShadow = true;
-            object.receiveShadow = false; // The plane will receive shadows
+
+            // Do NOT make original tiles receive shadows
+            object.receiveShadow = false;
+
+            // For materials that don't respond to shadows, just ensure they're visible
+            // but don't convert them
+            if (object.material) {
+              const materials = Array.isArray(object.material)
+                ? object.material
+                : [object.material];
+
+              materials.forEach((material) => {
+                // Ensure visibility - but don't change the material type
+                if (material) {
+                  // If it's a MeshBasicMaterial, just ensure it's visible
+                  if (material instanceof THREE.MeshBasicMaterial) {
+                    // Only ensure it has proper transparency settings if needed
+                    if (material.transparent) {
+                      material.needsUpdate = true;
+                    }
+                  }
+                }
+              });
+            }
           }
         });
 
-        // Schedule check for new objects
+        // Schedule another check for new objects less frequently
         if (processingTimeoutRef.current) {
           clearTimeout(processingTimeoutRef.current);
         }
 
-        // Reduce frequency of checks to improve performance
         processingTimeoutRef.current = setTimeout(enableShadowCasting, 10000);
       } catch (error) {
         console.error("Error in shadow processing:", error);
       }
     };
 
-    // Start processing after a short delay
+    // Start processing with a small delay
     processingTimeoutRef.current = setTimeout(enableShadowCasting, 500);
 
     return () => {
-      // Clean up
+      // Clean up on unmount
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
         processingTimeoutRef.current = null;
