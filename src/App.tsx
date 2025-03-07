@@ -1,5 +1,3 @@
-import { useState } from "react";
-
 // Maps
 import ThreeDTilesMap from "./maps/ThreeDTilesMap";
 
