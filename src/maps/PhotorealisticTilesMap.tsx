@@ -1,18 +1,18 @@
 import { useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-
 import * as THREE from "three";
+
 import TilesScene from "./_shared/components/TilesScene";
 import ControlsPanel from "./_shared/components/ControlsPanel";
 import { PRESET_LOCATIONS } from "./_shared/hooks/locationsData";
+
 import {
   EffectComposer,
   Vignette,
   BrightnessContrast,
 } from "@react-three/postprocessing";
 
-// Main component
-const PhotorealisticTilesMap = () => {
+export default function PhotorealisticTilesMap() {
   const [currentLocation, setCurrentLocation] = useState<string>(
     Object.keys(PRESET_LOCATIONS)[0]
   );
@@ -23,112 +23,74 @@ const PhotorealisticTilesMap = () => {
   const [error, setError] = useState<string | null>(null);
   const [tileCount, setTileCount] = useState<number>(0);
 
-  // New state for time control
+  // Time-of-day
   const [timeOfDay, setTimeOfDay] = useState<Date>(new Date());
-  const [timeSpeed, setTimeSpeed] = useState<number>(0); // 0 = paused, 1-10 = speed multiplier
+  const [timeSpeed, setTimeSpeed] = useState<number>(0);
 
-  // Dynamic visual settings based on time of day
+  // Visual
   const [brightnessValue, setBrightnessValue] = useState<number>(-0.2);
   const [vignetteDarkness, setVignetteDarkness] = useState<number>(0.7);
   const [skyColor, setSkyColor] = useState<string>("#050505");
 
-  // Function to change location
-  const changeLocation = (locationKey: string) => {
-    setCurrentLocation(locationKey);
+  const changeLocation = (locKey: string) => {
+    setCurrentLocation(locKey);
   };
-
-  // Function to set a specific time
   const setSpecificTime = (hours: number, minutes: number = 0) => {
-    const newTime = new Date();
-    newTime.setHours(hours, minutes, 0);
-    setTimeOfDay(newTime);
+    const d = new Date();
+    d.setHours(hours, minutes, 0);
+    setTimeOfDay(d);
   };
 
-  // Effect to control time progression
+  // Animate time
   useEffect(() => {
-    if (timeSpeed === 0) return; // Do nothing if paused
-
-    const interval = setInterval(() => {
-      setTimeOfDay((prevTime) => {
-        const newTime = new Date(prevTime);
-        // Advance minutes based on speed (faster = more minutes per interval)
-        newTime.setMinutes(newTime.getMinutes() + timeSpeed * 5);
-        return newTime;
+    if (timeSpeed === 0) return;
+    const handle = setInterval(() => {
+      setTimeOfDay((prev) => {
+        const next = new Date(prev);
+        next.setMinutes(next.getMinutes() + timeSpeed * 5);
+        return next;
       });
-    }, 1000); // Update every second
-
-    return () => clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(handle);
   }, [timeSpeed]);
 
-  // Effect to update visual settings based on time of day
+  // Daylight-based color changes
   useEffect(() => {
-    // Calculate time as a 0-24 value
     const hour = timeOfDay.getHours();
     const minute = timeOfDay.getMinutes();
-    const timeValue = hour + minute / 60;
-
-    // Night (very dark)
-    if (timeValue < 6 || timeValue > 20) {
+    const timeVal = hour + minute / 60;
+    if (timeVal < 6 || timeVal > 20) {
       setBrightnessValue(-0.5);
       setVignetteDarkness(0.8);
       setSkyColor("#000000");
-    }
-    // Dawn/Dusk (transition)
-    else if (timeValue < 7 || timeValue > 19) {
-      const isMorning = timeValue < 12;
-      const t = isMorning ? timeValue - 6 : 20 - timeValue;
-
+    } else if (timeVal < 7 || timeVal > 19) {
+      const isMorning = timeVal < 12;
+      const t = isMorning ? timeVal - 6 : 20 - timeVal;
       setBrightnessValue(-0.5 + t * 0.3);
       setVignetteDarkness(0.8 - t * 0.3);
-
-      if (isMorning) {
-        setSkyColor("#1a0f30"); // Dawn color
-      } else {
-        setSkyColor("#1a0922"); // Dusk color
-      }
-    }
-    // Day (brighter)
-    else {
-      const noonDist = Math.abs(12 - timeValue);
+      setSkyColor(isMorning ? "#1a0f30" : "#1a0922");
+    } else {
+      const noonDist = Math.abs(12 - timeVal);
       const dayBrightness = Math.max(0, 0.1 - noonDist * 0.01);
-
       setBrightnessValue(-0.2 + dayBrightness);
       setVignetteDarkness(0.5);
-
-      if (timeValue < 10) {
-        setSkyColor("#0a1a40"); // Morning blue
-      } else if (timeValue < 16) {
-        setSkyColor("#0a1a33"); // Midday blue
-      } else {
-        setSkyColor("#0a162b"); // Afternoon blue
-      }
+      if (timeVal < 10) setSkyColor("#0a1a40");
+      else if (timeVal < 16) setSkyColor("#0a1a33");
+      else setSkyColor("#0a162b");
     }
   }, [timeOfDay]);
 
-  const isUsingHighRes = false;
-  const glSettings = isUsingHighRes
-    ? {
-        antialias: true,
-        pixelRatio: window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio,
-        precision: "highp", // High precision rendering
-        toneMappingExposure: 0.1,
-      }
-    : {};
-
-  // Format time for display
   const formattedTime = timeOfDay.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
-  // Add a state for the shadow helper visibility
+  // Show/hide a directional-light shadow helper
   const [showShadowHelper, setShowShadowHelper] = useState<boolean>(false);
 
-  // Add a ref for the directional light
+  // Reference to the directional light from TilesScene (optionally)
   const directionalLightRef =
     useRef<React.RefObject<THREE.DirectionalLight>>(null);
-
-  // Function to set the light ref from the child component
   const setLightRef = (ref: React.RefObject<THREE.DirectionalLight>) => {
     directionalLightRef.current = ref;
   };
@@ -137,7 +99,7 @@ const PhotorealisticTilesMap = () => {
     <div className="relative">
       <div className="w-full h-[800px] relative overflow-hidden">
         <Canvas
-          shadows // Enable shadows in the canvas
+          shadows
           camera={{
             fov: 45,
             near: 1,
@@ -145,13 +107,13 @@ const PhotorealisticTilesMap = () => {
             position: [0, 5000, 0],
           }}
           onCreated={({ gl }) => {
-            gl.setClearColor(new THREE.Color(skyColor)); // Dynamic sky color
+            gl.setClearColor(new THREE.Color(skyColor));
             gl.setPixelRatio(window.devicePixelRatio);
             gl.shadowMap.enabled = true;
-            gl.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
+            gl.shadowMap.type = THREE.PCFSoftShadowMap;
           }}
-          gl={glSettings}
         >
+          {/* TilesScene with integrated CSM */}
           <TilesScene
             currentLocation={currentLocation}
             isOrbiting={isOrbiting}
@@ -164,38 +126,14 @@ const PhotorealisticTilesMap = () => {
             setLightRef={setLightRef}
           />
 
-          {/* Add post-processing effects to darken the scene */}
+          {/* Basic post-processing */}
           <EffectComposer>
-            {/* Adjust brightness and contrast for the entire scene */}
-            <BrightnessContrast
-              brightness={brightnessValue} // Dynamic brightness based on time
-              contrast={0.1} // Slight contrast boost
-            />
-
-            {/* Add vignette effect (darkens edges) */}
-            <Vignette
-              eskil={false}
-              offset={0.1}
-              darkness={vignetteDarkness} // Dynamic vignette based on time
-            />
+            <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
+            <Vignette eskil={false} offset={0.1} darkness={vignetteDarkness} />
           </EffectComposer>
         </Canvas>
 
-        {/* Time-of-day visual overlay */}
-        <div
-          className={`absolute inset-0 z-5 pointer-events-none ${
-            // Time-based overlay classes
-            timeOfDay.getHours() < 6 || timeOfDay.getHours() >= 21
-              ? "bg-gradient-to-b from-black/10 to-indigo-900/10" // Night
-              : timeOfDay.getHours() < 8
-              ? "bg-gradient-to-b from-indigo-900/10 to-orange-300/5" // Dawn
-              : timeOfDay.getHours() >= 19
-              ? "bg-gradient-to-b from-orange-600/5 to-indigo-900/10" // Dusk
-              : "bg-transparent" // Day
-          }`}
-        ></div>
-
-        {/* Loading indicator */}
+        {/* Loading overlay */}
         {isLoading && (
           <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center text-white z-50">
             <div>Loading 3D Tiles... {loadingProgress}%</div>
@@ -208,7 +146,7 @@ const PhotorealisticTilesMap = () => {
           </div>
         )}
 
-        {/* Error message */}
+        {/* Error overlay */}
         {error && (
           <div className="absolute inset-0 bg-black/70 flex justify-center items-center text-white p-5 text-center z-50">
             <div>
@@ -218,7 +156,7 @@ const PhotorealisticTilesMap = () => {
           </div>
         )}
 
-        {/* Tile count indicator */}
+        {/* Tile count */}
         {!isLoading && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white bg-black/50 py-1 px-2.5 rounded text-xs z-10">
             {tileCount > 0
@@ -227,7 +165,7 @@ const PhotorealisticTilesMap = () => {
           </div>
         )}
 
-        {/* Controls panel */}
+        {/* Controls panel (pick times, location, etc.) */}
         <ControlsPanel
           currentLocation={currentLocation}
           formattedTime={formattedTime}
@@ -241,7 +179,7 @@ const PhotorealisticTilesMap = () => {
           onSetShowShadowHelper={setShowShadowHelper}
         />
 
-        {/* Google logo attribution */}
+        {/* Google branding + attributions */}
         <div className="absolute bottom-1 left-1 z-10">
           <img
             src="https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_68x28dp.png"
@@ -251,7 +189,6 @@ const PhotorealisticTilesMap = () => {
           />
         </div>
 
-        {/* Copyright information */}
         {copyrightInfo && (
           <div className="absolute bottom-1 right-1 text-[10px] text-white bg-black/50 py-0.5 px-1 rounded-sm z-10">
             {copyrightInfo}
@@ -260,6 +197,4 @@ const PhotorealisticTilesMap = () => {
       </div>
     </div>
   );
-};
-
-export default PhotorealisticTilesMap;
+}

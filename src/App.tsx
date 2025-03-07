@@ -1,5 +1,5 @@
 // Maps
-import ThreeDTilesMap from "./maps/ThreeDTilesMap";
+import ThreeDTilesMap from "./maps/PhotorealisticTilesMap";
 
 const App = () => {
   return (
