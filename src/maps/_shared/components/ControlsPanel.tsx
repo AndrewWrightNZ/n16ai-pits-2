@@ -55,6 +55,8 @@ const ControlsPanel = ({
             <TimeButton label="6 AM" onClick={() => onSetSpecificTime(6)} />
             <TimeButton label="12 PM" onClick={() => onSetSpecificTime(12)} />
             <TimeButton label="6 PM" onClick={() => onSetSpecificTime(18)} />
+            <TimeButton label="7 PM" onClick={() => onSetSpecificTime(19)} />
+            <TimeButton label="8 PM" onClick={() => onSetSpecificTime(20)} />
             <TimeButton label="9 AM" onClick={() => onSetSpecificTime(9)} />
             <TimeButton label="3 PM" onClick={() => onSetSpecificTime(15)} />
             <TimeButton label="9 PM" onClick={() => onSetSpecificTime(21)} />

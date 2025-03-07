@@ -165,19 +165,19 @@ export function calculateAmbientLight(elevation: number): {
   if (elevation < 0) {
     // Night time - blue tint, low intensity
     return {
-      intensity: 0.3,
+      intensity: 0,
       color: new THREE.Color(0x111133),
     };
   } else if (elevation < 10) {
     // Sunrise/sunset - warm tint, low-medium intensity
     return {
-      intensity: 0.3 + (elevation / 10) * 0.2,
+      intensity: 0,
       color: new THREE.Color(0x994422),
     };
   } else {
     // Day time - neutral tint, medium-high intensity
     return {
-      intensity: 0.5 + (elevation / 90) * 0.3,
+      intensity: 0,
       color: new THREE.Color(0xaabbcc),
     };
   }

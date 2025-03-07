@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -24,6 +24,7 @@ interface TilesSceneProps {
   setError: (error: string | null) => void;
   setLoadingProgress: (progress: number) => void;
   setLightRef: (ref: React.RefObject<THREE.DirectionalLight>) => void;
+  showShadowHelper?: boolean;
 }
 
 interface TilesRendererExtendedEventMap {
@@ -63,6 +64,7 @@ interface ExtendedTilesRenderer extends TilesRenderer {
     type: K,
     listener: (event: TilesRendererExtendedEventMap[K]) => void
   ): void;
+  onLoadModel: (model: any) => any;
 }
 
 // API key from environment variables
@@ -79,11 +81,13 @@ const TilesScene = ({
   setError,
   setLoadingProgress,
   setLightRef,
+  showShadowHelper = false,
 }: TilesSceneProps) => {
   const tilesRendererRef = useRef<ExtendedTilesRenderer | null>(null);
   const processedUrls = useRef(new Map<string, string>());
   const currentSessionId = useRef<string>("");
   const orbitIntervalRef = useRef<number | null>(null);
+  const sunSphereRef = useRef<THREE.Mesh>(null);
 
   // References for lights
   const directionalLightRef = useRef<THREE.DirectionalLight>(null);
@@ -92,7 +96,10 @@ const TilesScene = ({
   const { scene, camera, gl: renderer } = useThree();
   const controlsRef = useRef<OrbitControlsRef | null>(null);
 
-  // And in useEffect, call it:
+  // State for sun darkness based on time
+  const [sunLightOpacity, setSunLightOpacity] = useState<number>(0.6);
+
+  // Share the directional light ref with parent component
   useEffect(() => {
     if (directionalLightRef.current) {
       setLightRef(
@@ -247,6 +254,71 @@ const TilesScene = ({
     currentLocation,
   ]);
 
+  // Process all loaded models to force them to use standard materials
+  const processLoaded3DTiles = () => {
+    if (!tilesRendererRef.current) return;
+
+    tilesRendererRef.current.onLoadModel = (model: any) => {
+      console.log("Processing model:", model);
+
+      // Process the model to manually override unlit materials
+      model.scene.traverse((object: any) => {
+        if (object instanceof THREE.Mesh) {
+          // Enable shadows
+          object.castShadow = true;
+          object.receiveShadow = true;
+
+          if (object.material) {
+            const processMaterial = (material: any) => {
+              // Check if this is an unlit material either by type or extension
+              const isUnlitMaterial =
+                material.type === "MeshBasicMaterial" ||
+                (material.userData &&
+                  material.userData.gltfExtensions &&
+                  material.userData.gltfExtensions.KHR_materials_unlit);
+
+              // Create a new material that will respond to lighting if needed
+              if (isUnlitMaterial) {
+                console.log("Converting unlit material to standard material");
+
+                const newMaterial = new THREE.MeshStandardMaterial({
+                  map: material.map,
+                  color: material.color
+                    ? material.color.clone()
+                    : new THREE.Color(0xffffff),
+                  transparent: material.transparent || false,
+                  opacity:
+                    material.opacity !== undefined ? material.opacity : 1.0,
+                  roughness: 0.7,
+                  metalness: 0.2,
+                });
+
+                return newMaterial;
+              }
+
+              return material;
+            };
+
+            if (Array.isArray(object.material)) {
+              object.material = object.material.map(processMaterial);
+            } else {
+              object.material = processMaterial(object.material);
+            }
+          }
+        }
+      });
+
+      return model;
+    };
+  };
+
+  // Call material processing function
+  useEffect(() => {
+    if (tilesRendererRef.current) {
+      processLoaded3DTiles();
+    }
+  }, [tilesRendererRef.current]);
+
   // Effect for handling location changes
   useEffect(() => {
     if (tilesRendererRef.current) {
@@ -282,6 +354,19 @@ const TilesScene = ({
   // Effect for handling time of day changes
   useEffect(() => {
     updateSunPosition();
+
+    // Update the darkening sphere opacity based on time
+    const hours = timeOfDay.getHours();
+    if (hours < 6 || hours > 20) {
+      // Night
+      setSunLightOpacity(0.8);
+    } else if (hours < 8 || hours > 18) {
+      // Dawn/Dusk
+      setSunLightOpacity(0.6);
+    } else {
+      // Day
+      setSunLightOpacity(0.4);
+    }
   }, [timeOfDay]);
 
   // Function to update the sun position and lighting based on time
@@ -291,61 +376,109 @@ const TilesScene = ({
     const location = PRESET_LOCATIONS[currentLocation];
     if (!location) return;
 
-    // Calculate sun position based on time and location
-    const sunPos = sun.calculateSunPosition(
-      timeOfDay,
-      location.lat,
-      location.lng
-    );
+    // Calculate sun position based on time of day
+    const hours = timeOfDay.getHours();
+    const minutes = timeOfDay.getMinutes();
+    const timeValue = hours + minutes / 60; // 0-24 value
 
-    // Update directional light position to match sun
-    directionalLightRef.current.position.set(sunPos.x, sunPos.y, sunPos.z);
+    // Create an arc from east to west (0 at sunrise, PI at sunset)
+    const sunriseHour = 6; // 6 AM
+    const sunsetHour = 20; // 8 PM
+    const dayLength = sunsetHour - sunriseHour;
 
-    // Update directional light color and intensity
-    directionalLightRef.current.color = sun.calculateSunColor(sunPos.elevation);
-    directionalLightRef.current.intensity = sun.calculateLightIntensity(
-      sunPos.elevation
-    );
+    let sunAngle = 0;
+
+    if (timeValue >= sunriseHour && timeValue <= sunsetHour) {
+      // Day time - sun moves in an arc
+      sunAngle = ((timeValue - sunriseHour) / dayLength) * Math.PI;
+    } else if (timeValue < sunriseHour) {
+      // Before sunrise - sun is below horizon to the east
+      sunAngle = -0.2;
+    } else {
+      // After sunset - sun is below horizon to the west
+      sunAngle = Math.PI + 0.2;
+    }
+
+    // Calculate sun position (5000 units away)
+    const radius = 5000;
+    const sunX = Math.cos(sunAngle) * radius;
+    const sunHeight = Math.sin(sunAngle) * radius;
+    const sunY = Math.max(10, sunHeight); // Prevent sun from going too far below horizon
+    const sunZ = 0;
+
+    // Update directional light position
+    directionalLightRef.current.position.set(sunX, sunY, sunZ);
+
+    // Update sun sphere position if it exists
+    if (sunSphereRef.current) {
+      sunSphereRef.current.position.copy(directionalLightRef.current.position);
+    }
+
+    // Set light color based on sun height
+    // Lower sun = warmer colors
+    let r = 1.0;
+    let g = 1.0;
+    let b = 1.0;
+
+    if (sunHeight < 1000) {
+      // Sunset/sunrise orange
+      const t = Math.max(0, sunHeight / 1000);
+      r = 1.0;
+      g = 0.6 + t * 0.4;
+      b = 0.3 + t * 0.7;
+    }
+
+    directionalLightRef.current.color.setRGB(r, g, b);
+
+    // Set light intensity based on sun height
+    let intensity = 0;
+
+    if (sunHeight > 0) {
+      // Day - brightness proportional to sun height
+      intensity = 1.0 + (sunHeight / radius) * 2.0;
+    } else {
+      // Night - very dim
+      intensity = 0.05;
+    }
+
+    directionalLightRef.current.intensity = intensity;
+    directionalLightRef.current.castShadow = sunHeight > 0;
 
     // Update ambient light
-    const ambientSettings = sun.calculateAmbientLight(sunPos.elevation);
-    ambientLightRef.current.color = ambientSettings.color;
-    ambientLightRef.current.intensity = ambientSettings.intensity;
+    ambientLightRef.current.intensity = sunHeight > 0 ? 0.1 : 0.02;
 
-    // Configure shadows based on time of day
-    if (sunPos.elevation > 0) {
-      // Day time - enable shadows
-      directionalLightRef.current.castShadow = true;
+    // Color ambient light to match time of day
+    if (sunHeight < 0) {
+      // Night - dark blue
+      ambientLightRef.current.color.setRGB(0.1, 0.1, 0.2);
+    } else if (sunHeight < 1000) {
+      // Sunset/sunrise - orange tint
+      ambientLightRef.current.color.setRGB(0.3, 0.2, 0.2);
+    } else {
+      // Day - neutral
+      ambientLightRef.current.color.setRGB(0.2, 0.2, 0.3);
+    }
 
-      // Configure shadow properties based on sun height
-      const shadowSize = 5000; // Size of shadow camera (adjust based on your scene)
+    // Configure shadow camera
+    if (sunHeight > 0) {
+      const shadowSize = 5000;
       directionalLightRef.current.shadow.camera.left = -shadowSize;
       directionalLightRef.current.shadow.camera.right = shadowSize;
       directionalLightRef.current.shadow.camera.top = shadowSize;
       directionalLightRef.current.shadow.camera.bottom = -shadowSize;
+      directionalLightRef.current.shadow.camera.far = 10000;
 
-      // Adjust shadow quality based on sun elevation
-      // Higher quality at sunrise/sunset when shadows are most dramatic
-      if (sunPos.elevation < 20) {
-        directionalLightRef.current.shadow.mapSize.width = 4096;
-        directionalLightRef.current.shadow.mapSize.height = 4096;
-        directionalLightRef.current.shadow.camera.far = 10000;
-      } else {
-        directionalLightRef.current.shadow.mapSize.width = 2048;
-        directionalLightRef.current.shadow.mapSize.height = 2048;
-        directionalLightRef.current.shadow.camera.far = 5000;
-      }
-
-      // Update the shadow camera
+      // Update shadow camera
       directionalLightRef.current.shadow.camera.updateProjectionMatrix();
-
-      // For better shadow visuals
-      directionalLightRef.current.shadow.bias = -0.0001;
-      directionalLightRef.current.shadow.normalBias = 0.02;
-    } else {
-      // Night time - disable shadows
-      directionalLightRef.current.castShadow = false;
     }
+
+    console.log(
+      `Sun updated - Time: ${hours}:${minutes}, Position: [${sunX.toFixed(
+        0
+      )}, ${sunY.toFixed(0)}, ${sunZ.toFixed(
+        0
+      )}], Intensity: ${intensity.toFixed(2)}`
+    );
   };
 
   const positionCameraAtLocation = (locationKey: string) => {
@@ -457,10 +590,48 @@ const TilesScene = ({
         if (object.material) {
           if (Array.isArray(object.material)) {
             object.material.forEach((mat) => {
+              // Ensure the material properties are set for shadows
               mat.needsUpdate = true;
+
+              // If material has emissive property, ensure it's black (no self-illumination)
+              if ("emissive" in mat) {
+                mat.emissive = new THREE.Color(0x000000);
+                mat.emissiveIntensity = 0;
+              }
+
+              // If it's a standard material, ensure shadow settings
+              if (
+                mat.type.includes("MeshStandard") ||
+                mat.type.includes("MeshPhysical")
+              ) {
+                mat.roughness = Math.max(0.4, mat.roughness || 0);
+                mat.metalness = Math.min(0.3, mat.metalness || 0);
+              }
             });
           } else {
+            // Ensure the material properties are set for shadows
             object.material.needsUpdate = true;
+
+            // If material has emissive property, ensure it's black (no self-illumination)
+            if ("emissive" in object.material) {
+              object.material.emissive = new THREE.Color(0x000000);
+              object.material.emissiveIntensity = 0;
+            }
+
+            // If it's a standard material, ensure shadow settings
+            if (
+              object.material.type.includes("MeshStandard") ||
+              object.material.type.includes("MeshPhysical")
+            ) {
+              object.material.roughness = Math.max(
+                0.4,
+                object.material.roughness || 0
+              );
+              object.material.metalness = Math.min(
+                0.3,
+                object.material.metalness || 0
+              );
+            }
           }
         }
       }
@@ -483,29 +654,59 @@ const TilesScene = ({
 
   return (
     <>
+      {/* Scene fog */}
+      <fog attach="fog" args={["#0a1622", 100, 5000]} />
+
+      {/* Darkening sphere */}
+      <mesh position={[0, 0, 0]} scale={[10000, 10000, 10000]} renderOrder={-1}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshBasicMaterial
+          color="#000000"
+          transparent={true}
+          opacity={sunLightOpacity} // This changes based on time of day
+          side={THREE.BackSide}
+        />
+      </mesh>
+
       {/* Ambient light */}
-      {/* <ambientLight
+      <ambientLight
         ref={ambientLightRef}
-        intensity={0.7}
-        color={new THREE.Color(0xaabbcc)}
-      /> */}
+        intensity={0.02}
+        color={new THREE.Color(0x111122)}
+      />
 
       {/* Directional light (sun) */}
-      {/* <directionalLight
+      <directionalLight
         ref={directionalLightRef}
         position={[1000, 1000, 1000]}
-        intensity={1}
+        intensity={2.5}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
         shadow-camera-left={-5000}
         shadow-camera-right={5000}
         shadow-camera-top={5000}
         shadow-camera-bottom={-5000}
         shadow-camera-far={10000}
-        shadow-bias={-0.0001}
-        shadow-normalBias={0.02}
-      /> */}
+        shadow-bias={-0.0005}
+        shadow-normalBias={0.04}
+        color={0xffffff}
+      />
+
+      {/* Visual sun representation */}
+      <mesh
+        ref={sunSphereRef}
+        position={[1000, 1000, 1000]} // Initial position, will be updated
+        scale={50} // Make it visible from a distance
+      >
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshBasicMaterial color="#FFF176" />
+      </mesh>
+
+      {/* Shadow camera helper (if enabled) */}
+      {showShadowHelper && directionalLightRef.current && (
+        <cameraHelper args={[directionalLightRef.current.shadow.camera]} />
+      )}
 
       {/* Orbit controls */}
       <OrbitControls
@@ -517,6 +718,62 @@ const TilesScene = ({
         minDistance={100}
         maxDistance={1000000}
       />
+
+      {/* Test objects */}
+      {/* Large ground plane for shadows */}
+      <mesh
+        position={[0, -10, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[2000, 2000]} />
+        <meshStandardMaterial
+          color="#333333"
+          transparent
+          opacity={0.6}
+          roughness={0.8}
+          metalness={0.2}
+        />
+      </mesh>
+
+      {/* Test buildings */}
+      <group position={[0, 0, 0]}>
+        {/* Large building in center */}
+        <mesh castShadow receiveShadow position={[0, 100, 0]}>
+          <boxGeometry args={[100, 200, 100]} />
+          <meshStandardMaterial
+            color="#B0BEC5"
+            roughness={0.7}
+            metalness={0.2}
+          />
+        </mesh>
+
+        {/* Smaller building nearby */}
+        <mesh castShadow receiveShadow position={[200, 50, 200]}>
+          <boxGeometry args={[80, 100, 80]} />
+          <meshStandardMaterial
+            color="#90A4AE"
+            roughness={0.6}
+            metalness={0.3}
+          />
+        </mesh>
+
+        {/* Another building */}
+        <mesh castShadow receiveShadow position={[-200, 75, -100]}>
+          <boxGeometry args={[120, 150, 90]} />
+          <meshStandardMaterial
+            color="#78909C"
+            roughness={0.5}
+            metalness={0.4}
+          />
+        </mesh>
+
+        {/* Small test cube */}
+        <mesh position={[0, 20, 0]} castShadow receiveShadow>
+          <boxGeometry args={[50, 50, 50]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+      </group>
     </>
   );
 };
