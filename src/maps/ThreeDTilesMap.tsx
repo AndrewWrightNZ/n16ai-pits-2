@@ -9,6 +9,7 @@ import {
   TilesFadePlugin,
 } from "3d-tiles-renderer/plugins";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { cn } from "../utils";
 
 interface TilesRendererExtendedEventMap {
   "load-error": { error: Error };
@@ -41,59 +42,6 @@ interface ExtendedTilesRenderer extends TilesRenderer {
 
 // API key from environment variables
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-// Container styles
-const containerStyle: React.CSSProperties = {
-  width: "100%",
-  height: "600px",
-  position: "relative",
-  overflow: "hidden",
-};
-
-// Copyright info style
-const attributionStyle: React.CSSProperties = {
-  position: "absolute",
-  bottom: "5px",
-  right: "5px",
-  fontSize: "10px",
-  color: "#fff",
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
-  padding: "2px 4px",
-  borderRadius: "2px",
-  zIndex: 10,
-};
-
-// Control panel styles
-const controlPanelStyle: React.CSSProperties = {
-  position: "absolute",
-  top: "10px",
-  left: "10px",
-  backgroundColor: "rgba(255, 255, 255, 0.8)",
-  padding: "10px",
-  borderRadius: "4px",
-  zIndex: 10,
-  maxWidth: "200px",
-};
-
-// Google logo style
-const googleLogoStyle: React.CSSProperties = {
-  position: "absolute",
-  bottom: "5px",
-  left: "5px",
-  zIndex: 10,
-};
-
-// Button style
-const buttonStyle: React.CSSProperties = {
-  padding: "8px 12px",
-  backgroundColor: "#fff",
-  border: "1px solid #ccc",
-  borderRadius: "4px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-  cursor: "pointer",
-  margin: "5px 0",
-  width: "100%",
-};
 
 // Location type definition
 interface Location {
@@ -505,8 +453,8 @@ const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
   };
 
   return (
-    <div style={{ position: "relative" }}>
-      <div style={containerStyle}>
+    <div className="relative">
+      <div className="w-full h-[800px] relative overflow-hidden">
         <Canvas
           shadows
           camera={{
@@ -534,39 +482,12 @@ const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
 
         {/* Loading indicator */}
         {isLoading && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              color: "white",
-              zIndex: 100,
-            }}
-          >
+          <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center text-white z-50">
             <div>Loading 3D Tiles... {loadingProgress}%</div>
-            <div
-              style={{
-                width: "200px",
-                height: "10px",
-                backgroundColor: "#333",
-                marginTop: "10px",
-                borderRadius: "5px",
-                overflow: "hidden",
-              }}
-            >
+            <div className="w-52 h-2.5 bg-gray-700 mt-2.5 rounded-md overflow-hidden">
               <div
-                style={{
-                  width: `${loadingProgress}%`,
-                  height: "100%",
-                  backgroundColor: "#4CAF50",
-                }}
+                className="h-full bg-green-500 transition-all duration-300"
+                style={{ width: `${loadingProgress}%` }}
               />
             </div>
           </div>
@@ -574,25 +495,9 @@ const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
 
         {/* Error message */}
         {error && (
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.7)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              color: "white",
-              padding: "20px",
-              textAlign: "center",
-              zIndex: 100,
-            }}
-          >
+          <div className="absolute inset-0 bg-black/70 flex justify-center items-center text-white p-5 text-center z-50">
             <div>
-              <h3>Error</h3>
+              <h3 className="text-xl font-bold mb-2">Error</h3>
               <p>{error}</p>
             </div>
           </div>
@@ -600,20 +505,7 @@ const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
 
         {/* Tile count indicator */}
         {!isLoading && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: "30px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              color: "white",
-              backgroundColor: "rgba(0, 0, 0, 0.5)",
-              padding: "5px 10px",
-              borderRadius: "4px",
-              fontSize: "12px",
-              zIndex: 10,
-            }}
-          >
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white bg-black/50 py-1 px-2.5 rounded text-xs z-10">
             {tileCount > 0
               ? `Tiles loaded: ${tileCount}`
               : "No tiles visible - try resetting view"}
@@ -621,40 +513,35 @@ const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
         )}
 
         {/* Controls panel */}
-        <div style={controlPanelStyle}>
-          <h3 style={{ margin: "0 0 10px 0" }}>3D Controls</h3>
+        <div className="absolute top-2.5 left-2.5 bg-white/80 p-2.5 rounded z-10 max-w-[200px]">
+          <h3 className="font-bold text-gray-800 mb-2.5">3D Controls</h3>
+
           {/* Location selection */}
-          <div style={{ marginBottom: "10px" }}>
-            <p style={{ margin: "5px 0", fontWeight: "bold" }}>
-              Change Location:
-            </p>
+          <div className="mb-2.5">
+            <p className="font-medium text-sm mb-1">Change Location:</p>
+
             {Object.entries(locations).map(([key, loc]) => (
-              <button
+              <LocationButton
                 key={key}
+                locationKey={key}
+                location={loc}
+                isActive={currentLocation === key}
                 onClick={() => changeLocation(key)}
-                style={{
-                  ...buttonStyle,
-                  backgroundColor: currentLocation === key ? "#4CAF50" : "#fff",
-                  color: currentLocation === key ? "white" : "black",
-                }}
-              >
-                {loc.description}
-              </button>
+              />
             ))}
           </div>
 
           {/* Orbit controls */}
-          <div style={{ marginBottom: "10px" }}>
-            <p style={{ margin: "5px 0", fontWeight: "bold" }}>
-              Camera Controls:
-            </p>
+          <div className="mb-2.5">
+            <p className="font-medium text-sm mb-1">Camera Controls:</p>
             <button
               onClick={() => setIsOrbiting(!isOrbiting)}
-              style={{
-                ...buttonStyle,
-                backgroundColor: isOrbiting ? "#f0ad4e" : "#fff",
-                color: isOrbiting ? "white" : "black",
-              }}
+              className={cn(
+                "w-full py-2 px-3 mb-1 text-sm font-medium border rounded shadow-sm transition-colors",
+                isOrbiting
+                  ? "bg-yellow-500 text-white border-yellow-600"
+                  : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
+              )}
             >
               {isOrbiting ? "Stop Orbit" : "Start Orbit"}
             </button>
@@ -662,19 +549,50 @@ const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
         </div>
 
         {/* Google logo attribution */}
-        <div style={googleLogoStyle}>
+        <div className="absolute bottom-1 left-1 z-10">
           <img
             src="https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_68x28dp.png"
             alt="Google"
             height="20"
+            className="h-5"
           />
         </div>
 
         {/* Copyright information */}
-        {copyrightInfo && <div style={attributionStyle}>{copyrightInfo}</div>}
+        {copyrightInfo && (
+          <div className="absolute bottom-1 right-1 text-[10px] text-white bg-black/50 py-0.5 px-1 rounded-sm z-10">
+            {copyrightInfo}
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+// Location Button component
+const LocationButton = ({
+  locationKey,
+  location,
+  isActive,
+  onClick,
+}: {
+  locationKey: string;
+  location: Location;
+  isActive: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    key={locationKey}
+    onClick={onClick}
+    className={cn(
+      "w-full py-2 px-3 mb-1 text-sm font-medium border rounded shadow-sm transition-colors",
+      isActive
+        ? "bg-green-500 text-white border-green-600"
+        : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
+    )}
+  >
+    {location.description}
+  </button>
+);
 
 export default PhotorealisticTilesMap;
