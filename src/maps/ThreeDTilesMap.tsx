@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { TilesRenderer } from "3d-tiles-renderer";
 import {
@@ -670,39 +670,29 @@ const TilesScene = ({
         minDistance={100}
         maxDistance={1000000}
       />
+
+      {/* Fix: Use Html from drei instead of a custom Html component */}
+      <Html position={[0, 0, 0]}>
+        <button
+          onClick={resetView}
+          style={{
+            padding: "10px 15px",
+            backgroundColor: "red",
+            color: "white",
+            fontWeight: "bold",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          RESET VIEW
+        </button>
+      </Html>
     </>
   );
 };
 
 // Using React Three Fiber's Html component for UI overlays
-// @ts-ignore
-const Html = ({ children, position }) => {
-  // const { camera } = useThree();
-  // const vec = new THREE.Vector3(...position);
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: "0",
-        top: "0",
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          transform: "translate(-50%, -50%)",
-          pointerEvents: "auto",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-};
 
 // Main component
 const PhotorealisticTilesMap = () => {
@@ -713,7 +703,6 @@ const PhotorealisticTilesMap = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState(null);
   const [tileCount, setTileCount] = useState(0);
-  const [debug, setDebug] = useState({});
 
   // Function to change location
   const changeLocation = (locationKey: any) => {
