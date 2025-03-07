@@ -8,7 +8,6 @@ import { TilesRenderer } from "3d-tiles-renderer";
 import {
   GLTFExtensionsPlugin,
   TileCompressionPlugin,
-  TilesFadePlugin,
 } from "3d-tiles-renderer/plugins";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
@@ -16,8 +15,11 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { CSM } from "../csm"; // or wherever your CSM code is
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
-// Import our shadow solution
-import ShadowGroundPlane from "./ShadowGroundPlane";
+// Import the immediate shadow test component
+import ImmediateShadowTest from "./ImmediateShadowTest";
+
+// Import the new TilesShadowWrapper component
+import TilesShadowWrapper from "./TilesShadowWrapper";
 
 interface TilesSceneProps {
   currentLocation: string;
@@ -66,6 +68,12 @@ export default function TilesScene({
   const [sunLightOpacity, setSunLightOpacity] = useState(0.6);
   const [tilesLoaded, setTilesLoaded] = useState(false);
 
+  // Enable shadow testing
+  const [enableShadowTest, setEnableShadowTest] = useState(true);
+
+  // Shadow opacity based on time of day
+  const [shadowOpacity, setShadowOpacity] = useState(0.3);
+
   // Create CSM for large scale shadows
   const csmRef = useRef<CSM | null>(null);
   useEffect(() => {
@@ -75,7 +83,7 @@ export default function TilesScene({
       cascades: 3,
       maxFar: 10000,
       mode: "practical",
-      shadowMapSize: 2048,
+      shadowMapSize: 4096,
       shadowBias: -0.0001,
       lightDirection: new THREE.Vector3(1, -1, 1).normalize(),
       lightIntensity: 1,
@@ -100,6 +108,15 @@ export default function TilesScene({
     };
   }, [scene, camera, setLightRef]);
 
+  // Make sure renderer has shadow map enabled
+  useEffect(() => {
+    if (renderer) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      console.log("Enabled shadow mapping on renderer");
+    }
+  }, [renderer]);
+
   // Initialize 3D Tiles
   useEffect(() => {
     setIsLoading(true);
@@ -109,7 +126,6 @@ export default function TilesScene({
     const rootUrl = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${API_KEY}`;
     const tilesRenderer = new TilesRenderer(rootUrl) as ExtendedTilesRenderer;
     tilesRenderer.registerPlugin(new TileCompressionPlugin());
-    tilesRenderer.registerPlugin(new TilesFadePlugin());
     tilesRenderer.registerPlugin(
       new GLTFExtensionsPlugin({
         dracoLoader: new DRACOLoader().setDecoderPath(
@@ -148,6 +164,82 @@ export default function TilesScene({
       return processedUrl;
     };
 
+    // Set up shadow casting and receiving for the tiles group
+    // Replace the current setupShadowsForTiles function in TilesScene.tsx with this optimized version:
+
+    // Set up shadow casting and receiving for the tiles group
+    const setupShadowsForTiles = () => {
+      console.log("Setting up shadows for tiles group...");
+
+      // Use a Set to track processed materials to avoid duplicate conversions
+      const processedMaterials = new Set();
+
+      tilesRenderer.group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Allow meshes to cast shadows
+          child.castShadow = true;
+
+          // Ensure materials are set up for shadows
+          if (child.material) {
+            // Handle both single materials and material arrays
+            const materials = Array.isArray(child.material)
+              ? child.material
+              : [child.material];
+
+            materials.forEach((material) => {
+              // Skip already processed materials using their UUID
+              if (material.uuid && processedMaterials.has(material.uuid)) {
+                return;
+              }
+
+              // Mark as processed
+              if (material.uuid) {
+                processedMaterials.add(material.uuid);
+              }
+
+              // Force material updates
+              material.needsUpdate = true;
+
+              // Some materials like MeshBasicMaterial don't respond to lighting
+              // If it's one of these, try to upgrade it
+              if (material instanceof THREE.MeshBasicMaterial) {
+                console.log(
+                  "Converting MeshBasicMaterial to MeshStandardMaterial for better shadows"
+                );
+                const color = material.color
+                  ? material.color.clone()
+                  : new THREE.Color(0xcccccc);
+                const newMaterial = new THREE.MeshStandardMaterial({
+                  color: color,
+                  roughness: 0.7,
+                  metalness: 0.0,
+                });
+
+                // Copy important properties from the original material
+                newMaterial.transparent = material.transparent;
+                newMaterial.opacity = material.opacity;
+                newMaterial.side = material.side;
+
+                // Replace the material
+                if (Array.isArray(child.material)) {
+                  const index = child.material.indexOf(material);
+                  if (index !== -1) child.material[index] = newMaterial;
+                } else {
+                  child.material = newMaterial;
+                }
+              }
+            });
+          }
+        }
+      });
+
+      // Schedule another check for new tiles less frequently
+      setTimeout(setupShadowsForTiles, 5000);
+    };
+
+    // Start the shadow setup process
+    setupShadowsForTiles();
+
     // Error listener
     tilesRenderer.addEventListener("load-error", (ev: any) => {
       setError(`Tiles loading error: ${ev.error?.message || "Unknown"}`);
@@ -155,6 +247,7 @@ export default function TilesScene({
 
     // Tiles loaded
     tilesRenderer.addEventListener("load-tile-set", () => {
+      console.log("Tile set loaded, ensuring shadows are enabled");
       setTileCount(tilesRenderer.group.children.length);
       if (tilesRenderer.rootTileSet) {
         setTilesLoaded(true);
@@ -225,12 +318,17 @@ export default function TilesScene({
   useEffect(() => {
     updateSunPosition();
     const hours = timeOfDay.getHours();
+
+    // Adjust shadow opacity based on time of day - with higher values for more visible shadows
     if (hours < 6 || hours > 20) {
       setSunLightOpacity(0.8);
+      setShadowOpacity(0.8); // Much stronger shadows at night
     } else if (hours < 8 || hours > 18) {
       setSunLightOpacity(0.6);
+      setShadowOpacity(0.7); // Stronger shadows at dawn/dusk
     } else {
       setSunLightOpacity(0.4);
+      setShadowOpacity(0.6); // Stronger shadows during day
     }
   }, [timeOfDay]);
 
@@ -258,15 +356,13 @@ export default function TilesScene({
     const sunY = Math.sin(sunAngle) * radius;
     fallbackLightRef.current.position.set(sunX, Math.max(10, sunY), 0);
 
-    // Increase intensity if the sun is above the horizon
-    let intensity = 0.1;
-    if (sunY > 0) {
-      intensity = 1.0 + (sunY / radius) * 2.0;
-    }
-    fallbackLightRef.current.intensity = intensity;
-    fallbackLightRef.current.castShadow = sunY > 0;
+    // Always cast shadows for testing
+    fallbackLightRef.current.castShadow = true;
 
-    // Important: Adjust shadow camera for better coverage
+    // Increase intensity
+    fallbackLightRef.current.intensity = 2.0;
+
+    // Important: Adjust shadow camera for better coverage and darker shadows
     fallbackLightRef.current.shadow.mapSize.width = 4096;
     fallbackLightRef.current.shadow.mapSize.height = 4096;
     fallbackLightRef.current.shadow.camera.near = 10;
@@ -275,11 +371,36 @@ export default function TilesScene({
     fallbackLightRef.current.shadow.camera.right = 2000;
     fallbackLightRef.current.shadow.camera.top = 2000;
     fallbackLightRef.current.shadow.camera.bottom = -2000;
-    fallbackLightRef.current.shadow.bias = -0.0005;
-    fallbackLightRef.current.shadow.normalBias = 0.04;
+    fallbackLightRef.current.shadow.bias = -0.0003; // Less negative bias for cleaner shadows
+    fallbackLightRef.current.shadow.normalBias = 0.02; // Lower normal bias for sharper shadows
+
+    // Make shadows darker by reducing light bleeding
+    fallbackLightRef.current.shadow.radius = 1; // Sharper shadows (default is 1)
+    fallbackLightRef.current.shadow.blurSamples = 8; // More blur samples for better quality
 
     // Adjust ambient
-    ambientLightRef.current.intensity = sunY > 0 ? 0.1 : 0.02;
+    ambientLightRef.current.intensity = 0.2; // Keep ambient light low for more visible shadows
+
+    // Update CSM light direction if using CSM
+    if (csmRef.current) {
+      const lightDirection = new THREE.Vector3(
+        -Math.cos(sunAngle),
+        -Math.max(0.1, Math.sin(sunAngle)),
+        0.5
+      ).normalize();
+
+      // Update the light direction - note that we don't call updateLightDirection() directly
+      // as it might not exist in your CSM implementation
+      csmRef.current.lightDirection = lightDirection;
+
+      // Instead, update each light in the CSM setup individually
+      csmRef.current.lights.forEach((light) => {
+        light.position.copy(lightDirection).multiplyScalar(1000);
+        light.target.position.set(0, 0, 0);
+        light.updateMatrixWorld();
+        light.target.updateMatrixWorld();
+      });
+    }
   }
 
   function positionCameraAtLocation(locKey: string) {
@@ -362,15 +483,15 @@ export default function TilesScene({
       {/* Ambient light */}
       <ambientLight
         ref={ambientLightRef}
-        intensity={0.02}
-        color={new THREE.Color(0x111122)}
+        intensity={0.2}
+        color={new THREE.Color(0xffffff)}
       />
 
       {/* Main directional light (sun) */}
       <directionalLight
         ref={fallbackLightRef}
         position={[1000, 1000, 1000]}
-        intensity={2.5}
+        intensity={3.0} /* Increased intensity for stronger contrast */
         castShadow
         shadow-mapSize-width={4096}
         shadow-mapSize-height={4096}
@@ -380,10 +501,23 @@ export default function TilesScene({
         shadow-camera-bottom={-2000}
         shadow-camera-near={10}
         shadow-camera-far={10000}
-        shadow-bias={-0.0005}
-        shadow-normalBias={0.04}
+        shadow-bias={-0.0003} /* Adjusted for cleaner shadows */
+        shadow-normalBias={0.02} /* Reduced for sharper shadows */
         color={0xffffff}
       />
+
+      {/* Add a helper to visualize the light's shadow camera */}
+      {enableShadowTest && fallbackLightRef.current && (
+        <cameraHelper args={[fallbackLightRef.current.shadow.camera]} />
+      )}
+
+      {/* Add our shadow wrapper to make tiles receive shadows */}
+      {tilesLoaded && tilesRendererRef.current && (
+        <TilesShadowWrapper
+          tilesGroup={tilesRendererRef.current.group}
+          shadowOpacity={shadowOpacity}
+        />
+      )}
 
       {/* Controls (orbit, panning, etc.) */}
       <OrbitControls
@@ -396,19 +530,44 @@ export default function TilesScene({
         maxDistance={1000000}
       />
 
-      {/* Add shadow receivers when tiles are loaded */}
-      {tilesLoaded && <ShadowGroundPlane />}
+      {/* Add immediate shadow test */}
+      {enableShadowTest && <ImmediateShadowTest />}
 
-      {/* Add some debug objects that will cast shadows */}
-      <mesh position={[0, 50, 0]} castShadow>
-        <boxGeometry args={[20, 20, 20]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
+      {/* Fixed shadow debug sphere - guaranteed to cast visible shadow */}
+      {enableShadowTest && (
+        <mesh castShadow position={[0, 80, 0]}>
+          <sphereGeometry args={[30, 32, 32]} />
+          <meshStandardMaterial color="red" />
+        </mesh>
+      )}
 
-      <mesh position={[40, 60, 40]} castShadow>
-        <sphereGeometry args={[15, 32, 32]} />
-        <meshStandardMaterial color="green" />
-      </mesh>
+      {/* Add several shadow-receiving planes at different heights */}
+      {enableShadowTest && (
+        <>
+          {/* Main ground plane */}
+          <mesh
+            receiveShadow
+            rotation={[-Math.PI / 2, 0, 0]}
+            position={[0, -10, 0]}
+          >
+            <planeGeometry args={[5000, 5000]} />
+            <shadowMaterial transparent opacity={0.8} color={0x000000} />
+          </mesh>
+
+          {/* Additional shadow-receiving planes at different heights */}
+          {[5, 20, 40, 60].map((height) => (
+            <mesh
+              key={`shadow-plane-${height}`}
+              receiveShadow
+              rotation={[-Math.PI / 2, 0, 0]}
+              position={[0, height, 0]}
+            >
+              <planeGeometry args={[500, 500]} />
+              <shadowMaterial transparent opacity={0.8} color={0x000000} />
+            </mesh>
+          ))}
+        </>
+      )}
     </>
   );
 }

@@ -54,6 +54,8 @@ const ControlsPanel = ({
           <div className="grid grid-cols-3 gap-1 mb-1">
             <TimeButton label="6 AM" onClick={() => onSetSpecificTime(6)} />
             <TimeButton label="12 PM" onClick={() => onSetSpecificTime(12)} />
+            <TimeButton label="4 PM" onClick={() => onSetSpecificTime(16)} />
+            <TimeButton label="5 PM" onClick={() => onSetSpecificTime(17)} />
             <TimeButton label="6 PM" onClick={() => onSetSpecificTime(18)} />
             <TimeButton label="7 PM" onClick={() => onSetSpecificTime(19)} />
             <TimeButton label="8 PM" onClick={() => onSetSpecificTime(20)} />
