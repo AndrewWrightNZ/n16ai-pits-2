@@ -11,13 +11,13 @@ import {
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
 import * as sun from "../../../utils/sun";
+import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
 // Interface for TilesScene props
 interface TilesSceneProps {
   currentLocation: string;
   isOrbiting: boolean;
   timeOfDay: Date;
-  locations: { [key: string]: { lat: number; lng: number; heading: number } };
   setTileCount: (count: number) => void;
   setCopyrightInfo: (info: string) => void;
   setIsLoading: (loading: boolean) => void;
@@ -79,7 +79,6 @@ const TilesScene = ({
   setError,
   setLoadingProgress,
   setLightRef,
-  locations,
 }: TilesSceneProps) => {
   const tilesRendererRef = useRef<ExtendedTilesRenderer | null>(null);
   const processedUrls = useRef(new Map<string, string>());
@@ -289,7 +288,7 @@ const TilesScene = ({
   const updateSunPosition = () => {
     if (!directionalLightRef.current || !ambientLightRef.current) return;
 
-    const location = locations[currentLocation];
+    const location = PRESET_LOCATIONS[currentLocation];
     if (!location) return;
 
     // Calculate sun position based on time and location
@@ -352,7 +351,7 @@ const TilesScene = ({
   const positionCameraAtLocation = (locationKey: string) => {
     if (!camera || !tilesRendererRef.current || !controlsRef.current) return;
 
-    const location = locations[locationKey];
+    const location = PRESET_LOCATIONS[locationKey];
     if (!location) return;
 
     // Use setLatLonToYUp to transform coordinates
@@ -485,14 +484,14 @@ const TilesScene = ({
   return (
     <>
       {/* Ambient light */}
-      <ambientLight
+      {/* <ambientLight
         ref={ambientLightRef}
         intensity={0.7}
         color={new THREE.Color(0xaabbcc)}
-      />
+      /> */}
 
       {/* Directional light (sun) */}
-      <directionalLight
+      {/* <directionalLight
         ref={directionalLightRef}
         position={[1000, 1000, 1000]}
         intensity={1}
@@ -506,7 +505,7 @@ const TilesScene = ({
         shadow-camera-far={10000}
         shadow-bias={-0.0001}
         shadow-normalBias={0.02}
-      />
+      /> */}
 
       {/* Orbit controls */}
       <OrbitControls

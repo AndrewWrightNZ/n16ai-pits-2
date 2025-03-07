@@ -2,7 +2,6 @@ import { useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 
 import * as THREE from "three";
-import ShadowHelper, { GroundPlane } from "./ShadowHelper";
 import TilesScene from "./_shared/components/TilesScene";
 import ControlsPanel from "./_shared/components/ControlsPanel";
 import { PRESET_LOCATIONS } from "./_shared/hooks/locationsData";
@@ -107,19 +106,7 @@ const PhotorealisticTilesMap = () => {
             setError={setError}
             setLoadingProgress={setLoadingProgress}
             setLightRef={setLightRef}
-            locations={PRESET_LOCATIONS}
           />
-
-          {/* Add the Shadow Helper when enabled */}
-          {showShadowHelper && directionalLightRef.current && (
-            <>
-              <ShadowHelper
-                directionalLightRef={directionalLightRef.current}
-                visible={showShadowHelper}
-              />
-              <GroundPlane height={-20} />
-            </>
-          )}
         </Canvas>
 
         {/* Loading indicator */}
