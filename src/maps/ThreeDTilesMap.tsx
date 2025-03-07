@@ -54,6 +54,13 @@ interface Location {
 
 // Define locations
 const locations: Record<string, Location> = {
+  london: {
+    lat: 51.5074,
+    lng: -0.1278,
+    altitude: 500,
+    heading: 0,
+    description: "London",
+  },
   sanFrancisco: {
     lat: 37.7749,
     lng: -122.4194,
@@ -150,9 +157,9 @@ const TilesScene = ({
       );
 
       // Improve renderer configuration for better visibility
-      tilesRenderer.errorTarget = 24;
-      tilesRenderer.maxDepth = 20;
-      tilesRenderer.displayActiveTiles = true;
+      tilesRenderer.errorTarget = 2; // Much lower (was 24 originally)
+      tilesRenderer.maxDepth = 40; // Higher detail level
+      tilesRenderer.lruCache.minSize = 1200; // Larger cache
 
       // URL processing function
       tilesRenderer.preprocessURL = (url: URL | string): string => {
@@ -323,10 +330,10 @@ const TilesScene = ({
       );
     }
 
-    // Set camera to a higher altitude to ensure visibility
-    const viewingAltitude = Math.max(location.altitude, 2000);
+    // Set camera to a MUCH lower altitude for close-up view
+    const viewingAltitude = 200; // Significantly reduced altitude (was 500-2000)
 
-    // Position camera looking down at an angle (not directly overhead)
+    // Position camera looking down at a steeper angle for better close-up
     camera.position.set(
       Math.sin(location.heading * THREE.MathUtils.DEG2RAD) * viewingAltitude,
       viewingAltitude,
@@ -337,33 +344,24 @@ const TilesScene = ({
     camera.lookAt(0, 0, 0);
     camera.up.set(0, 1, 0);
 
-    // Ensure camera frustum is appropriate for viewing
+    // Ensure camera frustum is appropriate for viewing close objects
     camera.near = 1;
-    camera.far = 100000000;
+    camera.far = 10000; // Reduced far plane for better z-buffer precision at close distance
     camera.updateProjectionMatrix();
 
-    // Reset OrbitControls target
+    // Configure OrbitControls for closer viewing
     if (controlsRef.current) {
       controlsRef.current.target.set(0, 0, 0);
-      controlsRef.current.minDistance = 100;
-      controlsRef.current.maxDistance = 1000000;
+      controlsRef.current.minDistance = 50; // Allow closer zooming
+      controlsRef.current.maxDistance = 1000; // Restrict how far users can zoom out
       controlsRef.current.update();
     }
 
     // Force an update of the tiles renderer
     if (tilesRendererRef.current) {
+      // Adjust for higher detail at close range
+      tilesRendererRef.current.errorTarget = 2; // Very low for high detail
       tilesRendererRef.current.update();
-
-      // Reset tiles if needed
-      setTimeout(() => {
-        if (
-          tilesRendererRef.current &&
-          tilesRendererRef.current.group.children.length === 0
-        ) {
-          tilesRendererRef.current.resetFailedTiles();
-          tilesRendererRef.current.update();
-        }
-      }, 2000);
     }
   };
 
@@ -431,15 +429,11 @@ const TilesScene = ({
   );
 };
 
-// Main component interface
-interface PhotorealisticTilesMapProps {
-  // Add any props if needed
-}
-
 // Main component
-const PhotorealisticTilesMap: React.FC<PhotorealisticTilesMapProps> = () => {
-  const [currentLocation, setCurrentLocation] =
-    useState<string>("sanFrancisco");
+const PhotorealisticTilesMap = () => {
+  const [currentLocation, setCurrentLocation] = useState<string>(
+    Object.keys(locations)[0]
+  );
   const [isOrbiting, setIsOrbiting] = useState<boolean>(false);
   const [copyrightInfo, setCopyrightInfo] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
