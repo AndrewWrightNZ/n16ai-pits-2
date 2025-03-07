@@ -490,7 +490,7 @@ export default function TilesScene({
       />
 
       {/* Additional shadow-receiving planes at different heights */}
-      {[5, 20, 40, 60].map((height) => (
+      {[60].map((height) => (
         <mesh
           key={`shadow-plane-${height}`}
           receiveShadow

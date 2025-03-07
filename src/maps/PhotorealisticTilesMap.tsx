@@ -100,9 +100,7 @@ export default function PhotorealisticTilesMap() {
             setLightRef={setLightRef}
           />
 
-          {/* Basic post-processing */}
           <EffectComposer>
-            {/* Golden hour may go here */}
             <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
             <Vignette eskil={false} offset={0.1} darkness={vignetteDarkness} />
           </EffectComposer>
