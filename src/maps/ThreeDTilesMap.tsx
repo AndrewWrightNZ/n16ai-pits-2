@@ -156,10 +156,15 @@ const TilesScene = ({
         })
       );
 
-      // Improve renderer configuration for better visibility
-      tilesRenderer.errorTarget = 2; // Much lower (was 24 originally)
-      tilesRenderer.maxDepth = 40; // Higher detail level
-      tilesRenderer.lruCache.minSize = 1200; // Larger cache
+      // GOOD SETTINGS
+      // tilesRenderer.errorTarget = 2; // Much lower (was 24 originally)
+      // tilesRenderer.maxDepth = 40; // Higher detail level
+      // tilesRenderer.lruCache.minSize = 1200; // Larger cache
+
+      // MAX SETTINGS
+      tilesRenderer.errorTarget = 0.5; // Absolute minimum (lower = higher quality)
+      tilesRenderer.maxDepth = 50; // Maximum possible depth for finest LOD
+      tilesRenderer.lruCache.minSize = 2000; // Massive cache for more detailed tiles
 
       // URL processing function
       tilesRenderer.preprocessURL = (url: URL | string): string => {
@@ -446,6 +451,15 @@ const PhotorealisticTilesMap = () => {
     setCurrentLocation(locationKey);
   };
 
+  const isUsingHighRes = false;
+  const glSettings = isUsingHighRes
+    ? {
+        antialias: true,
+        pixelRatio: window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio,
+        precision: "highp", // High precision rendering
+      }
+    : {};
+
   return (
     <div className="relative">
       <div className="w-full h-[800px] relative overflow-hidden">
@@ -462,6 +476,7 @@ const PhotorealisticTilesMap = () => {
             gl.setPixelRatio(window.devicePixelRatio);
             gl.shadowMap.enabled = true;
           }}
+          gl={glSettings}
         >
           <TilesScene
             currentLocation={currentLocation}
