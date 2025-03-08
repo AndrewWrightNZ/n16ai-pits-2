@@ -19,10 +19,6 @@ export function calculateSunPosition(
   const geomMeanAnomSun =
     357.52911 + julianCentury * (35999.05029 - 0.0001537 * julianCentury);
 
-  // Calculate eccentricity of earth's orbit
-  const eccent =
-    0.016708634 - julianCentury * (0.000042037 + 0.0000001267 * julianCentury);
-
   // Calculate sun's equation of center
   const sunEqOfCenter =
     Math.sin((geomMeanAnomSun * Math.PI) / 180) *

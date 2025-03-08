@@ -15,7 +15,7 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { CSM } from "../csm"; // or wherever your CSM code is
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
-// Import the new TilesShadowWrapper component
+// Import the TilesShadowWrapper component
 import TilesShadowWrapper from "./TilesShadowWrapper";
 
 interface TilesSceneProps {
@@ -56,10 +56,6 @@ export default function TilesScene({
 
   const orbitControlsRef = useRef<any>(null);
 
-  // One fallback directional light & an ambient light
-  const fallbackLightRef = useRef<THREE.DirectionalLight>(null);
-  const ambientLightRef = useRef<THREE.AmbientLight>(null);
-
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
   const [tilesLoaded, setTilesLoaded] = useState(false);
@@ -69,7 +65,48 @@ export default function TilesScene({
 
   // Create CSM for large scale shadows
   const csmRef = useRef<CSM | null>(null);
+
+  // Make sure renderer has shadow map enabled
   useEffect(() => {
+    if (renderer) {
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
+  }, [renderer]);
+
+  // Create CSM system - recreate when timeOfDay changes
+  useEffect(() => {
+    // Clean up existing CSM if any
+    if (csmRef.current) {
+      csmRef.current.remove(); // Use the built-in remove method
+      csmRef.current.dispose(); // And dispose to clean up shaders
+      csmRef.current = null;
+    }
+
+    // Calculate initial light direction based on time of day
+    const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
+    const sunriseHour = 6;
+    const sunsetHour = 20;
+    const dayLength = sunsetHour - sunriseHour;
+
+    // Calculate sun angle based on time of day
+    let sunAngle = 0;
+    if (hours >= sunriseHour && hours <= sunsetHour) {
+      sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
+    } else if (hours < sunriseHour) {
+      sunAngle = -0.2; // Just before sunrise
+    } else {
+      sunAngle = Math.PI + 0.2; // Just after sunset
+    }
+
+    // Initial light direction based on sun angle
+    const lightDirection = new THREE.Vector3(
+      -Math.cos(sunAngle),
+      -Math.max(0.1, Math.sin(sunAngle)),
+      0.5
+    ).normalize();
+
+    // Create a new CSM instance with proper config
     const csm = new CSM({
       camera,
       parent: scene,
@@ -78,37 +115,42 @@ export default function TilesScene({
       mode: "practical",
       shadowMapSize: 4096,
       shadowBias: -0.0001,
-      lightDirection: new THREE.Vector3(1, -1, 1).normalize(),
-      lightIntensity: 1,
+      lightDirection: lightDirection,
+      lightIntensity: 2.0, // Increased intensity
       lightNear: 1,
       lightFar: 10000,
       lightMargin: 500,
       fade: false,
     });
+
     csmRef.current = csm;
 
-    // Optionally expose the first cascade light if you want a reference
+    // Share the first cascade light ref with parent component if needed
     if (csm.lights.length > 0) {
       setLightRef(csm.lights[0] as any);
+
+      // Enhance shadow properties
+      csm.lights.forEach((light) => {
+        light.castShadow = true;
+        light.shadow.mapSize.width = 4096;
+        light.shadow.mapSize.height = 4096;
+        light.shadow.camera.near = 10;
+        light.shadow.camera.far = 10000;
+        light.shadow.bias = -0.0003;
+        light.shadow.normalBias = 0.02;
+        light.shadow.radius = 1;
+      });
     }
 
     return () => {
-      // Clean up cascade lights
-      csm.lights.forEach((light) => {
-        scene.remove(light);
-        scene.remove(light.target);
-      });
+      // Clean up cascade lights on unmount
+      if (csmRef.current) {
+        csmRef.current.remove();
+        csmRef.current.dispose();
+        csmRef.current = null;
+      }
     };
-  }, [scene, camera, setLightRef]);
-
-  // Make sure renderer has shadow map enabled
-  useEffect(() => {
-    if (renderer) {
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      console.log("Enabled shadow mapping on renderer");
-    }
-  }, [renderer]);
+  }, [scene, camera, setLightRef, timeOfDay]); // Keep timeOfDay dependency to recreate CSM when time changes significantly
 
   // Initialize 3D Tiles
   useEffect(() => {
@@ -157,13 +199,8 @@ export default function TilesScene({
       return processedUrl;
     };
 
-    // Set up shadow casting and receiving for the tiles group
-    // Replace the setupShadowsForTiles function in TilesScene.tsx with this version
-    // that preserves original materials
-
+    // Set up shadow casting for the tiles group - once when loaded, no recurring updates needed
     const setupShadowsForTiles = () => {
-      console.log("Setting up shadows for tiles group...");
-
       // Track processed materials to avoid duplicates
       const processedMaterials = new Set();
 
@@ -192,29 +229,20 @@ export default function TilesScene({
 
               // Just make sure materials update properly
               material.needsUpdate = true;
-
-              // DON'T convert materials - this was causing the black appearance
-              // Leave MeshBasicMaterial as is
             });
           }
         }
       });
-
-      // Schedule another check less frequently
-      setTimeout(setupShadowsForTiles, 10000); // Reduced frequency (10 seconds)
     };
-
-    // Start the shadow setup process
-    setupShadowsForTiles();
 
     // Error listener
     tilesRenderer.addEventListener("load-error", (ev: any) => {
       setError(`Tiles loading error: ${ev.error?.message || "Unknown"}`);
     });
 
-    // Tiles loaded
+    // Tiles loaded - this is when we set up the shadows
     tilesRenderer.addEventListener("load-tile-set", () => {
-      console.log("Tile set loaded, ensuring shadows are enabled");
+      setupShadowsForTiles();
       setTileCount(tilesRenderer.group.children.length);
       if (tilesRenderer.rootTileSet) {
         setTilesLoaded(true);
@@ -281,12 +309,10 @@ export default function TilesScene({
     }
   }, [isOrbiting]);
 
-  // Time-of-day => tweak fallback light, ambient intensity, etc.
+  // Time-of-day updates - use CSM's updateFrustums method to handle changes
   useEffect(() => {
-    updateSunPosition();
+    // Adjust shadow opacity based on time of day
     const hours = timeOfDay.getHours();
-
-    // Adjust shadow opacity based on time of day - with higher values for more visible shadows
     if (hours < 6 || hours > 20) {
       setShadowOpacity(0.8); // Much stronger shadows at night
     } else if (hours < 8 || hours > 18) {
@@ -294,78 +320,38 @@ export default function TilesScene({
     } else {
       setShadowOpacity(0.6); // Stronger shadows during day
     }
-  }, [timeOfDay]);
 
-  function updateSunPosition() {
-    if (!fallbackLightRef.current || !ambientLightRef.current) return;
-
-    const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
-    const sunriseHour = 6;
-    const sunsetHour = 20;
-    const dayLength = sunsetHour - sunriseHour;
-
-    // Basic day/night angle
-    let sunAngle = 0;
-    if (hours >= sunriseHour && hours <= sunsetHour) {
-      sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
-    } else if (hours < sunriseHour) {
-      sunAngle = -0.2;
-    } else {
-      sunAngle = Math.PI + 0.2;
-    }
-
-    // Position the fallback directional light in a big circle
-    const radius = 5000;
-    const sunX = Math.cos(sunAngle) * radius;
-    const sunY = Math.sin(sunAngle) * radius;
-    fallbackLightRef.current.position.set(sunX, Math.max(10, sunY), 0);
-
-    // Always cast shadows for testing
-    fallbackLightRef.current.castShadow = true;
-
-    // Increase intensity
-    fallbackLightRef.current.intensity = 2.0;
-
-    // Important: Adjust shadow camera for better coverage and darker shadows
-    fallbackLightRef.current.shadow.mapSize.width = 4096;
-    fallbackLightRef.current.shadow.mapSize.height = 4096;
-    fallbackLightRef.current.shadow.camera.near = 10;
-    fallbackLightRef.current.shadow.camera.far = 10000;
-    fallbackLightRef.current.shadow.camera.left = -2000;
-    fallbackLightRef.current.shadow.camera.right = 2000;
-    fallbackLightRef.current.shadow.camera.top = 2000;
-    fallbackLightRef.current.shadow.camera.bottom = -2000;
-    fallbackLightRef.current.shadow.bias = -0.0003; // Less negative bias for cleaner shadows
-    fallbackLightRef.current.shadow.normalBias = 0.02; // Lower normal bias for sharper shadows
-
-    // Make shadows darker by reducing light bleeding
-    fallbackLightRef.current.shadow.radius = 1; // Sharper shadows (default is 1)
-    fallbackLightRef.current.shadow.blurSamples = 8; // More blur samples for better quality
-
-    // Adjust ambient
-    ambientLightRef.current.intensity = 0.2; // Keep ambient light low for more visible shadows
-
-    // Update CSM light direction if using CSM
+    // If CSM exists, update its frustums
     if (csmRef.current) {
+      // Calculate sun angle based on time of day
+      const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
+      const sunriseHour = 6;
+      const sunsetHour = 20;
+      const dayLength = sunsetHour - sunriseHour;
+
+      let sunAngle = 0;
+      if (hours >= sunriseHour && hours <= sunsetHour) {
+        sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
+      } else if (hours < sunriseHour) {
+        sunAngle = -0.2; // Just before sunrise
+      } else {
+        sunAngle = Math.PI + 0.2; // Just after sunset
+      }
+
+      // Update the light direction
       const lightDirection = new THREE.Vector3(
         -Math.cos(sunAngle),
         -Math.max(0.1, Math.sin(sunAngle)),
         0.5
       ).normalize();
 
-      // Update the light direction - note that we don't call updateLightDirection() directly
-      // as it might not exist in your CSM implementation
       csmRef.current.lightDirection = lightDirection;
 
-      // Instead, update each light in the CSM setup individually
-      csmRef.current.lights.forEach((light) => {
-        light.position.copy(lightDirection).multiplyScalar(1000);
-        light.target.position.set(0, 0, 0);
-        light.updateMatrixWorld();
-        light.target.updateMatrixWorld();
-      });
+      // Force a full update of all CSM components
+      csmRef.current.updateFrustums();
+      csmRef.current.update();
     }
-  }
+  }, [timeOfDay]);
 
   function positionCameraAtLocation(locKey: string) {
     if (!camera || !tilesRendererRef.current || !orbitControlsRef.current)
@@ -405,11 +391,17 @@ export default function TilesScene({
       tilesRendererRef.current.errorTarget = 2;
       tilesRendererRef.current.update();
     }
-    updateSunPosition();
+
+    // Update CSM after camera position changes
+    if (csmRef.current) {
+      // Now we can use the public updateFrustums method
+      csmRef.current.updateFrustums();
+      csmRef.current.update();
+    }
   }
 
-  // The render loop
-  useFrame(() => {
+  // The render loop - use the public methods of the CSM class
+  useFrame(({ clock }) => {
     if (tilesRendererRef.current) {
       tilesRendererRef.current.update();
 
@@ -436,39 +428,48 @@ export default function TilesScene({
       } catch {}
     }
 
-    // Update cascade shadow maps
+    // Update sun position and shadows each frame
     if (csmRef.current) {
+      // Calculate light position based on current time
+      const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
+      const sunriseHour = 6;
+      const sunsetHour = 20;
+      const dayLength = sunsetHour - sunriseHour;
+
+      // Calculate sun angle based on time of day
+      let sunAngle = 0;
+      if (hours >= sunriseHour && hours <= sunsetHour) {
+        sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
+      } else if (hours < sunriseHour) {
+        sunAngle = -0.2; // Just before sunrise
+      } else {
+        sunAngle = Math.PI + 0.2; // Just after sunset
+      }
+
+      // Apply a slight oscillation for smoother transitions
+      const wobble = Math.sin(clock.getElapsedTime() * 0.1) * 0.001;
+
+      // Create a new light direction based on sun angle
+      // This is the key - we need to update the lightDirection property
+      // which the CSM class uses in its update method
+      const newLightDirection = new THREE.Vector3(
+        -Math.cos(sunAngle + wobble),
+        -Math.max(0.1, Math.sin(sunAngle + wobble)),
+        0.5
+      ).normalize();
+
+      // Update the CSM light direction - this is a public property
+      csmRef.current.lightDirection = newLightDirection;
+
+      // Call update, which will reposition the lights based on the new direction
       csmRef.current.update();
     }
   });
 
   return (
     <>
-      {/* Ambient light */}
-      <ambientLight
-        ref={ambientLightRef}
-        intensity={0.2}
-        color={new THREE.Color(0xffffff)}
-      />
-
-      {/* Main directional light (sun) */}
-      <directionalLight
-        ref={fallbackLightRef}
-        position={[1000, 1000, 1000]}
-        intensity={3.0} /* Increased intensity for stronger contrast */
-        castShadow
-        shadow-mapSize-width={4096}
-        shadow-mapSize-height={4096}
-        shadow-camera-left={-2000}
-        shadow-camera-right={2000}
-        shadow-camera-top={2000}
-        shadow-camera-bottom={-2000}
-        shadow-camera-near={10}
-        shadow-camera-far={10000}
-        shadow-bias={-0.0003} /* Adjusted for cleaner shadows */
-        shadow-normalBias={0.02} /* Reduced for sharper shadows */
-        color={0xffffff}
-      />
+      {/* Ambient light - reduced intensity for better shadow contrast */}
+      <ambientLight intensity={0.2} color={new THREE.Color(0xffffff)} />
 
       {/* Add our shadow wrapper to make tiles receive shadows */}
       {tilesLoaded && tilesRendererRef.current && (
@@ -489,18 +490,11 @@ export default function TilesScene({
         maxDistance={1000000}
       />
 
-      {/* Additional shadow-receiving planes at different heights */}
-      {[5, 20, 40, 60].map((height) => (
-        <mesh
-          key={`shadow-plane-${height}`}
-          receiveShadow
-          rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, height, 0]}
-        >
-          <planeGeometry args={[500, 500]} />
-          <shadowMaterial transparent opacity={0.8} color={0x000000} />
-        </mesh>
-      ))}
+      {/* Shadow-receiving ground plane at a specific height */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 60, 0]}>
+        <planeGeometry args={[500, 500]} />
+        <shadowMaterial transparent opacity={0.8} color={0x000000} />
+      </mesh>
     </>
   );
 }
