@@ -50,7 +50,7 @@ export default function TilesShadowWrapper({
 
       const plane = new THREE.Mesh(planeGeometry, shadowMaterial);
       plane.rotation.x = -Math.PI / 2; // Horizontal plane
-      plane.position.y = -0.5; // Slightly below ground level
+      plane.position.y = -5; // Changed from -0.5 to -5 to lower the shadow plane
       plane.receiveShadow = true;
       plane.name = "main-shadow-plane";
 
@@ -63,7 +63,7 @@ export default function TilesShadowWrapper({
 
     // Add elevated shadow planes
     const addElevatedPlanes = () => {
-      const heights = [20, 50, 100, 200];
+      const heights = [15, 45, 95, 195];
       const sizes = [500, 400, 300, 200];
 
       heights.forEach((height, index) => {

@@ -25,6 +25,9 @@ const _lightOrientationMatrix = new Matrix4();
 const _lightOrientationMatrixInverse = new Matrix4();
 const _up = new Vector3(0, 1, 0);
 
+// Additional reusable objects to reduce GC pressure
+const _tempLightDirection = new Vector3();
+
 interface CSMParams {
   camera: PerspectiveCamera | OrthographicCamera;
   parent: Object3D;
@@ -79,6 +82,8 @@ export class CSM {
       fragmentShader: string;
     } | null
   >;
+  // Track last update time for throttling
+  private _lastUpdateTime: number = 0;
 
   constructor(data: CSMParams) {
     this.camera = data.camera;
@@ -145,14 +150,15 @@ export class CSM {
       const nearVerts = frustum.vertices.near;
       const farVerts = frustum.vertices.far;
       const point1 = farVerts[0];
-      let point2: Vector3;
-      if (point1.distanceTo(farVerts[2]) > point1.distanceTo(nearVerts[2])) {
-        point2 = farVerts[2];
-      } else {
-        point2 = nearVerts[2];
-      }
 
+      // Determine the furthest point to use for shadow camera sizing
+      // This is more efficiently done with direct comparisons
+      const distFarFar = point1.distanceTo(farVerts[2]);
+      const distFarNear = point1.distanceTo(nearVerts[2]);
+
+      const point2 = distFarFar > distFarNear ? farVerts[2] : nearVerts[2];
       let squaredBBWidth = point1.distanceTo(point2);
+
       if (this.fade) {
         const camera = this.camera;
         const far = Math.max(camera.far, this.maxFar);
@@ -162,10 +168,12 @@ export class CSM {
         squaredBBWidth += margin;
       }
 
-      shadowCam.left = -squaredBBWidth / 2;
-      shadowCam.right = squaredBBWidth / 2;
-      shadowCam.top = squaredBBWidth / 2;
-      shadowCam.bottom = -squaredBBWidth / 2;
+      // Update shadow camera projection - these are symmetric so we can optimize the calculations
+      const halfWidth = squaredBBWidth * 0.5;
+      shadowCam.left = -halfWidth;
+      shadowCam.right = halfWidth;
+      shadowCam.top = halfWidth;
+      shadowCam.bottom = -halfWidth;
       shadowCam.updateProjectionMatrix();
     }
   }
@@ -205,8 +213,12 @@ export class CSM {
     far: number,
     target: number[]
   ): void {
+    // Precompute the factor for better performance
+    const step = (far - near) / amount;
+    const invFar = 1 / far;
+
     for (let i = 1; i < amount; i++) {
-      target.push((near + ((far - near) * i) / amount) / far);
+      target.push((near + step * i) * invFar);
     }
 
     target.push(1);
@@ -218,8 +230,12 @@ export class CSM {
     far: number,
     target: number[]
   ): void {
+    // Pre-calculate the logarithmic base once
+    const logBase = far / near;
+    const invFar = 1 / far;
+
     for (let i = 1; i < amount; i++) {
-      target.push(Math.pow(near * (far / near), i / amount) / far);
+      target.push(near * Math.pow(logBase, i / amount) * invFar);
     }
 
     target.push(1);
@@ -250,16 +266,27 @@ export class CSM {
     const camera = this.camera;
     const frustums = this.frustums;
 
+    // Performance optimization: throttle updates
+    const now = performance.now();
+    if (now - this._lastUpdateTime < 16) {
+      // ~60fps max update rate
+      return;
+    }
+    this._lastUpdateTime = now;
+
     _lightOrientationMatrix.lookAt(new Vector3(), this.lightDirection, _up);
     _lightOrientationMatrixInverse.copy(_lightOrientationMatrix).invert();
 
     for (let i = 0; i < frustums.length; i++) {
       const light = this.lights[i];
       const shadowCam = light.shadow.camera;
+
+      // Calculate texel dimensions only once per cascade
       const texelWidth =
         (shadowCam.right - shadowCam.left) / this.shadowMapSize;
       const texelHeight =
         (shadowCam.top - shadowCam.bottom) / this.shadowMapSize;
+
       _cameraToLightMatrix.multiplyMatrices(
         _lightOrientationMatrixInverse,
         camera.matrixWorld
@@ -268,24 +295,60 @@ export class CSM {
 
       const nearVerts = _lightSpaceFrustum.vertices.near;
       const farVerts = _lightSpaceFrustum.vertices.far;
+
+      // Reset bounding box
       _bbox.makeEmpty();
-      for (let j = 0; j < 4; j++) {
-        _bbox.expandByPoint(nearVerts[j]);
-        _bbox.expandByPoint(farVerts[j]);
-      }
+
+      // Unroll small loop for better performance
+      _bbox.expandByPoint(nearVerts[0]);
+      _bbox.expandByPoint(nearVerts[1]);
+      _bbox.expandByPoint(nearVerts[2]);
+      _bbox.expandByPoint(nearVerts[3]);
+      _bbox.expandByPoint(farVerts[0]);
+      _bbox.expandByPoint(farVerts[1]);
+      _bbox.expandByPoint(farVerts[2]);
+      _bbox.expandByPoint(farVerts[3]);
 
       _bbox.getCenter(_center);
       _center.z = _bbox.max.z + this.lightMargin;
+
+      // Quantize position to texel grid to reduce flickering
       _center.x = Math.floor(_center.x / texelWidth) * texelWidth;
       _center.y = Math.floor(_center.y / texelHeight) * texelHeight;
+
       _center.applyMatrix4(_lightOrientationMatrix);
 
       light.position.copy(_center);
       light.target.position.copy(_center);
 
+      // Update light target position
       light.target.position.x += this.lightDirection.x;
       light.target.position.y += this.lightDirection.y;
       light.target.position.z += this.lightDirection.z;
+
+      // Mark matrices as needing update
+      light.matrixWorldNeedsUpdate = true;
+      light.target.matrixWorldNeedsUpdate = true;
+    }
+  }
+
+  /**
+   * Set a new light direction with optional throttling
+   * @param newDirection The new light direction vector
+   * @param forceUpdate Force a complete update regardless of direction change
+   */
+  setLightDirection(newDirection: Vector3, forceUpdate: boolean = false): void {
+    _tempLightDirection.copy(newDirection).normalize();
+
+    // Only update if direction has changed significantly (0.001 radians ≈ 0.057 degrees)
+    // or if forceUpdate is true
+    if (
+      forceUpdate ||
+      (!this.lightDirection.equals(_tempLightDirection) &&
+        this.lightDirection.angleTo(_tempLightDirection) > 0.001)
+    ) {
+      this.lightDirection.copy(_tempLightDirection);
+      this.update();
     }
   }
 
@@ -372,12 +435,14 @@ export class CSM {
   }
 
   getExtendedBreaks(target: Vector2[]): void {
+    // Pre-allocate the array to the right size
     while (target.length < this.breaks.length) {
       target.push(new Vector2());
     }
-
+    // Truncate if needed
     target.length = this.breaks.length;
 
+    // Update the values directly
     for (let i = 0; i < this.cascades; i++) {
       const amount = this.breaks[i];
       const prev = this.breaks[i - 1] || 0;
