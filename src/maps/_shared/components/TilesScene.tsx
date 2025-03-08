@@ -491,7 +491,7 @@ export default function TilesScene({
       />
 
       {/* Shadow-receiving ground plane at a specific height */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 55, 0]}>
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 60, 0]}>
         <planeGeometry args={[500, 500]} />
         <shadowMaterial transparent opacity={0.8} color={0x000000} />
       </mesh>
