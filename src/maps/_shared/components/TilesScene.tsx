@@ -12,7 +12,7 @@ import {
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
 // If using Cascade Shadow Maps (CSM):
-import { CSM } from "../csm"; // or wherever your CSM code is
+import { CSM } from "../csm"; // adjust path as needed
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
 // Import the TilesShadowWrapper component
@@ -66,7 +66,7 @@ export default function TilesScene({
   // Create CSM for large scale shadows
   const csmRef = useRef<CSM | null>(null);
 
-  // Make sure renderer has shadow map enabled
+  // Ensure renderer has shadow map enabled
   useEffect(() => {
     if (renderer) {
       renderer.shadowMap.enabled = true;
@@ -74,39 +74,32 @@ export default function TilesScene({
     }
   }, [renderer]);
 
-  // Create CSM system - recreate when timeOfDay changes
+  // Create and update CSM when timeOfDay changes
   useEffect(() => {
-    // Clean up existing CSM if any
     if (csmRef.current) {
-      csmRef.current.remove(); // Use the built-in remove method
-      csmRef.current.dispose(); // And dispose to clean up shaders
+      csmRef.current.remove();
+      csmRef.current.dispose();
       csmRef.current = null;
     }
-
-    // Calculate initial light direction based on time of day
     const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
     const sunriseHour = 6;
     const sunsetHour = 20;
     const dayLength = sunsetHour - sunriseHour;
-
-    // Calculate sun angle based on time of day
     let sunAngle = 0;
     if (hours >= sunriseHour && hours <= sunsetHour) {
       sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
     } else if (hours < sunriseHour) {
-      sunAngle = -0.2; // Just before sunrise
+      sunAngle = -0.2;
     } else {
-      sunAngle = Math.PI + 0.2; // Just after sunset
+      sunAngle = Math.PI + 0.2;
     }
 
-    // Initial light direction based on sun angle
     const lightDirection = new THREE.Vector3(
       -Math.cos(sunAngle),
       -Math.max(0.1, Math.sin(sunAngle)),
       0.5
     ).normalize();
 
-    // Create a new CSM instance with proper config
     const csm = new CSM({
       camera,
       parent: scene,
@@ -116,20 +109,15 @@ export default function TilesScene({
       shadowMapSize: 4096,
       shadowBias: -0.0001,
       lightDirection: lightDirection,
-      lightIntensity: 2.0, // Increased intensity
+      lightIntensity: 2.0,
       lightNear: 1,
       lightFar: 10000,
       lightMargin: 500,
       fade: false,
     });
-
     csmRef.current = csm;
-
-    // Share the first cascade light ref with parent component if needed
     if (csm.lights.length > 0) {
       setLightRef(csm.lights[0] as any);
-
-      // Enhance shadow properties
       csm.lights.forEach((light) => {
         light.castShadow = true;
         light.shadow.mapSize.width = 4096;
@@ -141,16 +129,14 @@ export default function TilesScene({
         light.shadow.radius = 1;
       });
     }
-
     return () => {
-      // Clean up cascade lights on unmount
       if (csmRef.current) {
         csmRef.current.remove();
         csmRef.current.dispose();
         csmRef.current = null;
       }
     };
-  }, [scene, camera, setLightRef, timeOfDay]); // Keep timeOfDay dependency to recreate CSM when time changes significantly
+  }, [scene, camera, setLightRef, timeOfDay]);
 
   // Initialize 3D Tiles
   useEffect(() => {
@@ -160,6 +146,7 @@ export default function TilesScene({
 
     const rootUrl = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${API_KEY}`;
     const tilesRenderer = new TilesRenderer(rootUrl) as ExtendedTilesRenderer;
+
     tilesRenderer.registerPlugin(new TileCompressionPlugin());
     tilesRenderer.registerPlugin(
       new GLTFExtensionsPlugin({
@@ -168,24 +155,19 @@ export default function TilesScene({
         ),
       })
     );
-
     tilesRenderer.errorTarget = 0.5;
     tilesRenderer.maxDepth = 50;
     tilesRenderer.lruCache.minSize = 2000;
-
-    // Add your API key + session if missing
     tilesRenderer.preprocessURL = (url: URL | string): string => {
       const urlString = url.toString();
       if (urlString.startsWith("blob:")) return urlString;
       if (processedUrls.current.has(urlString)) {
         return processedUrls.current.get(urlString)!;
       }
-
       const sessionMatch = urlString.match(/[?&]session=([^&]+)/);
       if (sessionMatch && sessionMatch[1]) {
         currentSessionId.current = sessionMatch[1];
       }
-
       let processedUrl = urlString;
       if (!processedUrl.includes(`key=${API_KEY}`)) {
         const joinChar = processedUrl.includes("?") ? "&" : "?";
@@ -194,53 +176,148 @@ export default function TilesScene({
       if (currentSessionId.current && !processedUrl.includes("session=")) {
         processedUrl = `${processedUrl}&session=${currentSessionId.current}`;
       }
-
       processedUrls.current.set(urlString, processedUrl);
       return processedUrl;
     };
 
-    // Set up shadow casting for the tiles group - once when loaded, no recurring updates needed
+    // Set up shadow casting for tiles once loaded - UPDATED TO RECURSIVE VERSION
+    // Set up shadow casting for tiles once loaded - HANDLES ASYNC LOADED CHILDREN
     const setupShadowsForTiles = () => {
-      // Track processed materials to avoid duplicates
       const processedMaterials = new Set();
+      const processedObjects = new Set<string>(); // Track processed objects by UUID
 
-      tilesRenderer.group.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          // Allow meshes to cast shadows only
-          child.castShadow = true;
-          child.receiveShadow = false; // Important: Don't make tiles receive shadows
+      console.log("Setting up shadows for tiles");
 
-          // NO material conversion needed - we'll keep the original materials
-          if (child.material) {
-            const materials = Array.isArray(child.material)
-              ? child.material
-              : [child.material];
+      // Function to apply shadow settings to an object
+      const applyShadowSettings = (object: any) => {
+        // Skip if this object was already processed
+        if (object.uuid && processedObjects.has(object.uuid)) {
+          return;
+        }
+
+        // Mark as processed
+        if (object.uuid) {
+          processedObjects.add(object.uuid);
+        }
+
+        console.log(
+          "Processing object:",
+          object.name || object.type || "unnamed"
+        );
+
+        // Handle different object types
+        if (object instanceof THREE.Mesh) {
+          console.log(
+            "Setting shadows for Mesh:",
+            object.name || "unnamed mesh"
+          );
+          object.castShadow = true;
+          object.receiveShadow = true;
+
+          // Process materials
+          if (object.material) {
+            const materials = Array.isArray(object.material)
+              ? object.material
+              : [object.material];
 
             materials.forEach((material) => {
-              // Skip already processed materials
               if (material.uuid && processedMaterials.has(material.uuid)) {
                 return;
               }
-
-              // Mark as processed
               if (material.uuid) {
                 processedMaterials.add(material.uuid);
               }
-
-              // Just make sure materials update properly
               material.needsUpdate = true;
             });
           }
+        } else if (object instanceof THREE.Light) {
+          console.log(
+            "Setting shadows for Light:",
+            object.name || "unnamed light"
+          );
+          object.castShadow = true;
+
+          if (object.shadow) {
+            object.shadow.mapSize.width = 2048;
+            object.shadow.mapSize.height = 2048;
+            object.shadow.bias = -0.0003;
+          }
+        } else if (object.isObject3D) {
+          // Handle any Object3D including custom types like TilesGroup
+          console.log(
+            "Processing Object3D or custom type:",
+            object.constructor.name,
+            object.name || "unnamed"
+          );
+
+          if ("castShadow" in object) {
+            object.castShadow = true;
+          }
+
+          if ("receiveShadow" in object) {
+            object.receiveShadow = true;
+          }
         }
-      });
+
+        // Process all immediate children
+        if (object.children && object.children.length > 0) {
+          console.log(
+            `Processing ${object.children.length} children of:`,
+            object.name || object.type || "unnamed"
+          );
+          object.children.forEach((child: any) => applyShadowSettings(child));
+        }
+
+        console.log("Finished processing object: ", object);
+      };
+
+      // Initial application to current objects
+      applyShadowSettings(tilesRenderer.group);
+
+      // Set up a MutationObserver-like approach using a recurring check
+      // This handles objects loaded after initial processing
+      const checkForNewObjects = () => {
+        let newObjectsFound = false;
+
+        // Recursive function to find and process new objects
+        const findNewObjects = (object: any) => {
+          // Check if this object is new
+          if (object.uuid && !processedObjects.has(object.uuid)) {
+            applyShadowSettings(object);
+            newObjectsFound = true;
+            return;
+          }
+
+          // Check its children
+          if (object.children && object.children.length > 0) {
+            object.children.forEach((child: any) => findNewObjects(child));
+          }
+        };
+
+        // Start from the top group
+        findNewObjects(tilesRenderer.group);
+
+        // Schedule another check if changes were found or we're still expecting more tiles
+        if (
+          newObjectsFound ||
+          !tilesRenderer.rootTileSet ||
+          tilesRendererRef.current?.loadProgress !== 1
+        ) {
+          setTimeout(checkForNewObjects, 500); // Check every half second
+        }
+      };
+
+      // Start checking for new objects after a short delay
+      setTimeout(checkForNewObjects, 500);
+
+      console.log(
+        "Initial shadow setup complete, continuing to monitor for new tiles"
+      );
     };
 
-    // Error listener
     tilesRenderer.addEventListener("load-error", (ev: any) => {
       setError(`Tiles loading error: ${ev.error?.message || "Unknown"}`);
     });
-
-    // Tiles loaded - this is when we set up the shadows
     tilesRenderer.addEventListener("load-tile-set", () => {
       setupShadowsForTiles();
       setTileCount(tilesRenderer.group.children.length);
@@ -262,7 +339,6 @@ export default function TilesScene({
         setLoadingProgress(prog);
       }
       if (tilesRenderer.rootTileSet !== null) {
-        // The main tile set is loaded
         setIsLoading(false);
         setTilesLoaded(true);
       } else {
@@ -275,7 +351,6 @@ export default function TilesScene({
     positionCameraAtLocation(currentLocation);
 
     return () => {
-      // Cleanup on unmount
       if (tilesRendererRef.current) {
         scene.remove(tilesRendererRef.current.group);
         tilesRendererRef.current.dispose();
@@ -294,14 +369,14 @@ export default function TilesScene({
     setTileCount,
   ]);
 
-  // If location changes, reposition camera
+  // Reposition camera when location changes
   useEffect(() => {
     if (tilesRendererRef.current) {
       positionCameraAtLocation(currentLocation);
     }
   }, [currentLocation]);
 
-  // isOrbiting -> autorotate the camera
+  // Toggle orbit controls
   useEffect(() => {
     if (orbitControlsRef.current) {
       orbitControlsRef.current.autoRotate = isOrbiting;
@@ -309,65 +384,83 @@ export default function TilesScene({
     }
   }, [isOrbiting]);
 
-  // Time-of-day updates - use CSM's updateFrustums method to handle changes
+  // Update time-of-day: adjust shadow opacity and update CSM
   useEffect(() => {
-    // Adjust shadow opacity based on time of day
     const hours = timeOfDay.getHours();
     if (hours < 6 || hours > 20) {
-      setShadowOpacity(0.8); // Much stronger shadows at night
+      setShadowOpacity(0.8);
     } else if (hours < 8 || hours > 18) {
-      setShadowOpacity(0.7); // Stronger shadows at dawn/dusk
+      setShadowOpacity(0.7);
     } else {
-      setShadowOpacity(0.6); // Stronger shadows during day
+      setShadowOpacity(0.6);
     }
-
-    // If CSM exists, update its frustums
     if (csmRef.current) {
-      // Calculate sun angle based on time of day
       const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
       const sunriseHour = 6;
       const sunsetHour = 20;
       const dayLength = sunsetHour - sunriseHour;
-
       let sunAngle = 0;
       if (hours >= sunriseHour && hours <= sunsetHour) {
         sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
       } else if (hours < sunriseHour) {
-        sunAngle = -0.2; // Just before sunrise
+        sunAngle = -0.2;
       } else {
-        sunAngle = Math.PI + 0.2; // Just after sunset
+        sunAngle = Math.PI + 0.2;
       }
-
-      // Update the light direction
       const lightDirection = new THREE.Vector3(
         -Math.cos(sunAngle),
         -Math.max(0.1, Math.sin(sunAngle)),
         0.5
       ).normalize();
-
       csmRef.current.lightDirection = lightDirection;
-
-      // Force a full update of all CSM components
       csmRef.current.updateFrustums();
       csmRef.current.update();
     }
   }, [timeOfDay]);
 
+  // Helper: apply tile transformations using the current location.
+  // This mimics previous transformation logic (lat/lon to Y‑up plus heading rotation).
+  function applyTileTransformations(lat: number, lng: number, heading: number) {
+    if (tilesRendererRef.current) {
+      if (tilesRendererRef.current.setLatLonToYUp) {
+        // Use the built-in method if available
+        tilesRendererRef.current.setLatLonToYUp(
+          lat * THREE.MathUtils.DEG2RAD,
+          lng * THREE.MathUtils.DEG2RAD
+        );
+      } else {
+        // Fallback: rotate tiles group so that Z becomes up, then apply heading rotation.
+        // First, rotate -90° about X to get Y up.
+        const baseEuler = new THREE.Euler(-Math.PI / 2, 0, 0, "XYZ");
+        // Then apply additional rotation around Y (up) axis based on heading.
+        const headingEuler = new THREE.Euler(
+          0,
+          heading * THREE.MathUtils.DEG2RAD,
+          0,
+          "XYZ"
+        );
+        // Combine rotations
+        const combined = new THREE.Euler().setFromQuaternion(
+          new THREE.Quaternion()
+            .setFromEuler(baseEuler)
+            .multiply(new THREE.Quaternion().setFromEuler(headingEuler))
+        );
+        tilesRendererRef.current.group.rotation.copy(combined);
+      }
+    }
+  }
+
+  // Position camera and align tile set for the chosen location.
   function positionCameraAtLocation(locKey: string) {
     if (!camera || !tilesRendererRef.current || !orbitControlsRef.current)
       return;
     const loc = PRESET_LOCATIONS[locKey];
     if (!loc) return;
 
-    // Align tile set so lat/lon is Y-up in the local scene
-    if (tilesRendererRef.current.setLatLonToYUp) {
-      tilesRendererRef.current.setLatLonToYUp(
-        loc.lat * THREE.MathUtils.DEG2RAD,
-        loc.lng * THREE.MathUtils.DEG2RAD
-      );
-    }
+    // Apply tile transformations (lat, lng and heading) to align the tiles.
+    applyTileTransformations(loc.lat, loc.lng, loc.heading || 0);
 
-    // Position camera relative to the origin
+    // Position camera relative to the transformed tile set.
     const viewingAltitude = 200;
     camera.position.set(
       Math.sin(loc.heading * THREE.MathUtils.DEG2RAD) * viewingAltitude,
@@ -380,38 +473,29 @@ export default function TilesScene({
     camera.far = 20000;
     camera.updateProjectionMatrix();
 
-    if (orbitControlsRef.current) {
-      orbitControlsRef.current.target.set(0, 0, 0);
-      orbitControlsRef.current.minDistance = 50;
-      orbitControlsRef.current.maxDistance = 1000;
-      orbitControlsRef.current.update();
-    }
+    orbitControlsRef.current.target.set(0, 0, 0);
+    orbitControlsRef.current.minDistance = 50;
+    orbitControlsRef.current.maxDistance = 1000;
+    orbitControlsRef.current.update();
 
     if (tilesRendererRef.current) {
       tilesRendererRef.current.errorTarget = 2;
       tilesRendererRef.current.update();
     }
 
-    // Update CSM after camera position changes
     if (csmRef.current) {
-      // Now we can use the public updateFrustums method
       csmRef.current.updateFrustums();
       csmRef.current.update();
     }
   }
 
-  // The render loop - use the public methods of the CSM class
+  // Render loop: update tiles and CSM.
   useFrame(({ clock }) => {
     if (tilesRendererRef.current) {
       tilesRendererRef.current.update();
-
-      // Occasionally update tileCount
       if (Math.random() < 0.01) {
-        // 1% chance each frame
         setTileCount(tilesRendererRef.current.group.children.length);
       }
-
-      // If you want to gather attributions
       try {
         const arr: any[] = [];
         tilesRendererRef.current.getAttributions?.(arr);
@@ -427,59 +511,39 @@ export default function TilesScene({
         }
       } catch {}
     }
-
-    // Update sun position and shadows each frame
     if (csmRef.current) {
-      // Calculate light position based on current time
       const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
       const sunriseHour = 6;
       const sunsetHour = 20;
       const dayLength = sunsetHour - sunriseHour;
-
-      // Calculate sun angle based on time of day
       let sunAngle = 0;
       if (hours >= sunriseHour && hours <= sunsetHour) {
         sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
       } else if (hours < sunriseHour) {
-        sunAngle = -0.2; // Just before sunrise
+        sunAngle = -0.2;
       } else {
-        sunAngle = Math.PI + 0.2; // Just after sunset
+        sunAngle = Math.PI + 0.2;
       }
-
-      // Apply a slight oscillation for smoother transitions
       const wobble = Math.sin(clock.getElapsedTime() * 0.1) * 0.001;
-
-      // Create a new light direction based on sun angle
-      // This is the key - we need to update the lightDirection property
-      // which the CSM class uses in its update method
       const newLightDirection = new THREE.Vector3(
         -Math.cos(sunAngle + wobble),
         -Math.max(0.1, Math.sin(sunAngle + wobble)),
         0.5
       ).normalize();
-
-      // Update the CSM light direction - this is a public property
       csmRef.current.lightDirection = newLightDirection;
-
-      // Call update, which will reposition the lights based on the new direction
       csmRef.current.update();
     }
   });
 
   return (
     <>
-      {/* Ambient light - reduced intensity for better shadow contrast */}
       <ambientLight intensity={0.2} color={new THREE.Color(0xffffff)} />
-
-      {/* Add our shadow wrapper to make tiles receive shadows */}
       {tilesLoaded && tilesRendererRef.current && (
         <TilesShadowWrapper
           tilesGroup={tilesRendererRef.current.group}
           shadowOpacity={shadowOpacity}
         />
       )}
-
-      {/* Controls (orbit, panning, etc.) */}
       <OrbitControls
         ref={orbitControlsRef}
         enableDamping
@@ -489,8 +553,6 @@ export default function TilesScene({
         minDistance={100}
         maxDistance={1000000}
       />
-
-      {/* Shadow-receiving ground plane at a specific height */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 60, 0]}>
         <planeGeometry args={[500, 500]} />
         <shadowMaterial transparent opacity={0.8} color={0x000000} />

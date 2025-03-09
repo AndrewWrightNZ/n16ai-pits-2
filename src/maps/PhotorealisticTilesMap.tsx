@@ -87,7 +87,7 @@ export default function PhotorealisticTilesMap() {
             gl.shadowMap.type = THREE.PCFSoftShadowMap;
           }}
         >
-          {/* TilesScene with integrated CSM */}
+          {/* TilesScene with integrated CSM and tile transformations */}
           <TilesScene
             currentLocation={currentLocation}
             isOrbiting={isOrbiting}
