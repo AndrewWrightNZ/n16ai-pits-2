@@ -17,6 +17,9 @@ import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
 // Import the TilesShadowWrapper component
 import TilesShadowWrapper from "./TilesShadowWrapper";
+import WhiteTilesMaterial from "./WhiteTilesMaterial";
+import MultiLayerGround from "./MultiLayerGround";
+import WhiteSceneControls from "./WhiteSceneControls";
 
 interface TilesSceneProps {
   currentLocation: string;
@@ -59,6 +62,11 @@ export default function TilesScene({
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
   const [tilesLoaded, setTilesLoaded] = useState(false);
+
+  const [whiteSceneEnabled, setWhiteSceneEnabled] = useState(true);
+  const [buildingBrightness, setBuildingBrightness] = useState(1.0);
+  const [groundHeight, setGroundHeight] = useState(60); // Initial ground height
+  const [shadowIntensity, setShadowIntensity] = useState(0.8);
 
   // Shadow opacity based on time of day
   const [shadowOpacity, setShadowOpacity] = useState(0.3);
@@ -539,11 +547,27 @@ export default function TilesScene({
     <>
       <ambientLight intensity={0.2} color={new THREE.Color(0xffffff)} />
       {tilesLoaded && tilesRendererRef.current && (
-        <TilesShadowWrapper
-          tilesGroup={tilesRendererRef.current.group}
-          shadowOpacity={shadowOpacity}
-        />
+        <>
+          {/* Original shadow wrapper - can be kept for compatibility */}
+          <TilesShadowWrapper
+            tilesGroup={tilesRendererRef.current.group}
+            shadowOpacity={shadowOpacity}
+          />
+
+          {/* Enhanced white material with shadow overlays */}
+          <WhiteTilesMaterial
+            tilesGroup={tilesRendererRef.current.group}
+            shadowOpacity={shadowOpacity}
+            enabled={whiteSceneEnabled}
+            brightness={buildingBrightness}
+            roughness={0.85}
+            shadowIntensity={shadowIntensity}
+            groundLevelY={groundHeight}
+            isDebug={false}
+          />
+        </>
       )}
+
       <OrbitControls
         ref={orbitControlsRef}
         enableDamping
@@ -553,10 +577,19 @@ export default function TilesScene({
         minDistance={100}
         maxDistance={1000000}
       />
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 60, 0]}>
-        <planeGeometry args={[500, 500]} />
-        <shadowMaterial transparent opacity={0.8} color={0x000000} />
-      </mesh>
+
+      {/* Multi-layer ground replacement */}
+      <MultiLayerGround
+        baseColor="#ffffff"
+        groundSize={10000}
+        basePosition={[0, groundHeight, 0]}
+        shadowOpacity={shadowOpacity}
+        baseOpacity={1.0}
+        enableGrid={true}
+        gridSize={1000}
+        gridDivisions={20}
+        layerCount={5}
+      />
     </>
   );
 }
