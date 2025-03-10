@@ -194,8 +194,6 @@ export default function TilesScene({
       const processedMaterials = new Set();
       const processedObjects = new Set<string>(); // Track processed objects by UUID
 
-      console.log("Setting up shadows for tiles");
-
       // Function to apply shadow settings to an object
       const applyShadowSettings = (object: any) => {
         // Skip if this object was already processed
@@ -208,17 +206,8 @@ export default function TilesScene({
           processedObjects.add(object.uuid);
         }
 
-        console.log(
-          "Processing object:",
-          object.name || object.type || "unnamed"
-        );
-
         // Handle different object types
         if (object instanceof THREE.Mesh) {
-          console.log(
-            "Setting shadows for Mesh:",
-            object.name || "unnamed mesh"
-          );
           object.castShadow = true;
           object.receiveShadow = true;
 
@@ -239,10 +228,6 @@ export default function TilesScene({
             });
           }
         } else if (object instanceof THREE.Light) {
-          console.log(
-            "Setting shadows for Light:",
-            object.name || "unnamed light"
-          );
           object.castShadow = true;
 
           if (object.shadow) {
@@ -252,12 +237,6 @@ export default function TilesScene({
           }
         } else if (object.isObject3D) {
           // Handle any Object3D including custom types like TilesGroup
-          console.log(
-            "Processing Object3D or custom type:",
-            object.constructor.name,
-            object.name || "unnamed"
-          );
-
           if ("castShadow" in object) {
             object.castShadow = true;
           }
@@ -269,14 +248,8 @@ export default function TilesScene({
 
         // Process all immediate children
         if (object.children && object.children.length > 0) {
-          console.log(
-            `Processing ${object.children.length} children of:`,
-            object.name || object.type || "unnamed"
-          );
           object.children.forEach((child: any) => applyShadowSettings(child));
         }
-
-        console.log("Finished processing object: ", object);
       };
 
       // Initial application to current objects
@@ -317,10 +290,6 @@ export default function TilesScene({
 
       // Start checking for new objects after a short delay
       setTimeout(checkForNewObjects, 500);
-
-      console.log(
-        "Initial shadow setup complete, continuing to monitor for new tiles"
-      );
     };
 
     tilesRenderer.addEventListener("load-error", (ev: any) => {

@@ -16,13 +16,11 @@ interface WhiteTilesMaterialProps {
 
 export default function WhiteTilesMaterial({
   tilesGroup,
-  shadowOpacity,
   enabled = true,
   brightness = 1.0,
   roughness = 0.8,
   isDebug = false,
   shadowIntensity = 0.8,
-  groundLevelY = 0, // Estimated ground level Y position
 }: WhiteTilesMaterialProps) {
   const originalMaterials = useRef<
     Map<string, THREE.Material | THREE.Material[]>
@@ -39,7 +37,7 @@ export default function WhiteTilesMaterial({
       const material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         roughness: roughness,
-        metalness: 0.0,
+        metalness: 0.5,
         flatShading: false,
         side: THREE.DoubleSide, // Ensure both sides are rendered
       });
