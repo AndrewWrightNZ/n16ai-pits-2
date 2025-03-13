@@ -19,7 +19,6 @@ import { PRESET_LOCATIONS } from "../hooks/locationsData";
 import TilesShadowWrapper from "./TilesShadowWrapper";
 import WhiteTilesMaterial from "./WhiteTilesMaterial";
 import MultiLayerGround from "./MultiLayerGround";
-import WhiteSceneControls from "./WhiteSceneControls";
 
 interface TilesSceneProps {
   currentLocation: string;
@@ -81,33 +80,14 @@ export default function TilesScene({
   const [tilesLoaded, setTilesLoaded] = useState(false);
 
   // Scene settings
-  const [whiteSceneEnabled, setWhiteSceneEnabled] = useState(true);
-  const [buildingBrightness, setBuildingBrightness] = useState(1.0);
-  const [groundHeight, setGroundHeight] = useState(60); // Initial ground height
-  const [shadowIntensity, setShadowIntensity] = useState(0.8);
-  const [performanceMode, setPerformanceMode] = useState(false);
+  const performanceMode = false; // Set to true for performance mode
+  const groundHeight = 60; // Ground level for shadows and ground replacement
 
   // Shadow opacity based on time of day
   const [shadowOpacity, setShadowOpacity] = useState(0.3);
 
   // Create CSM for large scale shadows
   const csmRef = useRef<CSM | null>(null);
-
-  // Helper function to get/release shadow materials from pool
-  const getShadowMaterial = () => {
-    return (
-      shadowMaterialPoolRef.current.pop() ||
-      new THREE.MeshDepthMaterial({
-        depthPacking: THREE.RGBADepthPacking,
-      })
-    );
-  };
-
-  const releaseShadowMaterial = (material: THREE.Material) => {
-    if (shadowMaterialPoolRef.current.length < 20) {
-      shadowMaterialPoolRef.current.push(material as THREE.MeshDepthMaterial);
-    }
-  };
 
   // Ensure renderer has shadow map enabled with appropriate settings
   useEffect(() => {
@@ -689,10 +669,10 @@ export default function TilesScene({
           <WhiteTilesMaterial
             tilesGroup={tilesRendererRef.current.group}
             shadowOpacity={shadowOpacity}
-            enabled={whiteSceneEnabled}
-            brightness={buildingBrightness}
+            enabled={true}
+            brightness={0.8}
             roughness={performanceMode ? 0.7 : 0.85}
-            shadowIntensity={shadowIntensity}
+            shadowIntensity={0.5}
             groundLevelY={groundHeight}
             isDebug={false}
           />
@@ -720,20 +700,6 @@ export default function TilesScene({
         gridSize={1000}
         gridDivisions={performanceMode ? 10 : 20}
         layerCount={performanceMode ? 3 : 5}
-      />
-
-      {/* Add performance mode toggle if needed */}
-      <WhiteSceneControls
-        whiteSceneEnabled={whiteSceneEnabled}
-        setWhiteSceneEnabled={setWhiteSceneEnabled}
-        buildingBrightness={buildingBrightness}
-        setBuildingBrightness={setBuildingBrightness}
-        groundHeight={groundHeight}
-        setGroundHeight={setGroundHeight}
-        shadowIntensity={shadowIntensity}
-        setShadowIntensity={setShadowIntensity}
-        performanceMode={performanceMode}
-        setPerformanceMode={setPerformanceMode}
       />
     </>
   );

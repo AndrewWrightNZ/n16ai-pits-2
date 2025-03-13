@@ -1,5 +1,5 @@
 // Enhanced WhiteTilesMaterial with improved shadow reception
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
 interface WhiteTilesMaterialProps {
@@ -206,10 +206,6 @@ export default function WhiteTilesMaterial({
         // Get the normal vectors
         object.geometry.computeVertexNormals();
 
-        // Analyze if this is likely a horizontal surface by checking if most faces point up
-        let horizontalFaceCount = 0;
-        let totalFaceCount = 0;
-
         // Try to access normal data from BufferGeometry
         if (object.geometry.attributes && object.geometry.attributes.normal) {
           const normalAttr = object.geometry.attributes.normal;
@@ -219,9 +215,7 @@ export default function WhiteTilesMaterial({
           // Sample normals to estimate orientation
           for (let i = 0; i < normalAttr.count; i += 5) {
             // Sample every 5th normal for performance
-            const nx = normalAttr.getX(i);
             const ny = normalAttr.getY(i);
-            const nz = normalAttr.getZ(i);
 
             // If the normal faces up significantly
             if (ny > 0.7) {
