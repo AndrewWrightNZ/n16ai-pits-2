@@ -5,7 +5,7 @@ import {
   BrightnessContrast,
 } from "@react-three/postprocessing";
 import { Canvas } from "@react-three/fiber";
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 // Components
 import TilesScene from "./_shared/components/TilesScene";
@@ -29,28 +29,8 @@ export default function PhotorealisticTilesMap() {
       tileCount,
 
       // View
-      isOrbiting,
       copyrightInfo,
       timeSpeed,
-
-      // Location
-      currentLocation,
-    },
-    operations: {
-      // Loading
-      onSetIsLoading,
-      onSetLoadingProgress,
-
-      onSetError,
-      onSetTileCount,
-
-      // View
-      onSetIsOrbiting,
-      onSetCopyrightInfo,
-      onSetTimeSpeed,
-
-      // Location
-      onSetCurrentLocation,
     },
   } = useMapSettings();
 
@@ -87,16 +67,6 @@ export default function PhotorealisticTilesMap() {
     minute: "2-digit",
   });
 
-  // Show/hide a directional-light shadow helper
-  const [showShadowHelper, setShowShadowHelper] = useState<boolean>(false);
-
-  // Reference to the directional light from TilesScene (optionally)
-  const directionalLightRef =
-    useRef<React.RefObject<THREE.DirectionalLight>>(null);
-  const setLightRef = (ref: React.RefObject<THREE.DirectionalLight>) => {
-    directionalLightRef.current = ref;
-  };
-
   return (
     <div className="relative">
       <div className="w-full h-[800px] relative overflow-hidden">
@@ -116,17 +86,7 @@ export default function PhotorealisticTilesMap() {
           }}
         >
           {/* TilesScene with integrated CSM */}
-          <TilesScene
-            currentLocation={currentLocation}
-            isOrbiting={isOrbiting}
-            timeOfDay={timeOfDay}
-            setTileCount={onSetTileCount}
-            setCopyrightInfo={onSetCopyrightInfo}
-            setIsLoading={onSetIsLoading}
-            setError={onSetError}
-            setLoadingProgress={onSetLoadingProgress}
-            setLightRef={setLightRef}
-          />
+          <TilesScene timeOfDay={timeOfDay} />
 
           <EffectComposer>
             <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
@@ -136,16 +96,8 @@ export default function PhotorealisticTilesMap() {
 
         {/* Controls panel (pick times, location, etc.) */}
         <ControlsPanel
-          currentLocation={currentLocation}
           formattedTime={formattedTime}
-          timeSpeed={timeSpeed}
-          isOrbiting={isOrbiting}
-          showShadowHelper={showShadowHelper}
-          onSetTimeSpeed={onSetTimeSpeed}
-          onChangeLocation={onSetCurrentLocation}
           onSetSpecificTime={setSpecificTime}
-          onSetIsOrbiting={onSetIsOrbiting}
-          onSetShowShadowHelper={setShowShadowHelper}
         />
 
         {/* Loading overlay */}

@@ -1,31 +1,37 @@
 import { cn } from "../../../utils";
 import { PRESET_LOCATIONS, PresetLocation } from "../hooks/locationsData";
+import useMapSettings from "../hooks/useMapSettings";
 
 interface ControlsPanelProps {
-  currentLocation: string;
   formattedTime: string;
-  timeSpeed: number;
-  isOrbiting: boolean;
-  showShadowHelper: boolean;
-  onChangeLocation: (locationKey: string) => void;
   onSetSpecificTime: (hour: number) => void;
-  onSetTimeSpeed: (speed: number) => void;
-  onSetIsOrbiting: (isOrbiting: boolean) => void;
-  onSetShowShadowHelper: (showShadowHelper: boolean) => void;
 }
 
 const ControlsPanel = ({
-  currentLocation,
   formattedTime,
-  timeSpeed,
-  isOrbiting,
-  showShadowHelper,
-  onChangeLocation,
   onSetSpecificTime,
-  onSetTimeSpeed,
-  onSetIsOrbiting,
-  onSetShowShadowHelper,
 }: ControlsPanelProps) => {
+  //
+
+  // Hooks
+  const {
+    data: {
+      // View
+      isOrbiting,
+      timeSpeed,
+
+      // Location
+      currentLocation,
+    },
+    operations: {
+      onSetTimeSpeed,
+      onSetIsOrbiting,
+
+      // Location
+      onSetCurrentLocation,
+    },
+  } = useMapSettings();
+
   return (
     <>
       <div className="absolute top-2.5 left-2.5 bg-white/80 p-2.5 rounded z-10 max-w-[200px]">
@@ -41,7 +47,7 @@ const ControlsPanel = ({
               locationKey={key}
               location={loc}
               isActive={currentLocation === key}
-              onClick={() => onChangeLocation(key)}
+              onClick={() => onSetCurrentLocation(key)}
             />
           ))}
         </div>
@@ -113,21 +119,6 @@ const ControlsPanel = ({
             )}
           >
             {isOrbiting ? "Stop Orbit" : "Start Orbit"}
-          </button>
-        </div>
-
-        {/* Add this in the controls panel */}
-        <div className="mb-2.5">
-          <button
-            onClick={() => onSetShowShadowHelper(!showShadowHelper)}
-            className={cn(
-              "w-full py-2 px-3 mb-1 text-sm font-medium border rounded shadow-sm transition-colors",
-              showShadowHelper
-                ? "bg-purple-500 text-white border-purple-600"
-                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
-            )}
-          >
-            {showShadowHelper ? "Hide Shadow Helper" : "Show Shadow Helper"}
           </button>
         </div>
       </div>
