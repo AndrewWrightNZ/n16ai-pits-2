@@ -16,32 +16,43 @@ import useMapSettings from "./_shared/hooks/useMapSettings";
 import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 
 export default function PhotorealisticTilesMap() {
-  const [error, setError] = useState<string | null>(null);
-  const [tileCount, setTileCount] = useState<number>(0);
-
   //
 
   // Hooks
   const {
     data: {
+      // Loading
       isLoading,
       loadingProgress,
+
+      error,
+      tileCount,
+
+      // View
       isOrbiting,
       copyrightInfo,
-      currentLocation,
       timeSpeed,
+
+      // Location
+      currentLocation,
     },
     operations: {
+      // Loading
       onSetIsLoading,
       onSetLoadingProgress,
+
+      onSetError,
+      onSetTileCount,
+
+      // View
       onSetIsOrbiting,
       onSetCopyrightInfo,
-      onSetCurrentLocation,
       onSetTimeSpeed,
+
+      // Location
+      onSetCurrentLocation,
     },
   } = useMapSettings();
-
-  console.log("isLoading", isLoading);
 
   //
 
@@ -109,10 +120,10 @@ export default function PhotorealisticTilesMap() {
             currentLocation={currentLocation}
             isOrbiting={isOrbiting}
             timeOfDay={timeOfDay}
-            setTileCount={setTileCount}
+            setTileCount={onSetTileCount}
             setCopyrightInfo={onSetCopyrightInfo}
             setIsLoading={onSetIsLoading}
-            setError={setError}
+            setError={onSetError}
             setLoadingProgress={onSetLoadingProgress}
             setLightRef={setLightRef}
           />
@@ -122,6 +133,20 @@ export default function PhotorealisticTilesMap() {
             <Vignette eskil={false} offset={0.1} darkness={vignetteDarkness} />
           </EffectComposer>
         </Canvas>
+
+        {/* Controls panel (pick times, location, etc.) */}
+        <ControlsPanel
+          currentLocation={currentLocation}
+          formattedTime={formattedTime}
+          timeSpeed={timeSpeed}
+          isOrbiting={isOrbiting}
+          showShadowHelper={showShadowHelper}
+          onSetTimeSpeed={onSetTimeSpeed}
+          onChangeLocation={onSetCurrentLocation}
+          onSetSpecificTime={setSpecificTime}
+          onSetIsOrbiting={onSetIsOrbiting}
+          onSetShowShadowHelper={setShowShadowHelper}
+        />
 
         {/* Loading overlay */}
         {isLoading && (
@@ -154,20 +179,6 @@ export default function PhotorealisticTilesMap() {
               : "No tiles visible - try resetting view"}
           </div>
         )}
-
-        {/* Controls panel (pick times, location, etc.) */}
-        <ControlsPanel
-          currentLocation={currentLocation}
-          formattedTime={formattedTime}
-          timeSpeed={timeSpeed}
-          isOrbiting={isOrbiting}
-          showShadowHelper={showShadowHelper}
-          onSetTimeSpeed={onSetTimeSpeed}
-          onChangeLocation={onSetCurrentLocation}
-          onSetSpecificTime={setSpecificTime}
-          onSetIsOrbiting={onSetIsOrbiting}
-          onSetShowShadowHelper={setShowShadowHelper}
-        />
 
         {/* Google branding + attributions */}
         <div className="absolute bottom-1 left-1 z-10">

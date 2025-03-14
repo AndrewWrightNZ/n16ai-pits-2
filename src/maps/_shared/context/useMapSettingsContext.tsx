@@ -9,6 +9,9 @@ export interface MapSettingsState {
   isLoading: boolean;
   loadingProgress: number;
 
+  error: string | null;
+  tileCount: number;
+
   isOrbiting: boolean;
   timeOfDay: Date;
   timeSpeed: number;
@@ -35,6 +38,10 @@ const defaultState: MapSettingsState = {
   // View
   isLoading: true,
   loadingProgress: 0,
+
+  error: null,
+  tileCount: 0,
+
   isOrbiting: false,
   timeOfDay: new Date(),
   timeSpeed: 0,

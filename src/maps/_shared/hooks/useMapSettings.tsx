@@ -7,6 +7,9 @@ interface HookData extends MapSettingsState {}
 
 interface HookOperations {
   // View
+  onSetError: (newError: string | null) => void;
+  onSetTileCount: (newCount: number) => void;
+
   onSetIsOrbiting: (newIsOrbiting: boolean) => void;
   onSetTimeSpeed: (newSpeed: number) => void;
   onSetIsLoading: (newIsLoading: boolean) => void;
@@ -36,6 +39,9 @@ const useMapSettings = (): HookResponse => {
   const {
     isLoading,
     loadingProgress,
+
+    error,
+    tileCount,
 
     isOrbiting,
     timeOfDay,
@@ -76,11 +82,22 @@ const useMapSettings = (): HookResponse => {
     updateInternalState({ loadingProgress: newProgress });
   };
 
+  const onSetError = (newError: string | null) => {
+    updateInternalState({ error: newError });
+  };
+
+  const onSetTileCount = (newCount: number) => {
+    updateInternalState({ tileCount: newCount });
+  };
+
   return {
     data: {
       // View
       isLoading,
       loadingProgress,
+
+      error,
+      tileCount,
 
       isOrbiting,
       timeOfDay,
@@ -94,10 +111,14 @@ const useMapSettings = (): HookResponse => {
     },
     operations: {
       // View
-      onSetIsOrbiting,
-      onSetTimeSpeed,
       onSetIsLoading,
       onSetLoadingProgress,
+
+      onSetError,
+      onSetTileCount,
+
+      onSetIsOrbiting,
+      onSetTimeSpeed,
 
       // Location
       onSetCurrentLocation,
