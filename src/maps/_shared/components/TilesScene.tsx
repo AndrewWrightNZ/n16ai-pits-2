@@ -99,7 +99,7 @@ export default function TilesScene() {
 
     const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
     const sunriseHour = 6;
-    const sunsetHour = 20;
+    const sunsetHour = 20; // TODO: THIS CAN BE DYNAMIC EACH DAY
     const dayLength = sunsetHour - sunriseHour;
 
     // Calculate sun angle based on time of day
@@ -124,15 +124,15 @@ export default function TilesScene() {
       camera,
       parent: scene,
       cascades: 3,
-      maxFar: 10000,
+      maxFar: 1000,
       mode: "practical",
-      shadowMapSize: 4096,
+      shadowMapSize: 2048,
       shadowBias: -0.0001,
       lightDirection: lightDirection,
       lightIntensity: 2.0, // Increased intensity
       lightNear: 1,
-      lightFar: 10000,
-      lightMargin: 500,
+      lightFar: 1000,
+      lightMargin: 100,
       fade: false,
     });
 
@@ -143,10 +143,10 @@ export default function TilesScene() {
       // Enhance shadow properties
       csm.lights.forEach((light) => {
         light.castShadow = true;
-        light.shadow.mapSize.width = 4096;
-        light.shadow.mapSize.height = 4096;
+        light.shadow.mapSize.width = 2048;
+        light.shadow.mapSize.height = 2048;
         light.shadow.camera.near = 10;
-        light.shadow.camera.far = 10000;
+        light.shadow.camera.far = 2000;
         light.shadow.bias = -0.0003;
         light.shadow.normalBias = 0.02;
         light.shadow.radius = 1;
@@ -180,9 +180,9 @@ export default function TilesScene() {
       })
     );
 
-    tilesRenderer.errorTarget = 0.5;
+    tilesRenderer.errorTarget = 0.25;
     tilesRenderer.maxDepth = 50;
-    tilesRenderer.lruCache.minSize = 2000;
+    tilesRenderer.lruCache.minSize = 1000;
 
     // Add your API key + session if missing
     tilesRenderer.preprocessURL = (url: URL | string): string => {
@@ -219,7 +219,7 @@ export default function TilesScene() {
         if (child instanceof THREE.Mesh) {
           // Allow meshes to cast shadows only
           child.castShadow = true;
-          child.receiveShadow = false; // Important: Don't make tiles receive shadows
+          child.receiveShadow = true; // Important: Don't make tiles receive shadows
 
           // NO material conversion needed - we'll keep the original materials
           if (child.material) {
@@ -493,7 +493,7 @@ export default function TilesScene() {
         screenSpacePanning={false}
         maxPolarAngle={Math.PI / 2}
         minDistance={100}
-        maxDistance={1000000}
+        maxDistance={500}
       />
 
       {/* Shadow-receiving ground plane at a specific height */}
