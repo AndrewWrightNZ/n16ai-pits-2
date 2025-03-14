@@ -8,6 +8,9 @@ interface HookData extends MapSettingsState {}
 interface HookOperations {
   // View
   onSetIsOrbiting: (newIsOrbiting: boolean) => void;
+  onSetTimeSpeed: (newSpeed: number) => void;
+  onSetIsLoading: (newIsLoading: boolean) => void;
+  onSetLoadingProgress: (newProgress: number) => void;
 
   // Location
   onSetCurrentLocation: (newLocation: string) => void;
@@ -31,6 +34,9 @@ const useMapSettings = (): HookResponse => {
 
   // Variables
   const {
+    isLoading,
+    loadingProgress,
+
     isOrbiting,
     timeOfDay,
     timeSpeed,
@@ -58,9 +64,24 @@ const useMapSettings = (): HookResponse => {
     updateInternalState({ currentLocation: newLocation });
   };
 
+  const onSetTimeSpeed = (newSpeed: number) => {
+    updateInternalState({ timeSpeed: newSpeed });
+  };
+
+  const onSetIsLoading = (newIsLoading: boolean) => {
+    updateInternalState({ isLoading: newIsLoading });
+  };
+
+  const onSetLoadingProgress = (newProgress: number) => {
+    updateInternalState({ loadingProgress: newProgress });
+  };
+
   return {
     data: {
       // View
+      isLoading,
+      loadingProgress,
+
       isOrbiting,
       timeOfDay,
       timeSpeed,
@@ -74,6 +95,9 @@ const useMapSettings = (): HookResponse => {
     operations: {
       // View
       onSetIsOrbiting,
+      onSetTimeSpeed,
+      onSetIsLoading,
+      onSetLoadingProgress,
 
       // Location
       onSetCurrentLocation,

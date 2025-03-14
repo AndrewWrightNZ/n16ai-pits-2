@@ -6,6 +6,9 @@ import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
 export interface MapSettingsState {
   // View
+  isLoading: boolean;
+  loadingProgress: number;
+
   isOrbiting: boolean;
   timeOfDay: Date;
   timeSpeed: number;
@@ -30,6 +33,8 @@ const LOCAL_STORAGE_KEY = "MapSettingsState";
 
 const defaultState: MapSettingsState = {
   // View
+  isLoading: true,
+  loadingProgress: 0,
   isOrbiting: false,
   timeOfDay: new Date(),
   timeSpeed: 0,

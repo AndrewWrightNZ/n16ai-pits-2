@@ -283,16 +283,7 @@ export default function TilesScene({
         setTilesLoaded(false);
       }
     };
-  }, [
-    camera,
-    renderer,
-    scene,
-    currentLocation,
-    setIsLoading,
-    setError,
-    setLoadingProgress,
-    setTileCount,
-  ]);
+  }, [camera, renderer, scene, currentLocation]);
 
   // If location changes, reposition camera
   useEffect(() => {

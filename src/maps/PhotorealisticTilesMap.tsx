@@ -12,12 +12,10 @@ import TilesScene from "./_shared/components/TilesScene";
 import ControlsPanel from "./_shared/components/ControlsPanel";
 
 // Hooks
-import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 import useMapSettings from "./_shared/hooks/useMapSettings";
+import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 
 export default function PhotorealisticTilesMap() {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [tileCount, setTileCount] = useState<number>(0);
 
@@ -25,15 +23,30 @@ export default function PhotorealisticTilesMap() {
 
   // Hooks
   const {
-    data: { isOrbiting, copyrightInfo, currentLocation },
-    operations: { onSetIsOrbiting, onSetCopyrightInfo, onSetCurrentLocation },
+    data: {
+      isLoading,
+      loadingProgress,
+      isOrbiting,
+      copyrightInfo,
+      currentLocation,
+      timeSpeed,
+    },
+    operations: {
+      onSetIsLoading,
+      onSetLoadingProgress,
+      onSetIsOrbiting,
+      onSetCopyrightInfo,
+      onSetCurrentLocation,
+      onSetTimeSpeed,
+    },
   } = useMapSettings();
+
+  console.log("isLoading", isLoading);
 
   //
 
   // State
   const [timeOfDay, setTimeOfDay] = useState<Date>(new Date());
-  const [timeSpeed, setTimeSpeed] = useState<number>(0);
 
   const setSpecificTime = (hours: number, minutes: number = 0) => {
     const d = new Date();
@@ -98,9 +111,9 @@ export default function PhotorealisticTilesMap() {
             timeOfDay={timeOfDay}
             setTileCount={setTileCount}
             setCopyrightInfo={onSetCopyrightInfo}
-            setIsLoading={setIsLoading}
+            setIsLoading={onSetIsLoading}
             setError={setError}
-            setLoadingProgress={setLoadingProgress}
+            setLoadingProgress={onSetLoadingProgress}
             setLightRef={setLightRef}
           />
 
@@ -149,7 +162,7 @@ export default function PhotorealisticTilesMap() {
           timeSpeed={timeSpeed}
           isOrbiting={isOrbiting}
           showShadowHelper={showShadowHelper}
-          onSetTimeSpeed={setTimeSpeed}
+          onSetTimeSpeed={onSetTimeSpeed}
           onChangeLocation={onSetCurrentLocation}
           onSetSpecificTime={setSpecificTime}
           onSetIsOrbiting={onSetIsOrbiting}
