@@ -16,6 +16,8 @@ export interface MapSettingsState {
   timeOfDay: Date;
   timeSpeed: number;
 
+  formattedTime: string;
+
   // Locations
   currentLocation: string;
 
@@ -45,6 +47,7 @@ const defaultState: MapSettingsState = {
   isOrbiting: false,
   timeOfDay: new Date(),
   timeSpeed: 0,
+  formattedTime: "12:00 PM",
 
   // Locations
   currentLocation: Object.keys(PRESET_LOCATIONS)[0],

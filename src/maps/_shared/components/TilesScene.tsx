@@ -30,7 +30,7 @@ type ExtendedTilesRenderer = TilesRenderer & {
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
+export default function TilesScene() {
   //
 
   // Refs
@@ -47,6 +47,7 @@ export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
     data: {
       // View
       isOrbiting,
+      timeOfDay: rawTimeOfDay,
 
       // Location
       currentLocation,
@@ -94,6 +95,8 @@ export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
     }
 
     // Calculate initial light direction based on time of day
+    const timeOfDay = new Date(rawTimeOfDay);
+
     const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
     const sunriseHour = 6;
     const sunsetHour = 20;
@@ -158,7 +161,7 @@ export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
         csmRef.current = null;
       }
     };
-  }, [scene, camera, timeOfDay]); // Keep timeOfDay dependency to recreate CSM when time changes significantly
+  }, [scene, camera, rawTimeOfDay]); // Keep timeOfDay dependency to recreate CSM when time changes significantly
 
   // Initialize 3D Tiles
   useEffect(() => {
@@ -311,6 +314,8 @@ export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
   // Time-of-day updates - use CSM's updateFrustums method to handle changes
   useEffect(() => {
     // Adjust shadow opacity based on time of day
+    const timeOfDay = new Date(rawTimeOfDay);
+
     const hours = timeOfDay.getHours();
     if (hours < 6 || hours > 20) {
       setShadowOpacity(0.8); // Much stronger shadows at night
@@ -350,7 +355,7 @@ export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
       csmRef.current.updateFrustums();
       csmRef.current.update();
     }
-  }, [timeOfDay]);
+  }, [rawTimeOfDay]);
 
   function positionCameraAtLocation(locKey: string) {
     if (!camera || !tilesRendererRef.current || !orbitControlsRef.current)
@@ -430,6 +435,8 @@ export default function TilesScene({ timeOfDay }: { timeOfDay: Date }) {
     // Update sun position and shadows each frame
     if (csmRef.current) {
       // Calculate light position based on current time
+      const timeOfDay = new Date(rawTimeOfDay);
+
       const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
       const sunriseHour = 6;
       const sunsetHour = 20;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import useMapSettings from "./useMapSettings";
 
 interface LightingState {
   brightnessValue: number;
@@ -13,12 +14,21 @@ interface LightingState {
  * @param timeOfDay - Current time
  * @returns Object containing brightnessValue, vignetteDarkness, and skyColor
  */
-export function useDaylightLighting(timeOfDay: Date): LightingState {
+export function useDaylightLighting(): LightingState {
+  //
+
+  // Hooks
+  const {
+    data: { timeOfDay: rawTimeOfDay },
+  } = useMapSettings();
+
   const [brightnessValue, setBrightnessValue] = useState<number>(-0.2);
   const [vignetteDarkness, setVignetteDarkness] = useState<number>(0.7);
   const [skyColor, setSkyColor] = useState<string>("#050505");
 
   useEffect(() => {
+    const timeOfDay = new Date(rawTimeOfDay);
+
     const hour = timeOfDay.getHours();
     const minute = timeOfDay.getMinutes();
     const timeVal = hour + minute / 60;
@@ -132,7 +142,7 @@ export function useDaylightLighting(timeOfDay: Date): LightingState {
         );
       }
     }
-  }, [timeOfDay]);
+  }, [rawTimeOfDay]);
 
   return { brightnessValue, vignetteDarkness, skyColor };
 }

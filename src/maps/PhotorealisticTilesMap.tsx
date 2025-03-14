@@ -1,11 +1,11 @@
 import * as THREE from "three";
+import { useEffect } from "react";
 import {
   EffectComposer,
   Vignette,
   BrightnessContrast,
 } from "@react-three/postprocessing";
 import { Canvas } from "@react-three/fiber";
-import { useState, useEffect } from "react";
 
 // Components
 import TilesScene from "./_shared/components/TilesScene";
@@ -28,44 +28,36 @@ export default function PhotorealisticTilesMap() {
       error,
       tileCount,
 
+      timeOfDay,
+
       // View
       copyrightInfo,
       timeSpeed,
     },
+    operations: { onSetTimeOfDay },
   } = useMapSettings();
-
-  //
-
-  // State
-  const [timeOfDay, setTimeOfDay] = useState<Date>(new Date());
 
   const setSpecificTime = (hours: number, minutes: number = 0) => {
     const d = new Date();
     d.setHours(hours, minutes, 0);
-    setTimeOfDay(d);
+    onSetTimeOfDay(d);
   };
 
   // Animate time
   useEffect(() => {
     if (timeSpeed === 0) return;
     const handle = setInterval(() => {
-      setTimeOfDay((prev) => {
-        const next = new Date(prev);
-        next.setMinutes(next.getMinutes() + timeSpeed * 5);
-        return next;
-      });
+      const next = new Date(timeOfDay);
+
+      next.setMinutes(next.getMinutes() + timeSpeed * 5);
+
+      onSetTimeOfDay(next);
     }, 1000);
     return () => clearInterval(handle);
   }, [timeSpeed]);
 
   // Use the custom lighting hook
-  const { brightnessValue, vignetteDarkness, skyColor } =
-    useDaylightLighting(timeOfDay);
-
-  const formattedTime = timeOfDay.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const { brightnessValue, vignetteDarkness, skyColor } = useDaylightLighting();
 
   return (
     <div className="relative">
@@ -86,7 +78,7 @@ export default function PhotorealisticTilesMap() {
           }}
         >
           {/* TilesScene with integrated CSM */}
-          <TilesScene timeOfDay={timeOfDay} />
+          <TilesScene />
 
           <EffectComposer>
             <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
@@ -95,10 +87,7 @@ export default function PhotorealisticTilesMap() {
         </Canvas>
 
         {/* Controls panel (pick times, location, etc.) */}
-        <ControlsPanel
-          formattedTime={formattedTime}
-          onSetSpecificTime={setSpecificTime}
-        />
+        <ControlsPanel onSetSpecificTime={setSpecificTime} />
 
         {/* Loading overlay */}
         {isLoading && (

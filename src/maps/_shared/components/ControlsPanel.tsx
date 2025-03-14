@@ -3,14 +3,10 @@ import { PRESET_LOCATIONS, PresetLocation } from "../hooks/locationsData";
 import useMapSettings from "../hooks/useMapSettings";
 
 interface ControlsPanelProps {
-  formattedTime: string;
   onSetSpecificTime: (hour: number) => void;
 }
 
-const ControlsPanel = ({
-  formattedTime,
-  onSetSpecificTime,
-}: ControlsPanelProps) => {
+const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
   //
 
   // Hooks
@@ -19,6 +15,7 @@ const ControlsPanel = ({
       // View
       isOrbiting,
       timeSpeed,
+      formattedTime,
 
       // Location
       currentLocation,

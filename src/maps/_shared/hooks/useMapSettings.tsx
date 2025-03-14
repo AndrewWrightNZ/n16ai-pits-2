@@ -15,6 +15,8 @@ interface HookOperations {
   onSetIsLoading: (newIsLoading: boolean) => void;
   onSetLoadingProgress: (newProgress: number) => void;
 
+  onSetTimeOfDay: (newTime: Date) => void;
+
   // Location
   onSetCurrentLocation: (newLocation: string) => void;
 
@@ -46,6 +48,7 @@ const useMapSettings = (): HookResponse => {
     isOrbiting,
     timeOfDay,
     timeSpeed,
+    formattedTime,
 
     // Locations
     currentLocation,
@@ -90,6 +93,15 @@ const useMapSettings = (): HookResponse => {
     updateInternalState({ tileCount: newCount });
   };
 
+  const onSetTimeOfDay = (newTime: Date) => {
+    const formattedTime = newTime.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+
+    updateInternalState({ timeOfDay: newTime, formattedTime });
+  };
+
   return {
     data: {
       // View
@@ -102,6 +114,7 @@ const useMapSettings = (): HookResponse => {
       isOrbiting,
       timeOfDay,
       timeSpeed,
+      formattedTime,
 
       // Locations
       currentLocation,
@@ -119,6 +132,7 @@ const useMapSettings = (): HookResponse => {
 
       onSetIsOrbiting,
       onSetTimeSpeed,
+      onSetTimeOfDay,
 
       // Location
       onSetCurrentLocation,
