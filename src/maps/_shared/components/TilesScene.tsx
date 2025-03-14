@@ -18,17 +18,8 @@ import { PRESET_LOCATIONS } from "../hooks/locationsData";
 // Import the TilesShadowWrapper component
 import TilesShadowWrapper from "./TilesShadowWrapper";
 
-interface TilesSceneProps {
-  currentLocation: string;
-  isOrbiting: boolean;
-  timeOfDay: Date;
-  setTileCount: (count: number) => void;
-  setCopyrightInfo: (info: string) => void;
-  setIsLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  setLoadingProgress: (progress: number) => void;
-  setLightRef: (ref: React.RefObject<THREE.DirectionalLight>) => void;
-}
+// Hooks
+import useMapSettings from "../hooks/useMapSettings";
 
 type ExtendedTilesRenderer = TilesRenderer & {
   loadProgress?: number;
@@ -39,22 +30,42 @@ type ExtendedTilesRenderer = TilesRenderer & {
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-export default function TilesScene({
-  currentLocation,
-  isOrbiting,
-  timeOfDay,
-  setTileCount,
-  setCopyrightInfo,
-  setIsLoading,
-  setError,
-  setLoadingProgress,
-  setLightRef,
-}: TilesSceneProps) {
+export default function TilesScene() {
+  //
+
+  // Refs
   const tilesRendererRef = useRef<ExtendedTilesRenderer | null>(null);
   const processedUrls = useRef(new Map<string, string>());
   const currentSessionId = useRef<string>("");
 
   const orbitControlsRef = useRef<any>(null);
+
+  //
+
+  // Hooks
+  const {
+    data: {
+      // View
+      isOrbiting,
+      timeOfDay: rawTimeOfDay,
+
+      // Location
+      currentLocation,
+    },
+    operations: {
+      // Loading
+      onSetIsLoading,
+      onSetLoadingProgress,
+
+      onSetError,
+      onSetTileCount,
+
+      // View
+      onSetCopyrightInfo,
+    },
+  } = useMapSettings();
+
+  //
 
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
@@ -84,6 +95,8 @@ export default function TilesScene({
     }
 
     // Calculate initial light direction based on time of day
+    const timeOfDay = new Date(rawTimeOfDay);
+
     const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
     const sunriseHour = 6;
     const sunsetHour = 20;
@@ -127,8 +140,6 @@ export default function TilesScene({
 
     // Share the first cascade light ref with parent component if needed
     if (csm.lights.length > 0) {
-      setLightRef(csm.lights[0] as any);
-
       // Enhance shadow properties
       csm.lights.forEach((light) => {
         light.castShadow = true;
@@ -150,12 +161,12 @@ export default function TilesScene({
         csmRef.current = null;
       }
     };
-  }, [scene, camera, setLightRef, timeOfDay]); // Keep timeOfDay dependency to recreate CSM when time changes significantly
+  }, [scene, camera, rawTimeOfDay]); // Keep timeOfDay dependency to recreate CSM when time changes significantly
 
   // Initialize 3D Tiles
   useEffect(() => {
-    setIsLoading(true);
-    setError(null);
+    onSetIsLoading(true);
+    onSetError(null);
     setTilesLoaded(false);
 
     const rootUrl = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${API_KEY}`;
@@ -237,13 +248,13 @@ export default function TilesScene({
 
     // Error listener
     tilesRenderer.addEventListener("load-error", (ev: any) => {
-      setError(`Tiles loading error: ${ev.error?.message || "Unknown"}`);
+      onSetError(`Tiles loading error: ${ev.error?.message || "Unknown"}`);
     });
 
     // Tiles loaded - this is when we set up the shadows
     tilesRenderer.addEventListener("load-tile-set", () => {
       setupShadowsForTiles();
-      setTileCount(tilesRenderer.group.children.length);
+      onSetTileCount(tilesRenderer.group.children.length);
       if (tilesRenderer.rootTileSet) {
         setTilesLoaded(true);
       }
@@ -259,11 +270,11 @@ export default function TilesScene({
     const checkLoadProgress = () => {
       if (tilesRenderer.loadProgress !== undefined) {
         const prog = Math.round(tilesRenderer.loadProgress * 100);
-        setLoadingProgress(prog);
+        onSetLoadingProgress(prog);
       }
       if (tilesRenderer.rootTileSet !== null) {
         // The main tile set is loaded
-        setIsLoading(false);
+        onSetIsLoading(false);
         setTilesLoaded(true);
       } else {
         setTimeout(checkLoadProgress, 100);
@@ -283,16 +294,7 @@ export default function TilesScene({
         setTilesLoaded(false);
       }
     };
-  }, [
-    camera,
-    renderer,
-    scene,
-    currentLocation,
-    setIsLoading,
-    setError,
-    setLoadingProgress,
-    setTileCount,
-  ]);
+  }, [camera, renderer, scene, currentLocation]);
 
   // If location changes, reposition camera
   useEffect(() => {
@@ -312,6 +314,8 @@ export default function TilesScene({
   // Time-of-day updates - use CSM's updateFrustums method to handle changes
   useEffect(() => {
     // Adjust shadow opacity based on time of day
+    const timeOfDay = new Date(rawTimeOfDay);
+
     const hours = timeOfDay.getHours();
     if (hours < 6 || hours > 20) {
       setShadowOpacity(0.8); // Much stronger shadows at night
@@ -351,7 +355,7 @@ export default function TilesScene({
       csmRef.current.updateFrustums();
       csmRef.current.update();
     }
-  }, [timeOfDay]);
+  }, [rawTimeOfDay]);
 
   function positionCameraAtLocation(locKey: string) {
     if (!camera || !tilesRendererRef.current || !orbitControlsRef.current)
@@ -408,7 +412,7 @@ export default function TilesScene({
       // Occasionally update tileCount
       if (Math.random() < 0.01) {
         // 1% chance each frame
-        setTileCount(tilesRendererRef.current.group.children.length);
+        onSetTileCount(tilesRendererRef.current.group.children.length);
       }
 
       // If you want to gather attributions
@@ -423,7 +427,7 @@ export default function TilesScene({
         });
         const cStr = Array.from(cSet).join("; ");
         if (cStr) {
-          setCopyrightInfo(cStr);
+          onSetCopyrightInfo(cStr);
         }
       } catch {}
     }
@@ -431,6 +435,8 @@ export default function TilesScene({
     // Update sun position and shadows each frame
     if (csmRef.current) {
       // Calculate light position based on current time
+      const timeOfDay = new Date(rawTimeOfDay);
+
       const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
       const sunriseHour = 6;
       const sunsetHour = 20;

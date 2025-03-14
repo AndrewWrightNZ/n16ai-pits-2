@@ -1,73 +1,63 @@
-import { useRef, useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
-
-import TilesScene from "./_shared/components/TilesScene";
-import ControlsPanel from "./_shared/components/ControlsPanel";
-import { PRESET_LOCATIONS } from "./_shared/hooks/locationsData";
-
+import { useEffect } from "react";
 import {
   EffectComposer,
   Vignette,
   BrightnessContrast,
 } from "@react-three/postprocessing";
+import { Canvas } from "@react-three/fiber";
+
+// Components
+import TilesScene from "./_shared/components/TilesScene";
+import ControlsPanel from "./_shared/components/ControlsPanel";
+
+// Hooks
+import useMapSettings from "./_shared/hooks/useMapSettings";
 import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 
 export default function PhotorealisticTilesMap() {
-  const [currentLocation, setCurrentLocation] = useState<string>(
-    Object.keys(PRESET_LOCATIONS)[0]
-  );
-  const [isOrbiting, setIsOrbiting] = useState<boolean>(false);
-  const [copyrightInfo, setCopyrightInfo] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [loadingProgress, setLoadingProgress] = useState<number>(0);
-  const [error, setError] = useState<string | null>(null);
-  const [tileCount, setTileCount] = useState<number>(0);
+  //
 
-  // Time-of-day
-  const [timeOfDay, setTimeOfDay] = useState<Date>(new Date());
-  const [timeSpeed, setTimeSpeed] = useState<number>(0);
+  // Hooks
+  const {
+    data: {
+      // Loading
+      isLoading,
+      loadingProgress,
 
-  const changeLocation = (locKey: string) => {
-    setCurrentLocation(locKey);
-  };
+      error,
+      tileCount,
+
+      timeOfDay,
+
+      // View
+      copyrightInfo,
+      timeSpeed,
+    },
+    operations: { onSetTimeOfDay },
+  } = useMapSettings();
+
   const setSpecificTime = (hours: number, minutes: number = 0) => {
     const d = new Date();
     d.setHours(hours, minutes, 0);
-    setTimeOfDay(d);
+    onSetTimeOfDay(d);
   };
 
   // Animate time
   useEffect(() => {
     if (timeSpeed === 0) return;
     const handle = setInterval(() => {
-      setTimeOfDay((prev) => {
-        const next = new Date(prev);
-        next.setMinutes(next.getMinutes() + timeSpeed * 5);
-        return next;
-      });
+      const next = new Date(timeOfDay);
+
+      next.setMinutes(next.getMinutes() + timeSpeed * 5);
+
+      onSetTimeOfDay(next);
     }, 1000);
     return () => clearInterval(handle);
   }, [timeSpeed]);
 
   // Use the custom lighting hook
-  const { brightnessValue, vignetteDarkness, skyColor } =
-    useDaylightLighting(timeOfDay);
-
-  const formattedTime = timeOfDay.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  // Show/hide a directional-light shadow helper
-  const [showShadowHelper, setShowShadowHelper] = useState<boolean>(false);
-
-  // Reference to the directional light from TilesScene (optionally)
-  const directionalLightRef =
-    useRef<React.RefObject<THREE.DirectionalLight>>(null);
-  const setLightRef = (ref: React.RefObject<THREE.DirectionalLight>) => {
-    directionalLightRef.current = ref;
-  };
+  const { brightnessValue, vignetteDarkness, skyColor } = useDaylightLighting();
 
   return (
     <div className="relative">
@@ -88,23 +78,16 @@ export default function PhotorealisticTilesMap() {
           }}
         >
           {/* TilesScene with integrated CSM */}
-          <TilesScene
-            currentLocation={currentLocation}
-            isOrbiting={isOrbiting}
-            timeOfDay={timeOfDay}
-            setTileCount={setTileCount}
-            setCopyrightInfo={setCopyrightInfo}
-            setIsLoading={setIsLoading}
-            setError={setError}
-            setLoadingProgress={setLoadingProgress}
-            setLightRef={setLightRef}
-          />
+          <TilesScene />
 
           <EffectComposer>
             <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
             <Vignette eskil={false} offset={0.1} darkness={vignetteDarkness} />
           </EffectComposer>
         </Canvas>
+
+        {/* Controls panel (pick times, location, etc.) */}
+        <ControlsPanel onSetSpecificTime={setSpecificTime} />
 
         {/* Loading overlay */}
         {isLoading && (
@@ -137,20 +120,6 @@ export default function PhotorealisticTilesMap() {
               : "No tiles visible - try resetting view"}
           </div>
         )}
-
-        {/* Controls panel (pick times, location, etc.) */}
-        <ControlsPanel
-          currentLocation={currentLocation}
-          formattedTime={formattedTime}
-          timeSpeed={timeSpeed}
-          isOrbiting={isOrbiting}
-          showShadowHelper={showShadowHelper}
-          onSetTimeSpeed={setTimeSpeed}
-          onChangeLocation={changeLocation}
-          onSetSpecificTime={setSpecificTime}
-          onSetIsOrbiting={setIsOrbiting}
-          onSetShowShadowHelper={setShowShadowHelper}
-        />
 
         {/* Google branding + attributions */}
         <div className="absolute bottom-1 left-1 z-10">
