@@ -1,36 +1,40 @@
-import { useRef, useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
-
-import TilesScene from "./_shared/components/TilesScene";
-import ControlsPanel from "./_shared/components/ControlsPanel";
-import { PRESET_LOCATIONS } from "./_shared/hooks/locationsData";
-
 import {
   EffectComposer,
   Vignette,
   BrightnessContrast,
 } from "@react-three/postprocessing";
+import { Canvas } from "@react-three/fiber";
+import { useRef, useState, useEffect } from "react";
+
+// Components
+import TilesScene from "./_shared/components/TilesScene";
+import ControlsPanel from "./_shared/components/ControlsPanel";
+
+// Hooks
 import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
+import useMapSettings from "./_shared/hooks/useMapSettings";
 
 export default function PhotorealisticTilesMap() {
-  const [currentLocation, setCurrentLocation] = useState<string>(
-    Object.keys(PRESET_LOCATIONS)[0]
-  );
-  const [isOrbiting, setIsOrbiting] = useState<boolean>(false);
-  const [copyrightInfo, setCopyrightInfo] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
   const [tileCount, setTileCount] = useState<number>(0);
 
-  // Time-of-day
+  //
+
+  // Hooks
+  const {
+    data: { isOrbiting, copyrightInfo, currentLocation },
+    operations: { onSetIsOrbiting, onSetCopyrightInfo, onSetCurrentLocation },
+  } = useMapSettings();
+
+  //
+
+  // State
   const [timeOfDay, setTimeOfDay] = useState<Date>(new Date());
   const [timeSpeed, setTimeSpeed] = useState<number>(0);
 
-  const changeLocation = (locKey: string) => {
-    setCurrentLocation(locKey);
-  };
   const setSpecificTime = (hours: number, minutes: number = 0) => {
     const d = new Date();
     d.setHours(hours, minutes, 0);
@@ -93,7 +97,7 @@ export default function PhotorealisticTilesMap() {
             isOrbiting={isOrbiting}
             timeOfDay={timeOfDay}
             setTileCount={setTileCount}
-            setCopyrightInfo={setCopyrightInfo}
+            setCopyrightInfo={onSetCopyrightInfo}
             setIsLoading={setIsLoading}
             setError={setError}
             setLoadingProgress={setLoadingProgress}
@@ -146,9 +150,9 @@ export default function PhotorealisticTilesMap() {
           isOrbiting={isOrbiting}
           showShadowHelper={showShadowHelper}
           onSetTimeSpeed={setTimeSpeed}
-          onChangeLocation={changeLocation}
+          onChangeLocation={onSetCurrentLocation}
           onSetSpecificTime={setSpecificTime}
-          onSetIsOrbiting={setIsOrbiting}
+          onSetIsOrbiting={onSetIsOrbiting}
           onSetShowShadowHelper={setShowShadowHelper}
         />
 
