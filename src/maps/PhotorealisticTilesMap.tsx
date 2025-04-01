@@ -61,13 +61,13 @@ export default function PhotorealisticTilesMap() {
 
   return (
     <div className="relative">
-      <div className="w-full h-[800px] relative overflow-hidden">
+      <div className="w-full h-[850px] relative overflow-hidden">
         <Canvas
           shadows
           camera={{
             fov: 30, // Narrow field of view
             near: 1,
-            far: 100000, // Reduced
+            far: 1000, // Reduced
             position: [0, 1000, 0], // Lower height
           }}
           onCreated={({ gl }) => {

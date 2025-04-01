@@ -224,7 +224,7 @@ export default function TilesScene() {
   return (
     <>
       {/* Ambient light - reduced intensity for better shadow contrast */}
-      <ambientLight intensity={0.2} color={new THREE.Color(0xffffff)} />
+      <ambientLight intensity={0.7} color={new THREE.Color(0xffffff)} />
 
       {/* Add our shadow wrapper to make tiles receive shadows */}
       {tilesLoaded && getCurrentTilesRenderer() && (
