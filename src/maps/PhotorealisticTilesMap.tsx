@@ -61,14 +61,14 @@ export default function PhotorealisticTilesMap() {
 
   return (
     <div className="relative">
-      <div className="w-full h-[800px] relative overflow-hidden">
+      <div className="w-full h-[850px] relative overflow-hidden">
         <Canvas
           shadows
           camera={{
-            fov: 45,
+            fov: 30, // Narrow field of view
             near: 1,
-            far: 100000000,
-            position: [0, 5000, 0],
+            far: 1000, // Reduced
+            position: [0, 1000, 0], // Lower height
           }}
           onCreated={({ gl }) => {
             gl.setClearColor(new THREE.Color(skyColor));
