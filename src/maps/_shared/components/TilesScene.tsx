@@ -15,8 +15,10 @@ import {
   ExtendedTilesRenderer,
 } from "../services/tilesRendererService";
 
-// Import the TilesShadowWrapper component
+// Import components
 import TilesShadowWrapper from "./TilesShadowWrapper";
+import WhiteTilesMaterial from "./WhiteTilesMaterial";
+// import MultiLayerGround from "./";
 
 // Import data
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
@@ -175,6 +177,8 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
   // State
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [shadowOpacity, setShadowOpacity] = useState(0.6);
+  const [useWhiteMaterial, setUseWhiteMaterial] = useState(true);
+  const [performanceMode, setPerformanceMode] = useState(false);
 
   // Hooks
   const {
@@ -195,11 +199,15 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
       // View
       onSetCopyrightInfo,
+      onSetLightRef,
     },
   } = useMapSettings();
 
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
+
+  // Ground level for shadows and ground replacement
+  const groundHeight = 60;
 
   // Debug function to add to window
   useEffect(() => {
@@ -223,44 +231,11 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
             }
           }
         },
-        sceneInfo: () => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer && tilesRenderer.group) {
-              let meshCount = 0;
-              let materialCount = 0;
-              let whiteMatCount = 0;
-
-              tilesRenderer.group.traverse((obj) => {
-                if (obj instanceof THREE.Mesh) {
-                  meshCount++;
-
-                  const materials = Array.isArray(obj.material)
-                    ? obj.material
-                    : [obj.material];
-
-                  materialCount += materials.length;
-
-                  materials.forEach((mat) => {
-                    if (
-                      mat instanceof THREE.MeshStandardMaterial &&
-                      mat.color &&
-                      mat.color.r > 0.95 &&
-                      mat.color.g > 0.95 &&
-                      mat.color.b > 0.95
-                    ) {
-                      whiteMatCount++;
-                    }
-                  });
-                }
-              });
-
-              console.log(
-                `Scene has ${meshCount} meshes, ${materialCount} materials, ${whiteMatCount} white materials`
-              );
-            }
-          }
+        toggleWhiteMaterial: () => {
+          setUseWhiteMaterial(!useWhiteMaterial);
+        },
+        togglePerformanceMode: () => {
+          setPerformanceMode(!performanceMode);
         },
       };
     }
@@ -271,11 +246,17 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         (window as any).debugTiles = undefined;
       }
     };
-  }, []);
+  }, [useWhiteMaterial, performanceMode]);
 
   // Initialize shadow manager
   useEffect(() => {
     if (!renderer) return;
+
+    // Configure renderer shadow settings
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = performanceMode
+      ? THREE.BasicShadowMap // Faster but lower quality
+      : THREE.PCFSoftShadowMap; // Higher quality but slower
 
     const shadowsManager = new ShadowsManager(renderer);
     shadowsManager.initializeShadowRenderer();
@@ -284,7 +265,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     return () => {
       shadowsManagerRef.current = null;
     };
-  }, [renderer]);
+  }, [renderer, performanceMode]);
 
   // Initialize CSM controller when time of day changes
   useEffect(() => {
@@ -295,10 +276,25 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
       camera as THREE.PerspectiveCamera,
       scene
     );
-    const timeOfDay = new Date(rawTimeOfDay);
 
-    // Initialize CSM
-    csmController.initialize(timeOfDay);
+    // Configure CSM based on performance mode
+    const shadowMapSize = performanceMode ? 2048 : 4096;
+    const cascades = performanceMode ? 2 : 3;
+
+    // Initialize CSM with configuration
+    const timeOfDay = new Date(rawTimeOfDay);
+    csmController.initialize(timeOfDay, {
+      shadowMapSize,
+      cascades,
+      maxFar: performanceMode ? 5000 : 10000,
+    });
+
+    // Provide the light reference
+    const csm = csmController.getCSM();
+    if (csm && csm.lights.length > 0) {
+      onSetLightRef(csm.lights[0] as any);
+    }
+
     csmControllerRef.current = csmController;
 
     // Update shadow opacity
@@ -313,7 +309,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         csmControllerRef.current = null;
       }
     };
-  }, [camera, scene, rawTimeOfDay]);
+  }, [camera, scene, rawTimeOfDay, performanceMode, onSetLightRef]);
 
   // Initialize 3D Tiles
   useEffect(() => {
@@ -322,16 +318,22 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     setTilesLoaded(false);
     shadowWrapperAppliedRef.current = false;
 
-    console.log("Initializing TilesRendererService with white materials");
+    console.log(
+      "Initializing TilesRendererService without forcing white materials"
+    );
 
-    // Create TilesRendererService - explicitly use white material
+    // Create TilesRendererService WITHOUT forcing white material
+    // We'll use the WhiteTilesMaterial component instead
     const tilesRendererService = new TilesRendererService(
       camera,
       renderer,
       scene,
       API_KEY,
-      true // Force white material
+      false // Don't force white material in the service
     );
+
+    // Configure tiles renderer based on performance mode
+    tilesRendererService.setPerformanceMode(performanceMode);
 
     // Set callbacks
     tilesRendererService.setCallbacks({
@@ -353,17 +355,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         if (tilesRenderer) {
           onSetTileCount(tilesRenderer.group.children.length);
         }
-
-        // Force material update after a short delay
-        setTimeout(() => {
-          tilesRendererService.forceUpdateMaterials();
-        }, 500);
-
-        // And again after shadow wrapper may have been applied
-        setTimeout(() => {
-          console.log("Second forced update for materials");
-          tilesRendererService.forceUpdateMaterials();
-        }, 2000);
       },
       onAttributions: (attributions) => onSetCopyrightInfo(attributions),
       onTileCount: (count) => onSetTileCount(count),
@@ -387,7 +378,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     // Position camera at current location
     const locationData = PRESET_LOCATIONS[currentLocation];
     if (locationData) {
-      cameraPositioner.positionCameraAtLocation(locationData);
+      cameraPositioner.positionCameraAtLocation(locationData, performanceMode);
     }
 
     return () => {
@@ -398,7 +389,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
       }
       cameraPositionerRef.current = null;
     };
-  }, [camera, renderer, scene, currentLocation]);
+  }, [camera, renderer, scene, currentLocation, performanceMode]);
 
   // If location changes, reposition camera
   useEffect(() => {
@@ -406,16 +397,22 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
     const locationData = PRESET_LOCATIONS[currentLocation];
     if (locationData) {
-      cameraPositionerRef.current.positionCameraAtLocation(locationData);
+      cameraPositionerRef.current.positionCameraAtLocation(
+        locationData,
+        performanceMode
+      );
     }
-  }, [currentLocation]);
+  }, [currentLocation, performanceMode]);
 
   // Update orbit controls auto-rotation
   useEffect(() => {
     if (cameraPositionerRef.current) {
-      cameraPositionerRef.current.setAutoRotate(isOrbiting);
+      cameraPositionerRef.current.setAutoRotate(
+        isOrbiting,
+        performanceMode ? 1.0 : 2.0
+      );
     }
-  }, [isOrbiting]);
+  }, [isOrbiting, performanceMode]);
 
   // Time-of-day updates
   useEffect(() => {
@@ -433,27 +430,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     }
   }, [rawTimeOfDay]);
 
-  // After TilesShadowWrapper is applied, we need to re-apply white materials
-  useEffect(() => {
-    if (
-      tilesLoaded &&
-      tilesRendererServiceRef.current &&
-      !shadowWrapperAppliedRef.current
-    ) {
-      console.log("Shadow wrapper applied, forcing material update");
-
-      // Mark as applied to prevent multiple updates
-      shadowWrapperAppliedRef.current = true;
-
-      // Wait a short time for the shadow wrapper to complete
-      setTimeout(() => {
-        if (tilesRendererServiceRef.current) {
-          tilesRendererServiceRef.current.forceUpdateMaterials();
-        }
-      }, 1000);
-    }
-  }, [tilesLoaded]);
-
   // The render loop
   useFrame(({ clock }) => {
     // Update tiles renderer
@@ -464,7 +440,14 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     // Update CSM with time and wobble
     if (csmControllerRef.current) {
       const timeOfDay = new Date(rawTimeOfDay);
-      csmControllerRef.current.update(timeOfDay, clock.getElapsedTime());
+
+      // Only update with wobble effect every few frames in performance mode
+      if (
+        !performanceMode ||
+        Math.floor(clock.getElapsedTime() * 2) % 2 === 0
+      ) {
+        csmControllerRef.current.update(timeOfDay, clock.getElapsedTime());
+      }
     }
   });
 
@@ -475,14 +458,31 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
   return (
     <>
-      {/* Ambient light - reduced intensity for better shadow contrast */}
-      <ambientLight intensity={0.7} color={new THREE.Color(0xffffff)} />
+      {/* Ambient light - adjusted intensity based on performance mode */}
+      <ambientLight
+        intensity={performanceMode ? 0.3 : 0.2}
+        color={new THREE.Color(0xffffff)}
+      />
 
       {/* Add our shadow wrapper to make tiles receive shadows */}
-      {tilesLoaded && getCurrentTilesRenderer() && (
+      {tilesLoaded && getCurrentTilesRenderer() && !performanceMode && (
         <TilesShadowWrapper
           tilesGroup={getCurrentTilesRenderer()!.group}
           shadowOpacity={shadowOpacity}
+        />
+      )}
+
+      {/* Enhanced white material with shadow overlays */}
+      {tilesLoaded && getCurrentTilesRenderer() && (
+        <WhiteTilesMaterial
+          tilesGroup={getCurrentTilesRenderer()!.group}
+          shadowOpacity={shadowOpacity}
+          enabled={useWhiteMaterial}
+          brightness={0.8}
+          roughness={performanceMode ? 0.7 : 0.85}
+          shadowIntensity={0.5}
+          groundLevelY={groundHeight}
+          isDebug={false}
         />
       )}
 
@@ -494,14 +494,21 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         screenSpacePanning={false}
         maxPolarAngle={Math.PI / 2}
         minDistance={100}
-        maxDistance={500}
+        maxDistance={performanceMode ? 5000 : 1000000}
       />
 
-      {/* Shadow-receiving ground plane at a specific height */}
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 60, 0]}>
-        <planeGeometry args={[500, 500]} />
-        <shadowMaterial transparent opacity={0.8} color={0x000000} />
-      </mesh>
+      {/* Multi-layer ground replacement - optimized for performance */}
+      {/* <MultiLayerGround
+        baseColor="#ffffff"
+        groundSize={performanceMode ? 8000 : 10000}
+        basePosition={[0, groundHeight, 0]}
+        shadowOpacity={shadowOpacity}
+        baseOpacity={1.0}
+        enableGrid={!performanceMode} // Disable grid in performance mode
+        gridSize={1000}
+        gridDivisions={performanceMode ? 10 : 20}
+        layerCount={performanceMode ? 3 : 5}
+      /> */}
     </>
   );
 });

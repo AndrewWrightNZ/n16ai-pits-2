@@ -66,9 +66,14 @@ export class CameraPositioner {
   /**
    * Position camera at a specific location
    * @param location Location object with lat, lng, heading
+   * @param performanceMode Whether to use performance mode settings
    * @param viewingAltitude Optional altitude in meters (default: 200)
    */
-  positionCameraAtLocation(location: Location, viewingAltitude = 200): void {
+  positionCameraAtLocation(
+    location: Location,
+    performanceMode: boolean = false,
+    viewingAltitude: number = 200
+  ): void {
     if (!this.camera || !this.tilesRenderer || !this.orbitControls.current)
       return;
 
@@ -91,20 +96,20 @@ export class CameraPositioner {
     this.camera.lookAt(0, 0, 0);
     this.camera.up.set(0, 1, 0);
     this.camera.near = 1;
-    this.camera.far = 20000;
+    this.camera.far = performanceMode ? 10000 : 20000;
     this.camera.updateProjectionMatrix();
 
     // Configure orbit controls
     if (this.orbitControls.current) {
       this.orbitControls.current.target.set(0, 0, 0);
       this.orbitControls.current.minDistance = 50;
-      this.orbitControls.current.maxDistance = 1000;
+      this.orbitControls.current.maxDistance = performanceMode ? 800 : 1000;
       this.orbitControls.current.update();
     }
 
     // Update tile renderer error target
     if (this.tilesRenderer) {
-      this.tilesRenderer.errorTarget = 2;
+      this.tilesRenderer.errorTarget = performanceMode ? 4 : 2;
       this.tilesRenderer.update();
     }
 

@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import {
   MapSettingsState,
   useMapSettingsContext,
@@ -16,6 +17,7 @@ interface HookOperations {
   onSetLoadingProgress: (newProgress: number) => void;
 
   onSetTimeOfDay: (newTime: Date) => void;
+  onSetLightRef: (lightRef: THREE.DirectionalLight) => void;
 
   // Location
   onSetCurrentLocation: (newLocation: string) => void;
@@ -49,6 +51,7 @@ const useMapSettings = (): HookResponse => {
     timeOfDay,
     timeSpeed,
     formattedTime,
+    lightRef,
 
     // Locations
     currentLocation,
@@ -102,6 +105,10 @@ const useMapSettings = (): HookResponse => {
     updateInternalState({ timeOfDay: newTime, formattedTime });
   };
 
+  const onSetLightRef = (lightRef: THREE.DirectionalLight) => {
+    updateInternalState({ lightRef });
+  };
+
   return {
     data: {
       // View
@@ -115,6 +122,7 @@ const useMapSettings = (): HookResponse => {
       timeOfDay,
       timeSpeed,
       formattedTime,
+      lightRef,
 
       // Locations
       currentLocation,
@@ -133,6 +141,7 @@ const useMapSettings = (): HookResponse => {
       onSetIsOrbiting,
       onSetTimeSpeed,
       onSetTimeOfDay,
+      onSetLightRef,
 
       // Location
       onSetCurrentLocation,

@@ -14,6 +14,8 @@ export type ExtendedTilesRenderer = TilesRenderer & {
   getAttributions?: (arr: any[]) => void;
   rootTileSet?: any;
   displayCallback?: (tile: any, object: THREE.Object3D) => void;
+  errorTarget?: number;
+  maxDepth?: number;
 };
 
 // Event callbacks type definitions
@@ -36,9 +38,12 @@ export class TilesRendererService {
   private apiKey: string;
   private materialReplacementCount = 0;
   private materialOverrideInterval: any = null;
+  private performanceMode = false;
+  private lastCopyrightUpdateTime = 0;
+  private processedObjects = new Set<string>();
 
   // Flag to enable white material replacement
-  private useWhiteMaterial: boolean = true;
+  private useWhiteMaterial: boolean = false;
 
   // Callback handlers
   private onLoadError: LoadErrorCallback | null = null;
@@ -60,7 +65,7 @@ export class TilesRendererService {
     renderer: WebGLRenderer,
     scene: Scene,
     apiKey: string,
-    useWhiteMaterial: boolean = true
+    useWhiteMaterial: boolean = false
   ) {
     this.camera = camera;
     this.renderer = renderer;
@@ -72,6 +77,20 @@ export class TilesRendererService {
       "TilesRendererService initialized, useWhiteMaterial:",
       useWhiteMaterial
     );
+  }
+
+  /**
+   * Set performance mode
+   * @param isPerformanceMode Whether to use performance optimizations
+   */
+  setPerformanceMode(isPerformanceMode: boolean): void {
+    this.performanceMode = isPerformanceMode;
+
+    if (this.tilesRenderer) {
+      // Adjust error target based on performance mode
+      this.tilesRenderer.errorTarget = isPerformanceMode ? 1.0 : 0.5;
+      this.tilesRenderer.maxDepth = isPerformanceMode ? 30 : 50;
+    }
   }
 
   /**
@@ -114,10 +133,10 @@ export class TilesRendererService {
       })
     );
 
-    // Configure renderer settings
-    tilesRenderer.errorTarget = 0.25;
-    tilesRenderer.maxDepth = 50;
-    tilesRenderer.lruCache.minSize = 1000;
+    // Configure renderer settings based on performance mode
+    tilesRenderer.errorTarget = this.performanceMode ? 1.0 : 0.5;
+    tilesRenderer.maxDepth = this.performanceMode ? 30 : 50;
+    tilesRenderer.lruCache.minSize = 2000;
 
     // Set up the display callback to intercept tiles as they're created
     if (this.useWhiteMaterial) {
@@ -158,7 +177,9 @@ export class TilesRendererService {
       // Process all tiles again after load completes
       setTimeout(() => {
         console.log("Processing all tiles after load complete");
-        this.processExistingTiles(tilesRenderer.group);
+        if (this.useWhiteMaterial) {
+          this.processExistingTiles(tilesRenderer.group);
+        }
       }, 1000);
     });
 
@@ -191,7 +212,7 @@ export class TilesRendererService {
     console.log("Starting material override interval");
 
     this.materialOverrideInterval = setInterval(() => {
-      if (this.tilesRenderer) {
+      if (this.tilesRenderer && this.useWhiteMaterial) {
         this.processExistingTiles(this.tilesRenderer.group);
       }
     }, 2000); // Check every 2 seconds
@@ -243,12 +264,13 @@ export class TilesRendererService {
   private createWhiteMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      roughness: 0.7,
+      roughness: this.performanceMode ? 0.7 : 0.85,
       metalness: 0.0,
       flatShading: false,
       transparent: false,
       opacity: 1.0,
       side: THREE.DoubleSide,
+      shadowSide: THREE.DoubleSide, // Important for better shadow rendering
     });
   }
 
@@ -257,6 +279,9 @@ export class TilesRendererService {
    * @param tile The tile object to process
    */
   private replaceMaterialsWithWhite(tile: THREE.Object3D): void {
+    // Skip if this implementation isn't using white materials
+    if (!this.useWhiteMaterial) return;
+
     let replacedCount = 0;
 
     // Track this object as processed
@@ -461,8 +486,13 @@ export class TilesRendererService {
       this.onTileCount(this.tilesRenderer.group.children.length);
     }
 
-    // Get attributions if needed
-    if (this.onAttributions && this.tilesRenderer.getAttributions) {
+    // Throttle copyright updates to once every 10 seconds
+    const now = Date.now();
+    if (
+      this.onAttributions &&
+      this.tilesRenderer.getAttributions &&
+      now - this.lastCopyrightUpdateTime > 10000
+    ) {
       try {
         const attributionsArray: any[] = [];
         this.tilesRenderer.getAttributions(attributionsArray);
@@ -480,6 +510,7 @@ export class TilesRendererService {
         if (attributionsString) {
           this.onAttributions(attributionsString);
         }
+        this.lastCopyrightUpdateTime = now;
       } catch (e) {
         // Silently ignore attribution errors
       }
@@ -494,30 +525,61 @@ export class TilesRendererService {
 
     console.log("Setting up shadows for tiles");
 
-    let setupCount = 0;
-    this.tilesRenderer.group.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Allow meshes to cast and receive shadows
-        child.castShadow = true;
-        child.receiveShadow = true;
-        setupCount++;
+    // Create a set to track processed objects
+    this.processedObjects.clear();
 
-        if (child.material) {
-          const materials = Array.isArray(child.material)
-            ? child.material
-            : [child.material];
+    // Function to apply shadow settings with distance-based LOD
+    const applyShadowSettings = (object: THREE.Object3D) => {
+      // Skip if already processed
+      if (object.uuid && this.processedObjects.has(object.uuid)) {
+        return;
+      }
+
+      // Mark as processed
+      if (object.uuid) {
+        this.processedObjects.add(object.uuid);
+      }
+
+      if (object instanceof THREE.Mesh) {
+        // Apply distance-based LOD for shadow casting if camera is available
+        if (this.camera instanceof THREE.PerspectiveCamera) {
+          const distanceToCamera = this.camera.position.distanceTo(
+            object.position
+          );
+          const shadowCastDistance = this.performanceMode ? 300 : 500;
+
+          object.castShadow = distanceToCamera < shadowCastDistance;
+        } else {
+          object.castShadow = true;
+        }
+
+        // Always receive shadows
+        object.receiveShadow = true;
+
+        // Update materials
+        if (object.material) {
+          const materials = Array.isArray(object.material)
+            ? object.material
+            : [object.material];
 
           materials.forEach((material) => {
-            // Make sure materials update properly
             material.needsUpdate = true;
           });
         }
       }
-    });
 
-    console.log(`Setup shadows for ${setupCount} meshes`);
+      // Process children
+      if (object.children && object.children.length > 0) {
+        object.children.forEach((child) => applyShadowSettings(child));
+      }
+    };
 
-    // Force another material replacement after shadow setup
+    // Apply to all tiles
+    applyShadowSettings(this.tilesRenderer.group);
+
+    console.log(`Setup shadows for ${this.processedObjects.size} objects`);
+
+    // Force material update after shadow setup
     if (this.useWhiteMaterial) {
       this.forceUpdateMaterials();
     }
@@ -541,5 +603,3 @@ export class TilesRendererService {
     this.currentSessionId = "";
   }
 }
-
-export default TilesRendererService;
