@@ -13,6 +13,7 @@ export type ExtendedTilesRenderer = TilesRenderer & {
   setLatLonToYUp?: (lat: number, lon: number) => void;
   getAttributions?: (arr: any[]) => void;
   rootTileSet?: any;
+  displayCallback?: (tile: any, object: THREE.Object3D) => void;
 };
 
 // Event callbacks type definitions
@@ -33,6 +34,11 @@ export class TilesRendererService {
   private renderer: WebGLRenderer;
   private scene: Scene;
   private apiKey: string;
+  private materialReplacementCount = 0;
+  private materialOverrideInterval: any = null;
+
+  // Flag to enable white material replacement
+  private useWhiteMaterial: boolean = true;
 
   // Callback handlers
   private onLoadError: LoadErrorCallback | null = null;
@@ -47,17 +53,25 @@ export class TilesRendererService {
    * @param renderer WebGLRenderer instance
    * @param scene THREE.Scene instance
    * @param apiKey Google Maps API key
+   * @param useWhiteMaterial Whether to replace materials with plain white
    */
   constructor(
     camera: Camera,
     renderer: WebGLRenderer,
     scene: Scene,
-    apiKey: string
+    apiKey: string,
+    useWhiteMaterial: boolean = true
   ) {
     this.camera = camera;
     this.renderer = renderer;
     this.scene = scene;
     this.apiKey = apiKey;
+    this.useWhiteMaterial = useWhiteMaterial;
+
+    console.log(
+      "TilesRendererService initialized, useWhiteMaterial:",
+      useWhiteMaterial
+    );
   }
 
   /**
@@ -105,6 +119,17 @@ export class TilesRendererService {
     tilesRenderer.maxDepth = 50;
     tilesRenderer.lruCache.minSize = 1000;
 
+    // Set up the display callback to intercept tiles as they're created
+    if (this.useWhiteMaterial) {
+      console.log("Setting up display callback for white material replacement");
+
+      // This is the key - we intercept each object as it's about to be added to the scene
+      tilesRenderer.displayCallback = (_: any, object: THREE.Object3D) => {
+        this.replaceMaterialsWithWhite(object);
+        return object;
+      };
+    }
+
     // Configure URL preprocessing
     tilesRenderer.preprocessURL = this.preprocessURL.bind(this);
 
@@ -115,13 +140,26 @@ export class TilesRendererService {
       }
     });
 
+    tilesRenderer.addEventListener("load-tile", (ev: any) => {
+      if (this.useWhiteMaterial && ev.target) {
+        this.replaceMaterialsWithWhite(ev.target);
+      }
+    });
+
     tilesRenderer.addEventListener("load-tile-set", () => {
       if (tilesRenderer.rootTileSet && this.onLoadComplete) {
         this.onLoadComplete();
       }
+
       if (this.onTileCount) {
         this.onTileCount(tilesRenderer.group.children.length);
       }
+
+      // Process all tiles again after load completes
+      setTimeout(() => {
+        console.log("Processing all tiles after load complete");
+        this.processExistingTiles(tilesRenderer.group);
+      }, 1000);
     });
 
     // Configure the renderer
@@ -135,6 +173,28 @@ export class TilesRendererService {
 
     // Start checking load progress
     this.checkLoadProgress();
+
+    // Set up interval to continuously force white materials
+    if (this.useWhiteMaterial) {
+      this.startMaterialOverrideInterval();
+    }
+  }
+
+  /**
+   * Start an interval that continually checks for and overrides materials
+   */
+  private startMaterialOverrideInterval() {
+    if (this.materialOverrideInterval) {
+      clearInterval(this.materialOverrideInterval);
+    }
+
+    console.log("Starting material override interval");
+
+    this.materialOverrideInterval = setInterval(() => {
+      if (this.tilesRenderer) {
+        this.processExistingTiles(this.tilesRenderer.group);
+      }
+    }, 2000); // Check every 2 seconds
   }
 
   /**
@@ -177,6 +237,147 @@ export class TilesRendererService {
   }
 
   /**
+   * Create a white standard material
+   * @returns A new white MeshStandardMaterial
+   */
+  private createWhiteMaterial(): THREE.MeshStandardMaterial {
+    return new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.7,
+      metalness: 0.0,
+      flatShading: false,
+      transparent: false,
+      opacity: 1.0,
+      side: THREE.DoubleSide,
+    });
+  }
+
+  /**
+   * Replace materials in a tile with white material
+   * @param tile The tile object to process
+   */
+  private replaceMaterialsWithWhite(tile: THREE.Object3D): void {
+    let replacedCount = 0;
+
+    // Track this object as processed
+    if (!tile.userData.whiteMatApplied) {
+      // Traverse the tile hierarchy
+      tile.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          // Configure for shadows
+          child.castShadow = true;
+          child.receiveShadow = true;
+
+          // Replace materials with white material
+          if (child.material && !child.userData.whiteMatApplied) {
+            // Debug original material
+            if (replacedCount === 0) {
+              console.log("Sample original material:", child.material);
+            }
+
+            if (Array.isArray(child.material)) {
+              // For meshes with multiple materials, create a new array of materials
+              const newMaterials = child.material.map(() => {
+                replacedCount++;
+                return this.createWhiteMaterial();
+              });
+              child.material = newMaterials;
+            } else {
+              // For single material meshes, replace with a new material
+              child.material = this.createWhiteMaterial();
+              replacedCount++;
+            }
+
+            // Force material update
+            if (!Array.isArray(child.material)) {
+              child.material.needsUpdate = true;
+            }
+
+            // Mark as processed
+            child.userData.whiteMatApplied = true;
+          }
+        }
+      });
+
+      // Mark the parent as processed
+      tile.userData.whiteMatApplied = true;
+    }
+
+    // Update total count and log
+    if (replacedCount > 0) {
+      this.materialReplacementCount += replacedCount;
+      console.log(
+        `Replaced ${replacedCount} materials in tile, total: ${this.materialReplacementCount}`
+      );
+    }
+  }
+
+  /**
+   * Process all existing tiles in the group
+   * @param group The group containing tiles
+   */
+  private processExistingTiles(group: THREE.Object3D): void {
+    // Don't log every time during interval
+    const shouldLog = !this.materialOverrideInterval || Math.random() < 0.1;
+
+    if (shouldLog) {
+      console.log(
+        "Processing existing tiles, children count:",
+        group.children.length
+      );
+    }
+
+    let processedCount = 0;
+
+    group.traverse((child) => {
+      if (child instanceof THREE.Object3D && child !== group) {
+        if (!child.userData.whiteMatApplied) {
+          this.replaceMaterialsWithWhite(child);
+          processedCount++;
+        }
+      }
+    });
+
+    if (shouldLog && processedCount > 0) {
+      console.log(`Processed ${processedCount} objects in the tiles group`);
+    }
+  }
+
+  /**
+   * Force material update on all objects
+   * Call this method after TilesShadowWrapper is used
+   */
+  public forceUpdateMaterials(): void {
+    if (!this.tilesRenderer) return;
+
+    console.log("Forcing update of all materials");
+
+    // If white material is enabled, re-process all tiles
+    if (this.useWhiteMaterial) {
+      // Reset the processed flags to force reprocessing
+      this.tilesRenderer.group.traverse((obj) => {
+        if (obj.userData) {
+          obj.userData.whiteMatApplied = false;
+        }
+      });
+
+      this.processExistingTiles(this.tilesRenderer.group);
+    }
+  }
+
+  /**
+   * Force white material on a specific object
+   * Can be called directly for debugging
+   */
+  public forceWhiteMaterialOnObject(object: THREE.Object3D): void {
+    if (!this.useWhiteMaterial) return;
+
+    console.log("Forcing white material on specific object");
+    object.userData.whiteMatApplied = false;
+    this.replaceMaterialsWithWhite(object);
+  }
+
+  /**
    * Check loading progress periodically
    */
   private checkLoadProgress(): void {
@@ -214,6 +415,37 @@ export class TilesRendererService {
       lat * THREE.MathUtils.DEG2RAD,
       lon * THREE.MathUtils.DEG2RAD
     );
+  }
+
+  /**
+   * Toggle the use of white material
+   * @param useWhite Whether to use white material
+   */
+  setUseWhiteMaterial(useWhite: boolean): void {
+    if (this.useWhiteMaterial === useWhite) return;
+
+    this.useWhiteMaterial = useWhite;
+    console.log("White material mode set to:", useWhite);
+
+    // Update existing tiles if the tilesRenderer exists
+    if (this.tilesRenderer && this.useWhiteMaterial) {
+      // Reset processed flags
+      this.tilesRenderer.group.traverse((obj) => {
+        if (obj.userData) {
+          obj.userData.whiteMatApplied = false;
+        }
+      });
+
+      this.processExistingTiles(this.tilesRenderer.group);
+
+      // Start or stop the interval
+      if (useWhite) {
+        this.startMaterialOverrideInterval();
+      } else if (this.materialOverrideInterval) {
+        clearInterval(this.materialOverrideInterval);
+        this.materialOverrideInterval = null;
+      }
+    }
   }
 
   /**
@@ -260,14 +492,15 @@ export class TilesRendererService {
   setupShadowsForTiles(): void {
     if (!this.tilesRenderer) return;
 
-    // Track processed materials to avoid duplicates
-    const processedMaterials = new Set();
+    console.log("Setting up shadows for tiles");
 
+    let setupCount = 0;
     this.tilesRenderer.group.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        // Allow meshes to cast shadows only
+        // Allow meshes to cast and receive shadows
         child.castShadow = true;
         child.receiveShadow = true;
+        setupCount++;
 
         if (child.material) {
           const materials = Array.isArray(child.material)
@@ -275,28 +508,30 @@ export class TilesRendererService {
             : [child.material];
 
           materials.forEach((material) => {
-            // Skip already processed materials
-            if (material.uuid && processedMaterials.has(material.uuid)) {
-              return;
-            }
-
-            // Mark as processed
-            if (material.uuid) {
-              processedMaterials.add(material.uuid);
-            }
-
-            // Just make sure materials update properly
+            // Make sure materials update properly
             material.needsUpdate = true;
           });
         }
       }
     });
+
+    console.log(`Setup shadows for ${setupCount} meshes`);
+
+    // Force another material replacement after shadow setup
+    if (this.useWhiteMaterial) {
+      this.forceUpdateMaterials();
+    }
   }
 
   /**
    * Dispose of TilesRenderer resources
    */
   dispose(): void {
+    if (this.materialOverrideInterval) {
+      clearInterval(this.materialOverrideInterval);
+      this.materialOverrideInterval = null;
+    }
+
     if (!this.tilesRenderer) return;
 
     this.scene.remove(this.tilesRenderer.group);

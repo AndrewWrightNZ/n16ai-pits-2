@@ -1,4 +1,10 @@
-import { useRef, useEffect, useState } from "react";
+import {
+  useRef,
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "@react-three/drei";
@@ -23,13 +29,148 @@ import CameraPositioner from "../services/cameraPositionerService";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-export default function TilesScene() {
+// Define a type for the ref
+export interface TilesSceneRef {
+  getTilesService: () => TilesRendererService | null;
+}
+
+// Create a separate component for the Debug UI that sits outside the Canvas
+export function TilesDebugUI({ tilesService }: any) {
+  const [lastDebugAction, setLastDebugAction] = useState("");
+
+  // Debug functions
+  const forceWhiteMaterials = () => {
+    if (tilesService.current) {
+      tilesService.current.forceUpdateMaterials();
+      setLastDebugAction("Forced white materials");
+    }
+  };
+
+  const logTiles = () => {
+    if (tilesService.current) {
+      const tilesRenderer = tilesService.current.getTilesRenderer();
+      if (tilesRenderer) {
+        console.log("Tiles group:", tilesRenderer.group);
+        const childCount = tilesRenderer.group.children.length;
+        console.log(`Group has ${childCount} children`);
+        setLastDebugAction(`Logged ${childCount} tiles`);
+      }
+    }
+  };
+
+  const sceneInfo = () => {
+    if (!tilesService.current) return;
+
+    const tilesRenderer = tilesService.current.getTilesRenderer();
+    if (!tilesRenderer || !tilesRenderer.group) return;
+
+    console.log("Tiles group:", tilesRenderer.group);
+    let meshCount = 0;
+    let materialCount = 0;
+    let whiteMatCount = 0;
+
+    tilesRenderer.group.traverse((obj: any) => {
+      if (obj instanceof THREE.Mesh) {
+        meshCount++;
+
+        const materials = Array.isArray(obj.material)
+          ? obj.material
+          : [obj.material];
+
+        materialCount += materials.length;
+
+        materials.forEach((mat) => {
+          if (
+            mat instanceof THREE.MeshStandardMaterial &&
+            mat.color &&
+            mat.color.r > 0.95 &&
+            mat.color.g > 0.95 &&
+            mat.color.b > 0.95
+          ) {
+            whiteMatCount++;
+          }
+        });
+      }
+    });
+
+    console.log(
+      `Tiles have ${meshCount} meshes, ${materialCount} materials, ${whiteMatCount} white materials`
+    );
+    setLastDebugAction(`Counted ${whiteMatCount} white materials`);
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 10,
+        left: 10,
+        zIndex: 1000,
+        backgroundColor: "rgba(0,0,0,0.7)",
+        padding: "10px",
+        borderRadius: "5px",
+        color: "white",
+        fontFamily: "monospace",
+        fontSize: "12px",
+      }}
+    >
+      <div>Last Action: {lastDebugAction || "None"}</div>
+      <div style={{ display: "flex", gap: "5px", marginTop: "5px" }}>
+        <button
+          onClick={forceWhiteMaterials}
+          style={{
+            padding: "5px",
+            backgroundColor: "#444",
+            border: "none",
+            color: "white",
+            borderRadius: "3px",
+          }}
+        >
+          Force White
+        </button>
+        <button
+          onClick={logTiles}
+          style={{
+            padding: "5px",
+            backgroundColor: "#444",
+            border: "none",
+            color: "white",
+            borderRadius: "3px",
+          }}
+        >
+          Log Tiles
+        </button>
+        <button
+          onClick={sceneInfo}
+          style={{
+            padding: "5px",
+            backgroundColor: "#444",
+            border: "none",
+            color: "white",
+            borderRadius: "3px",
+          }}
+        >
+          Count Materials
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Main scene component
+const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
   // Refs for service instances
   const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
   const csmControllerRef = useRef<CSMController | null>(null);
   const cameraPositionerRef = useRef<CameraPositioner | null>(null);
   const shadowsManagerRef = useRef<ShadowsManager | null>(null);
   const orbitControlsRef = useRef<any>(null);
+  const shadowWrapperAppliedRef = useRef<boolean>(false);
+
+  // Expose the TilesRendererService via ref
+  useImperativeHandle(ref, () => ({
+    getTilesService: () => tilesRendererServiceRef.current,
+  }));
 
   // State
   const [tilesLoaded, setTilesLoaded] = useState(false);
@@ -59,6 +200,78 @@ export default function TilesScene() {
 
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
+
+  // Debug function to add to window
+  useEffect(() => {
+    // Add debug functions to window for console access
+    if (typeof window !== "undefined") {
+      (window as any).debugTiles = {
+        forceWhiteMaterials: () => {
+          if (tilesRendererServiceRef.current) {
+            tilesRendererServiceRef.current.forceUpdateMaterials();
+          }
+        },
+        logTiles: () => {
+          if (tilesRendererServiceRef.current) {
+            const tilesRenderer =
+              tilesRendererServiceRef.current.getTilesRenderer();
+            if (tilesRenderer) {
+              console.log("Tiles group:", tilesRenderer.group);
+              console.log(
+                `Group has ${tilesRenderer.group.children.length} children`
+              );
+            }
+          }
+        },
+        sceneInfo: () => {
+          if (tilesRendererServiceRef.current) {
+            const tilesRenderer =
+              tilesRendererServiceRef.current.getTilesRenderer();
+            if (tilesRenderer && tilesRenderer.group) {
+              let meshCount = 0;
+              let materialCount = 0;
+              let whiteMatCount = 0;
+
+              tilesRenderer.group.traverse((obj) => {
+                if (obj instanceof THREE.Mesh) {
+                  meshCount++;
+
+                  const materials = Array.isArray(obj.material)
+                    ? obj.material
+                    : [obj.material];
+
+                  materialCount += materials.length;
+
+                  materials.forEach((mat) => {
+                    if (
+                      mat instanceof THREE.MeshStandardMaterial &&
+                      mat.color &&
+                      mat.color.r > 0.95 &&
+                      mat.color.g > 0.95 &&
+                      mat.color.b > 0.95
+                    ) {
+                      whiteMatCount++;
+                    }
+                  });
+                }
+              });
+
+              console.log(
+                `Scene has ${meshCount} meshes, ${materialCount} materials, ${whiteMatCount} white materials`
+              );
+            }
+          }
+        },
+      };
+    }
+
+    return () => {
+      // Remove debug functions
+      if (typeof window !== "undefined") {
+        (window as any).debugTiles = undefined;
+      }
+    };
+  }, []);
 
   // Initialize shadow manager
   useEffect(() => {
@@ -107,13 +320,17 @@ export default function TilesScene() {
     onSetIsLoading(true);
     onSetError(null);
     setTilesLoaded(false);
+    shadowWrapperAppliedRef.current = false;
 
-    // Create TilesRendererService
+    console.log("Initializing TilesRendererService with white materials");
+
+    // Create TilesRendererService - explicitly use white material
     const tilesRendererService = new TilesRendererService(
       camera,
       renderer,
       scene,
-      API_KEY
+      API_KEY,
+      true // Force white material
     );
 
     // Set callbacks
@@ -125,6 +342,9 @@ export default function TilesScene() {
         onSetIsLoading(false);
         setTilesLoaded(true);
 
+        // Log completion
+        console.log("Tiles loading complete, setting up shadows");
+
         // Setup shadows once tiles are loaded
         tilesRendererService.setupShadowsForTiles();
 
@@ -133,6 +353,17 @@ export default function TilesScene() {
         if (tilesRenderer) {
           onSetTileCount(tilesRenderer.group.children.length);
         }
+
+        // Force material update after a short delay
+        setTimeout(() => {
+          tilesRendererService.forceUpdateMaterials();
+        }, 500);
+
+        // And again after shadow wrapper may have been applied
+        setTimeout(() => {
+          console.log("Second forced update for materials");
+          tilesRendererService.forceUpdateMaterials();
+        }, 2000);
       },
       onAttributions: (attributions) => onSetCopyrightInfo(attributions),
       onTileCount: (count) => onSetTileCount(count),
@@ -202,6 +433,27 @@ export default function TilesScene() {
     }
   }, [rawTimeOfDay]);
 
+  // After TilesShadowWrapper is applied, we need to re-apply white materials
+  useEffect(() => {
+    if (
+      tilesLoaded &&
+      tilesRendererServiceRef.current &&
+      !shadowWrapperAppliedRef.current
+    ) {
+      console.log("Shadow wrapper applied, forcing material update");
+
+      // Mark as applied to prevent multiple updates
+      shadowWrapperAppliedRef.current = true;
+
+      // Wait a short time for the shadow wrapper to complete
+      setTimeout(() => {
+        if (tilesRendererServiceRef.current) {
+          tilesRendererServiceRef.current.forceUpdateMaterials();
+        }
+      }, 1000);
+    }
+  }, [tilesLoaded]);
+
   // The render loop
   useFrame(({ clock }) => {
     // Update tiles renderer
@@ -252,4 +504,6 @@ export default function TilesScene() {
       </mesh>
     </>
   );
-}
+});
+
+export default TilesScene;

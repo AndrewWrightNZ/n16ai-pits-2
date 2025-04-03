@@ -9,7 +9,7 @@ interface TilesShadowWrapperProps {
 
 /**
  * Component that enables shadows for Google 3D Tiles
- * This version preserves original materials while allowing shadow visualization
+ * This version works with both white materials and original materials
  */
 export default function TilesShadowWrapper({
   tilesGroup,
@@ -31,6 +31,10 @@ export default function TilesShadowWrapper({
     processedMeshesRef.current.clear();
 
     if (!tilesGroup) return;
+
+    console.log(
+      "TilesShadowWrapper: Setting up shadow planes for new tiles group"
+    );
 
     // Create a new group for shadow receivers
     const shadowGroup = new THREE.Group();
@@ -89,9 +93,11 @@ export default function TilesShadowWrapper({
 
     addElevatedPlanes();
 
-    // This function only enables shadow casting on meshes but preserves original materials
+    // This function enables shadow casting on meshes
     const enableShadowCasting = () => {
       if (!tilesGroup) return;
+
+      let processedCount = 0;
 
       try {
         tilesGroup.traverse((object) => {
@@ -103,15 +109,36 @@ export default function TilesShadowWrapper({
           if (object instanceof THREE.Mesh) {
             // Mark as processed
             processedMeshesRef.current.add(object.uuid);
+            processedCount++;
 
-            // IMPORTANT: Only enable shadow casting, don't modify materials
+            // IMPORTANT: Enable shadow casting for all meshes
             object.castShadow = true;
 
-            // Do NOT make original tiles receive shadows
-            object.receiveShadow = false;
+            // Determine if this is a white material that we've set up
+            const isWhiteMaterial =
+              object.material &&
+              !Array.isArray(object.material) &&
+              object.material instanceof THREE.MeshStandardMaterial &&
+              object.material.color &&
+              object.material.color.r > 0.95 &&
+              object.material.color.g > 0.95 &&
+              object.material.color.b > 0.95;
 
-            // For materials that don't respond to shadows, just ensure they're visible
-            // but don't convert them
+            // For white materials, we also want them to receive shadows
+            if (isWhiteMaterial) {
+              object.receiveShadow = true;
+
+              // Make sure shadow properties update
+              if (!Array.isArray(object.material)) {
+                object.material.needsUpdate = true;
+              }
+            } else {
+              // For non-white materials (original photorealistic materials),
+              // don't make them receive shadows as they may look odd
+              object.receiveShadow = false;
+            }
+
+            // For all materials, ensure they cast shadows properly
             if (object.material) {
               const materials = Array.isArray(object.material)
                 ? object.material
@@ -120,25 +147,26 @@ export default function TilesShadowWrapper({
               materials.forEach((material) => {
                 // Ensure visibility - but don't change the material type
                 if (material) {
-                  // If it's a MeshBasicMaterial, just ensure it's visible
-                  if (material instanceof THREE.MeshBasicMaterial) {
-                    // Only ensure it has proper transparency settings if needed
-                    if (material.transparent) {
-                      material.needsUpdate = true;
-                    }
-                  }
+                  // Force material update
+                  material.needsUpdate = true;
                 }
               });
             }
           }
         });
 
+        if (processedCount > 0) {
+          console.log(
+            `TilesShadowWrapper: Processed ${processedCount} new meshes for shadows`
+          );
+        }
+
         // Schedule another check for new objects less frequently
         if (processingTimeoutRef.current) {
           clearTimeout(processingTimeoutRef.current);
         }
 
-        processingTimeoutRef.current = setTimeout(enableShadowCasting, 10000);
+        processingTimeoutRef.current = setTimeout(enableShadowCasting, 5000);
       } catch (error) {
         console.error("Error in shadow processing:", error);
       }
@@ -162,6 +190,23 @@ export default function TilesShadowWrapper({
       processedMeshesRef.current.clear();
     };
   }, [tilesGroup, scene, shadowOpacity]);
+
+  // Update shadow opacity on change
+  useEffect(() => {
+    if (!shadowGroupRef.current) return;
+
+    shadowGroupRef.current.traverse((obj) => {
+      if (
+        obj instanceof THREE.Mesh &&
+        obj.material instanceof THREE.ShadowMaterial
+      ) {
+        obj.material.opacity = obj.name.includes("elevated")
+          ? shadowOpacity * 0.8
+          : shadowOpacity;
+        obj.material.needsUpdate = true;
+      }
+    });
+  }, [shadowOpacity]);
 
   return null;
 }

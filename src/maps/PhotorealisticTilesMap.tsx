@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   EffectComposer,
   Vignette,
@@ -8,7 +8,10 @@ import {
 import { Canvas } from "@react-three/fiber";
 
 // Components
-import TilesScene from "./_shared/components/TilesScene";
+import TilesScene, {
+  TilesSceneRef,
+  TilesDebugUI,
+} from "./_shared/components/TilesScene";
 import ControlsPanel from "./_shared/components/ControlsPanel";
 
 // Hooks
@@ -16,7 +19,8 @@ import useMapSettings from "./_shared/hooks/useMapSettings";
 import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 
 export default function PhotorealisticTilesMap() {
-  //
+  // Ref to access TilesRendererService
+  const tilesSceneRef = useRef<TilesSceneRef>(null);
 
   // Hooks
   const {
@@ -77,8 +81,8 @@ export default function PhotorealisticTilesMap() {
             gl.shadowMap.type = THREE.PCFSoftShadowMap;
           }}
         >
-          {/* TilesScene with integrated CSM */}
-          <TilesScene />
+          {/* TilesScene with integrated CSM - now with ref forwarding */}
+          <TilesScene ref={tilesSceneRef} />
 
           <EffectComposer>
             <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
@@ -88,6 +92,9 @@ export default function PhotorealisticTilesMap() {
 
         {/* Controls panel (pick times, location, etc.) */}
         <ControlsPanel onSetSpecificTime={setSpecificTime} />
+
+        {/* Debug UI for white material control - only in development */}
+        {true && <TilesDebugUI tilesService={tilesSceneRef} />}
 
         {/* Loading overlay */}
         {isLoading && (
