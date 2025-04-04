@@ -38,7 +38,6 @@ export class TilesRendererService {
   private apiKey: string;
   private materialReplacementCount = 0;
   private materialOverrideInterval: any = null;
-  private performanceMode = false;
   private lastCopyrightUpdateTime = 0;
   private processedObjects = new Set<string>();
 
@@ -77,20 +76,6 @@ export class TilesRendererService {
       "TilesRendererService initialized, useWhiteMaterial:",
       useWhiteMaterial
     );
-  }
-
-  /**
-   * Set performance mode
-   * @param isPerformanceMode Whether to use performance optimizations
-   */
-  setPerformanceMode(isPerformanceMode: boolean): void {
-    this.performanceMode = isPerformanceMode;
-
-    if (this.tilesRenderer) {
-      // Adjust error target based on performance mode
-      this.tilesRenderer.errorTarget = isPerformanceMode ? 1.0 : 0.5;
-      this.tilesRenderer.maxDepth = isPerformanceMode ? 30 : 50;
-    }
   }
 
   /**
@@ -134,8 +119,8 @@ export class TilesRendererService {
     );
 
     // Configure renderer settings based on performance mode
-    tilesRenderer.errorTarget = this.performanceMode ? 1.0 : 0.5;
-    tilesRenderer.maxDepth = this.performanceMode ? 30 : 50;
+    tilesRenderer.errorTarget = 0.5;
+    tilesRenderer.maxDepth = 40; // AW NOTE: Big impact on fluffiness
     tilesRenderer.lruCache.minSize = 2000;
 
     // Set up the display callback to intercept tiles as they're created
@@ -264,7 +249,7 @@ export class TilesRendererService {
   private createWhiteMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      roughness: this.performanceMode ? 0.7 : 0.85,
+      roughness: true ? 0.7 : 0.85,
       metalness: 0.0,
       flatShading: false,
       transparent: false,
@@ -546,7 +531,7 @@ export class TilesRendererService {
           const distanceToCamera = this.camera.position.distanceTo(
             object.position
           );
-          const shadowCastDistance = this.performanceMode ? 300 : 500;
+          const shadowCastDistance = true ? 300 : 500;
 
           object.castShadow = distanceToCamera < shadowCastDistance;
         } else {

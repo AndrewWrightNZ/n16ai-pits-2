@@ -27,7 +27,6 @@ export class CSMController {
   private camera: PerspectiveCamera;
   private scene: Scene;
   private lastUpdateTime = 0;
-  private performanceMode = false;
 
   /**
    * Create a new CSM controller
@@ -37,14 +36,6 @@ export class CSMController {
   constructor(camera: PerspectiveCamera, scene: Scene) {
     this.camera = camera;
     this.scene = scene;
-  }
-
-  /**
-   * Set performance mode
-   * @param isPerformanceMode Whether to use performance optimizations
-   */
-  setPerformanceMode(isPerformanceMode: boolean): void {
-    this.performanceMode = isPerformanceMode;
   }
 
   /**
@@ -63,11 +54,11 @@ export class CSMController {
 
     // Default options with performance considerations
     const defaultOptions = {
-      cascades: this.performanceMode ? 2 : 3,
-      maxFar: this.performanceMode ? 5000 : 10000,
-      shadowMapSize: this.performanceMode ? 2048 : 4096,
+      cascades: 2,
+      maxFar: 5000,
+      shadowMapSize: 2048,
       lightIntensity: 2.0,
-      lightMargin: this.performanceMode ? 250 : 500,
+      lightMargin: 250,
       shadowBias: -0.0001,
       normalBias: 0.02,
     };
@@ -102,7 +93,7 @@ export class CSMController {
         light.shadow.camera.far = mergedOptions.maxFar;
         light.shadow.bias = -0.0003;
         light.shadow.normalBias = mergedOptions.normalBias;
-        light.shadow.radius = this.performanceMode ? 2 : 1; // Softer shadows in performance mode
+        light.shadow.radius = 1;
       });
     }
 
@@ -120,9 +111,11 @@ export class CSMController {
 
     // Throttle updates in performance mode
     const now = Date.now();
-    if (this.performanceMode && now - this.lastUpdateTime < 500) {
+
+    if (now - this.lastUpdateTime < 500) {
       return; // Only update every 500ms in performance mode
     }
+
     this.lastUpdateTime = now;
 
     // Calculate sun position based on time
@@ -141,7 +134,7 @@ export class CSMController {
     }
 
     // Add subtle wobble for realism if elapsedTime is provided
-    const wobbleFactor = this.performanceMode ? 0.0005 : 0.001;
+    const wobbleFactor = 0.001;
     const wobble = elapsedTime ? Math.sin(elapsedTime * 0.1) * wobbleFactor : 0;
 
     // Create direction vector
