@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useState, useContext, useEffect } from "react";
+import * as THREE from "three";
 
 // Data
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
@@ -17,6 +18,9 @@ export interface MapSettingsState {
   timeSpeed: number;
 
   formattedTime: string;
+
+  // Light reference
+  lightRef?: THREE.DirectionalLight;
 
   // Locations
   currentLocation: string;
@@ -64,7 +68,18 @@ export const MapSettingsProvider: React.FC<{
     // Try to load the state from localStorage on initial render
     if (typeof window !== "undefined") {
       const storedState = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return storedState ? JSON.parse(storedState) : defaultState;
+
+      if (storedState) {
+        // Parse stored state but omit the lightRef as it can't be serialized
+        const parsedState = JSON.parse(storedState);
+        // Remove any serialized lightRef property if somehow present
+        if ("lightRef" in parsedState) {
+          delete parsedState.lightRef;
+        }
+        return parsedState;
+      }
+
+      return defaultState;
     } else {
       return defaultState;
     }
@@ -73,7 +88,13 @@ export const MapSettingsProvider: React.FC<{
   useEffect(() => {
     // Save to localStorage whenever the state changes
     if (typeof window !== "undefined") {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localState));
+      // Clone state and remove lightRef before serializing
+      const stateToStore = { ...localState };
+      if ("lightRef" in stateToStore) {
+        delete stateToStore.lightRef;
+      }
+
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(stateToStore));
     }
   }, [localState]);
 

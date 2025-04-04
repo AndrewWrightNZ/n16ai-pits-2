@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Scene } from "three";
+import { PerspectiveCamera, Scene, Vector3 } from "three";
 
 // Shadows
 import { CSM } from "../csm";
@@ -7,12 +7,26 @@ import { CSM } from "../csm";
 import { SunPositionCalculator } from "../helpers/sunPositionCalculator";
 
 /**
+ * Configuration options for CSM initialization
+ */
+interface CSMOptions {
+  cascades?: number;
+  maxFar?: number;
+  shadowMapSize?: number;
+  lightIntensity?: number;
+  lightMargin?: number;
+  shadowBias?: number;
+  normalBias?: number;
+}
+
+/**
  * Controller for Cascade Shadow Maps (CSM) system
  */
 export class CSMController {
   private csm: CSM | null = null;
   private camera: PerspectiveCamera;
   private scene: Scene;
+  private lastUpdateTime = 0;
 
   /**
    * Create a new CSM controller
@@ -27,9 +41,10 @@ export class CSMController {
   /**
    * Initialize or reinitialize the CSM system
    * @param timeOfDay Date object representing the time of day
+   * @param options Optional configuration options
    * @returns CSM instance
    */
-  initialize(timeOfDay: Date): CSM {
+  initialize(timeOfDay: Date, options?: CSMOptions): CSM {
     // Clean up existing CSM if any
     this.dispose();
 
@@ -37,20 +52,34 @@ export class CSMController {
     const lightDirection =
       SunPositionCalculator.getLightDirectionFromTime(timeOfDay);
 
+    // Default options with performance considerations
+    const defaultOptions = {
+      cascades: 2,
+      maxFar: 5000,
+      shadowMapSize: 2048,
+      lightIntensity: 2.0,
+      lightMargin: 250,
+      shadowBias: -0.0001,
+      normalBias: 0.02,
+    };
+
+    // Merge provided options with defaults
+    const mergedOptions = { ...defaultOptions, ...options };
+
     // Create a new CSM instance with proper config
     const csm = new CSM({
       camera: this.camera,
       parent: this.scene,
-      cascades: 3,
-      maxFar: 1000,
+      cascades: mergedOptions.cascades,
+      maxFar: mergedOptions.maxFar,
       mode: "practical",
-      shadowMapSize: 2048,
-      shadowBias: -0.0001,
+      shadowMapSize: mergedOptions.shadowMapSize,
+      shadowBias: mergedOptions.shadowBias,
       lightDirection: lightDirection,
-      lightIntensity: 2.0,
+      lightIntensity: mergedOptions.lightIntensity,
       lightNear: 1,
-      lightFar: 1000,
-      lightMargin: 100,
+      lightFar: mergedOptions.maxFar,
+      lightMargin: mergedOptions.lightMargin,
       fade: false,
     });
 
@@ -58,12 +87,12 @@ export class CSMController {
     if (csm.lights.length > 0) {
       csm.lights.forEach((light) => {
         light.castShadow = true;
-        light.shadow.mapSize.width = 2048;
-        light.shadow.mapSize.height = 2048;
+        light.shadow.mapSize.width = mergedOptions.shadowMapSize;
+        light.shadow.mapSize.height = mergedOptions.shadowMapSize;
         light.shadow.camera.near = 10;
-        light.shadow.camera.far = 2000;
+        light.shadow.camera.far = mergedOptions.maxFar;
         light.shadow.bias = -0.0003;
-        light.shadow.normalBias = 0.02;
+        light.shadow.normalBias = mergedOptions.normalBias;
         light.shadow.radius = 1;
       });
     }
@@ -80,14 +109,42 @@ export class CSMController {
   update(timeOfDay: Date, elapsedTime?: number): void {
     if (!this.csm) return;
 
-    // Add slight wobble for smoother transitions if elapsedTime is provided
-    const wobble = elapsedTime ? Math.sin(elapsedTime * 0.1) * 0.001 : 0;
+    // Throttle updates in performance mode
+    const now = Date.now();
+
+    if (now - this.lastUpdateTime < 500) {
+      return; // Only update every 500ms in performance mode
+    }
+
+    this.lastUpdateTime = now;
+
+    // Calculate sun position based on time
+    const hours = timeOfDay.getHours() + timeOfDay.getMinutes() / 60;
+    const sunriseHour = 6;
+    const sunsetHour = 20;
+    const dayLength = sunsetHour - sunriseHour;
+    let sunAngle = 0;
+
+    if (hours >= sunriseHour && hours <= sunsetHour) {
+      sunAngle = ((hours - sunriseHour) / dayLength) * Math.PI;
+    } else if (hours < sunriseHour) {
+      sunAngle = -0.2;
+    } else {
+      sunAngle = Math.PI + 0.2;
+    }
+
+    // Add subtle wobble for realism if elapsedTime is provided
+    const wobbleFactor = 0.001;
+    const wobble = elapsedTime ? Math.sin(elapsedTime * 0.1) * wobbleFactor : 0;
+
+    // Create direction vector
+    const lightDirection = new Vector3(
+      -Math.cos(sunAngle + wobble),
+      -Math.max(0.1, Math.sin(sunAngle + wobble)),
+      0.5
+    ).normalize();
 
     // Update the light direction
-    const lightDirection = SunPositionCalculator.getLightDirectionFromTime(
-      timeOfDay,
-      wobble
-    );
     this.csm.lightDirection = lightDirection;
 
     // Force a full update of all CSM components

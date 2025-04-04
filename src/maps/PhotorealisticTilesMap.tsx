@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   EffectComposer,
   Vignette,
@@ -8,7 +8,7 @@ import {
 import { Canvas } from "@react-three/fiber";
 
 // Components
-import TilesScene from "./_shared/components/TilesScene";
+import TilesScene, { TilesSceneRef } from "./_shared/components/TilesScene";
 import ControlsPanel from "./_shared/components/ControlsPanel";
 
 // Hooks
@@ -16,7 +16,8 @@ import useMapSettings from "./_shared/hooks/useMapSettings";
 import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
 
 export default function PhotorealisticTilesMap() {
-  //
+  // Ref to access TilesRendererService
+  const tilesSceneRef = useRef<TilesSceneRef>(null);
 
   // Hooks
   const {
@@ -61,28 +62,34 @@ export default function PhotorealisticTilesMap() {
 
   return (
     <div className="relative">
-      <div className="w-full h-[850px] relative overflow-hidden">
+      {/* Modified container size to be smaller and focus on center */}
+      <div className="w-full h-[850px] mx-auto relative overflow-hidden">
         <Canvas
           shadows
           camera={{
-            fov: 30, // Narrow field of view
+            fov: 25, // Narrower field of view to focus more on center
             near: 1,
-            far: 1000, // Reduced
-            position: [0, 1000, 0], // Lower height
+            far: 400, // Reduced far plane to focus on closer objects
+            position: [0, 800, 0], // Lower height for closer view
           }}
           onCreated={({ gl }) => {
             gl.setClearColor(new THREE.Color(skyColor));
             gl.setPixelRatio(window.devicePixelRatio);
             gl.shadowMap.enabled = true;
             gl.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            // Add a small zoom to focus on center
+            gl.domElement.style.transform = "scale(1.1)";
+            gl.domElement.style.transformOrigin = "center center";
           }}
         >
-          {/* TilesScene with integrated CSM */}
-          <TilesScene />
+          {/* TilesScene with integrated CSM - now with ref forwarding */}
+          <TilesScene ref={tilesSceneRef} />
 
           <EffectComposer>
-            <BrightnessContrast brightness={brightnessValue} contrast={0.1} />
-            <Vignette eskil={false} offset={0.1} darkness={vignetteDarkness} />
+            <BrightnessContrast brightness={brightnessValue} contrast={0.15} />
+            {/* Slight contrast increase */}
+            <Vignette eskil={false} offset={0.15} darkness={vignetteDarkness} />
           </EffectComposer>
         </Canvas>
 
