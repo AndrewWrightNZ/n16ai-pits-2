@@ -7,7 +7,7 @@ import {
 } from "3d-tiles-renderer/plugins";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
-// Type for extended TilesRenderer with additional properties
+// Update your ExtendedTilesRenderer type definition to include properly typed statistics
 export type ExtendedTilesRenderer = TilesRenderer & {
   loadProgress?: number;
   setLatLonToYUp?: (lat: number, lon: number) => void;
@@ -22,10 +22,21 @@ export type ExtendedTilesRenderer = TilesRenderer & {
   loadSiblings?: boolean;
   skipLevelOfDetail?: boolean;
   optimizeVisibility?: boolean;
-  enableDebugVisual?: boolean; // For debugging which tiles are being loaded
-  traversalCallback?: (tile: any, depth: number, isSeen: boolean) => number; // For prioritizing tiles
-  maximumMemoryUsage?: number; // Memory limit in bytes
-  maxConcurrentRequests?: number; // Maximum number of concurrent requests
+  enableDebugVisual?: boolean;
+  traversalCallback?: (tile: any, depth: number, isSeen: boolean) => number;
+  maximumMemoryUsage?: number;
+  maxConcurrentRequests?: number;
+  statistics?: {
+    memoryUsage?: number;
+    geometryCount?: number;
+    textureCount?: number;
+    tilesToProcess?: number;
+    tilesProcessed?: number;
+    tilesLoaded?: number;
+    averageTimings?: Record<string, number>;
+    [key: string]: any; // Allow for additional statistics properties
+  };
+  memoryUsed?: number; // Alternative property used in some versions
 };
 
 // Event callbacks type definitions
@@ -127,6 +138,90 @@ export class TilesRendererService {
     if (onLoadComplete) this.onLoadComplete = onLoadComplete;
     if (onAttributions) this.onAttributions = onAttributions;
     if (onTileCount) this.onTileCount = onTileCount;
+  }
+
+  // Add this method to your TilesRendererService class
+
+  /**
+   * Gets the memory usage statistics from the tiles renderer
+   * @returns Memory usage in bytes or undefined if not available
+   */
+  public getMemoryUsage(): number | undefined {
+    if (!this.tilesRenderer) return undefined;
+
+    // Try to access memory usage from statistics
+    if ("statistics" in this.tilesRenderer && this.tilesRenderer.statistics) {
+      if ("memoryUsage" in this.tilesRenderer.statistics) {
+        return this.tilesRenderer.statistics.memoryUsage;
+      }
+    }
+
+    // Alternative approach: if maximumMemoryUsage and memoryUsed are available properties
+    if (
+      "maximumMemoryUsage" in this.tilesRenderer &&
+      "memoryUsed" in this.tilesRenderer
+    ) {
+      return this.tilesRenderer.memoryUsed;
+    }
+
+    // If both approaches fail, try to use the three.js estimated memory usage
+    let totalGeometryMemory = 0;
+    let totalTextureMemory = 0;
+
+    this.tilesRenderer.group.traverse((node) => {
+      // Type check: only process nodes that are Meshes
+      if (node instanceof THREE.Mesh) {
+        if (node.geometry) {
+          // Estimate geometry memory
+          const geometry = node.geometry;
+          if (geometry.index) {
+            totalGeometryMemory += geometry.index.array.byteLength;
+          }
+
+          for (const attribute in geometry.attributes) {
+            if (geometry.attributes[attribute].array) {
+              totalGeometryMemory +=
+                geometry.attributes[attribute].array.byteLength;
+            }
+          }
+        }
+
+        if (node.material) {
+          // Handle both single material and material array
+          const materials = Array.isArray(node.material)
+            ? node.material
+            : [node.material];
+
+          materials.forEach((material) => {
+            if (material.map) {
+              totalTextureMemory += this.estimateTextureMemory(material.map);
+            }
+            if (material.normalMap) {
+              totalTextureMemory += this.estimateTextureMemory(
+                material.normalMap
+              );
+            }
+          });
+        }
+      }
+    });
+
+    return totalGeometryMemory + totalTextureMemory;
+  }
+
+  /**
+   * Estimates the memory used by a texture
+   * @param texture The texture to estimate memory for
+   * @returns Estimated memory in bytes
+   */
+  private estimateTextureMemory(texture: THREE.Texture): number {
+    if (!texture || !texture.image) return 0;
+
+    const { width, height } = texture.image;
+    // Estimate bytes per pixel (RGBA = 4 bytes per pixel)
+    const bytesPerPixel = 4;
+
+    return width * height * bytesPerPixel;
   }
 
   /**

@@ -27,6 +27,7 @@ import useMapSettings from "../hooks/useMapSettings";
 import ShadowsManager from "../services/shadowManager";
 import CSMController from "../controllers/csmController";
 import CameraPositioner from "../services/cameraPositionerService";
+import { memoryManager } from "../services/MemoryManagementService";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -420,6 +421,14 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
         // Reset retry counter after successful load
         tileLoadRetryCountRef.current = 0;
+
+        if (tilesRenderer) {
+          memoryManager.initialize(tilesRenderer, camera);
+        } else {
+          console.warn(
+            "Cannot initialize memory manager: tiles renderer is null"
+          );
+        }
       },
       onAttributions: (attributions) => onSetCopyrightInfo(attributions),
       onTileCount: (count) => {
