@@ -11,7 +11,6 @@ interface WhiteTilesMaterialProps {
   isDebug?: boolean;
   // New props for shadow enhancement
   shadowIntensity?: number;
-  groundLevelY?: number;
 }
 
 export default function WhiteTilesMaterial({
@@ -22,7 +21,6 @@ export default function WhiteTilesMaterial({
   roughness = 0.8,
   isDebug = false,
   shadowIntensity = 0.8,
-  groundLevelY = 60,
 }: WhiteTilesMaterialProps) {
   const originalMaterials = useRef<
     Map<string, THREE.Material | THREE.Material[]>
@@ -276,7 +274,7 @@ export default function WhiteTilesMaterial({
         removeShadowOverlays(tilesGroup);
       }
     };
-  }, [tilesGroup, isActive, groundLevelY]);
+  }, [tilesGroup, isActive]);
 
   // Update shadow overlay opacity when shadowOpacity changes
   useEffect(() => {
