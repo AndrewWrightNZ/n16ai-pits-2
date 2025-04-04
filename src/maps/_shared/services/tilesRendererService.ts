@@ -120,7 +120,7 @@ export class TilesRendererService {
 
     // Configure renderer settings based on performance mode
     tilesRenderer.errorTarget = 0.5;
-    tilesRenderer.maxDepth = 40; // AW NOTE: Big impact on fluffiness
+    tilesRenderer.maxDepth = 60; // AW NOTE: Big impact on fluffiness
     tilesRenderer.lruCache.minSize = 2000;
 
     // Set up the display callback to intercept tiles as they're created

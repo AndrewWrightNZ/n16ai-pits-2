@@ -36,129 +36,6 @@ export interface TilesSceneRef {
   getTilesService: () => TilesRendererService | null;
 }
 
-// Create a separate component for the Debug UI that sits outside the Canvas
-export function TilesDebugUI({ tilesService }: any) {
-  const [lastDebugAction, setLastDebugAction] = useState("");
-
-  // Debug functions
-  const forceWhiteMaterials = () => {
-    if (tilesService.current) {
-      tilesService.current.forceUpdateMaterials();
-      setLastDebugAction("Forced white materials");
-    }
-  };
-
-  const logTiles = () => {
-    if (tilesService.current) {
-      const tilesRenderer = tilesService.current.getTilesRenderer();
-      if (tilesRenderer) {
-        console.log("Tiles group:", tilesRenderer.group);
-        const childCount = tilesRenderer.group.children.length;
-        console.log(`Group has ${childCount} children`);
-        setLastDebugAction(`Logged ${childCount} tiles`);
-      }
-    }
-  };
-
-  const sceneInfo = () => {
-    if (!tilesService.current) return;
-
-    const tilesRenderer = tilesService.current.getTilesRenderer();
-    if (!tilesRenderer || !tilesRenderer.group) return;
-
-    console.log("Tiles group:", tilesRenderer.group);
-    let meshCount = 0;
-    let materialCount = 0;
-    let whiteMatCount = 0;
-
-    tilesRenderer.group.traverse((obj: any) => {
-      if (obj instanceof THREE.Mesh) {
-        meshCount++;
-
-        const materials = Array.isArray(obj.material)
-          ? obj.material
-          : [obj.material];
-
-        materialCount += materials.length;
-
-        materials.forEach((mat) => {
-          if (
-            mat instanceof THREE.MeshStandardMaterial &&
-            mat.color &&
-            mat.color.r > 0.95 &&
-            mat.color.g > 0.95 &&
-            mat.color.b > 0.95
-          ) {
-            whiteMatCount++;
-          }
-        });
-      }
-    });
-
-    console.log(
-      `Tiles have ${meshCount} meshes, ${materialCount} materials, ${whiteMatCount} white materials`
-    );
-    setLastDebugAction(`Counted ${whiteMatCount} white materials`);
-  };
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        bottom: 10,
-        left: 10,
-        zIndex: 1000,
-        backgroundColor: "rgba(0,0,0,0.7)",
-        padding: "10px",
-        borderRadius: "5px",
-        color: "white",
-        fontFamily: "monospace",
-        fontSize: "12px",
-      }}
-    >
-      <div>Last Action: {lastDebugAction || "None"}</div>
-      <div style={{ display: "flex", gap: "5px", marginTop: "5px" }}>
-        <button
-          onClick={forceWhiteMaterials}
-          style={{
-            padding: "5px",
-            backgroundColor: "#444",
-            border: "none",
-            color: "white",
-            borderRadius: "3px",
-          }}
-        >
-          Force White
-        </button>
-        <button
-          onClick={logTiles}
-          style={{
-            padding: "5px",
-            backgroundColor: "#444",
-            border: "none",
-            color: "white",
-            borderRadius: "3px",
-          }}
-        >
-          Log Tiles
-        </button>
-        <button
-          onClick={sceneInfo}
-          style={{
-            padding: "5px",
-            backgroundColor: "#444",
-            border: "none",
-            color: "white",
-            borderRadius: "3px",
-          }}
-        >
-          Count Materials
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // Main scene component
 const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
   // Refs for service instances
@@ -433,6 +310,73 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     }
   });
 
+  // Inside the TilesScene component:
+
+  // Replace/update the useEffect where you define window.debugTiles
+  useEffect(() => {
+    // Add debug functions to window for console access
+    if (typeof window !== "undefined") {
+      (window as any).debugTiles = {
+        forceWhiteMaterials: () => {
+          if (tilesRendererServiceRef.current) {
+            tilesRendererServiceRef.current.forceUpdateMaterials();
+          }
+        },
+        logTiles: () => {
+          if (tilesRendererServiceRef.current) {
+            const tilesRenderer =
+              tilesRendererServiceRef.current.getTilesRenderer();
+            if (tilesRenderer) {
+              console.log("Tiles group:", tilesRenderer.group);
+              console.log(
+                `Group has ${tilesRenderer.group.children.length} children`
+              );
+            }
+          }
+        },
+        toggleWhiteMaterial: () => {
+          setUseWhiteMaterial(!useWhiteMaterial);
+        },
+
+        // Add the camera position logging function
+        logCameraPosition: () => {
+          if (cameraPositionerRef.current) {
+            cameraPositionerRef.current.logCurrentPosition();
+          } else {
+            console.error("Camera positioner not available");
+          }
+        },
+      };
+    }
+
+    return () => {
+      // Remove debug functions
+      if (typeof window !== "undefined") {
+        (window as any).debugTiles = undefined;
+      }
+    };
+  }, [useWhiteMaterial]);
+
+  // Add this new useEffect for the keyboard shortcut (can be placed after your other useEffect hooks)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Use Ctrl+L or Command+L as shortcut
+      if ((event.ctrlKey || event.metaKey) && event.key === "l") {
+        event.preventDefault();
+        if (cameraPositionerRef.current) {
+          cameraPositionerRef.current.logCurrentPosition();
+          console.log("Camera position logged via keyboard shortcut (Ctrl+L)");
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [cameraPositionerRef.current]);
+
   // Get the current tiles renderer for JSX
   const getCurrentTilesRenderer = (): ExtendedTilesRenderer | null => {
     return tilesRendererServiceRef.current?.getTilesRenderer() || null;
@@ -458,8 +402,8 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
           shadowOpacity={shadowOpacity}
           enabled={useWhiteMaterial}
           brightness={0.8}
-          roughness={true ? 0.9 : 0.85}
-          shadowIntensity={0.5}
+          roughness={0.9}
+          shadowIntensity={0.8}
           groundLevelY={groundHeight}
           isDebug={false}
         />

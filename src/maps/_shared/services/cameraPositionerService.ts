@@ -65,11 +65,17 @@ export class CameraPositioner {
 
   /**
    * Position camera at a specific location
-   * @param location Location object with lat, lng, heading
+   * @param location Location object with lat, lng, heading and optional position/target properties
    * @param viewingAltitude Optional altitude in meters (default: 200)
    */
   positionCameraAtLocation(
-    location: Location,
+    location: Location & {
+      position?: { x: number; y: number; z: number };
+      target?: { x: number; y: number; z: number };
+      tilt?: number;
+      distance?: number;
+      altitude?: number;
+    },
     viewingAltitude: number = 200
   ): void {
     if (!this.camera || !this.tilesRenderer || !this.orbitControls.current)
@@ -83,15 +89,41 @@ export class CameraPositioner {
       );
     }
 
-    // Position camera relative to the origin
-    this.camera.position.set(
-      Math.sin(location.heading * THREE.MathUtils.DEG2RAD) * viewingAltitude,
-      viewingAltitude,
-      Math.cos(location.heading * THREE.MathUtils.DEG2RAD) * viewingAltitude
-    );
+    // If we have explicit position and target data, use those
+    if (location.position && location.target) {
+      // Set camera position directly
+      this.camera.position.set(
+        location.position.x,
+        location.position.y,
+        location.position.z
+      );
 
-    // Configure camera
-    this.camera.lookAt(0, 0, 0);
+      // Set orbit controls target
+      if (this.orbitControls.current) {
+        this.orbitControls.current.target.set(
+          location.target.x,
+          location.target.y,
+          location.target.z
+        );
+      }
+    } else {
+      // Use the older method of positioning based on heading and altitude
+      const altitude = location.altitude || viewingAltitude;
+
+      // Position camera relative to the origin
+      this.camera.position.set(
+        Math.sin(location.heading * THREE.MathUtils.DEG2RAD) * altitude,
+        altitude,
+        Math.cos(location.heading * THREE.MathUtils.DEG2RAD) * altitude
+      );
+
+      // Set the target to origin
+      if (this.orbitControls.current) {
+        this.orbitControls.current.target.set(0, 0, 0);
+      }
+    }
+
+    // Configure camera basics
     this.camera.up.set(0, 1, 0);
     this.camera.near = 1;
     this.camera.far = true ? 10000 : 20000;
@@ -99,9 +131,9 @@ export class CameraPositioner {
 
     // Configure orbit controls
     if (this.orbitControls.current) {
-      this.orbitControls.current.target.set(0, 0, 0);
       this.orbitControls.current.minDistance = 50;
-      this.orbitControls.current.maxDistance = true ? 800 : 1000;
+      this.orbitControls.current.maxDistance =
+        location.distance || (true ? 800 : 1000);
       this.orbitControls.current.update();
     }
 
@@ -131,6 +163,81 @@ export class CameraPositioner {
     this.orbitControls.current.maxPolarAngle = Math.PI / 2;
     this.orbitControls.current.minDistance = 100;
     this.orbitControls.current.maxDistance = 500;
+  }
+
+  /**
+   * Logs the current camera position, rotation and controls settings
+   * to the console in a format ready for PRESET_LOCATIONS
+   */
+  logCurrentPosition(): void {
+    if (!this.camera || !this.orbitControls.current) {
+      console.error("Camera or orbit controls not available");
+      return;
+    }
+
+    // Get current camera position
+    const position = this.camera.position.clone();
+
+    // Get orbit controls target (look-at point)
+    const target = this.orbitControls.current.target.clone();
+
+    // Calculate distance from target
+    const distance = position.distanceTo(target);
+
+    // Get camera rotation in degrees
+    const rotation = {
+      x: THREE.MathUtils.radToDeg(this.camera.rotation.x),
+      y: THREE.MathUtils.radToDeg(this.camera.rotation.y),
+      z: THREE.MathUtils.radToDeg(this.camera.rotation.z),
+    };
+
+    // Calculate a heading value based on camera position relative to target
+    const heading = Math.atan2(position.x - target.x, position.z - target.z);
+    const headingDegrees = THREE.MathUtils.radToDeg(heading);
+
+    // Calculate tilt (pitch) from camera rotation
+    const tilt = rotation.x;
+
+    // Format as a location object to copy/paste into PRESET_LOCATIONS
+    const locationData = {
+      name: "Custom Location",
+      lat: 0, // You need to determine this based on your app's coordinate system
+      lng: 0, // You need to determine this based on your app's coordinate system
+      heading: headingDegrees,
+      tilt: tilt,
+      position: {
+        x: position.x,
+        y: position.y,
+        z: position.z,
+      },
+      target: {
+        x: target.x,
+        y: target.y,
+        z: target.z,
+      },
+      distance: distance,
+    };
+
+    // Log formatted object for easy copy/paste
+    console.log("Current Camera Position:");
+    console.log(JSON.stringify(locationData, null, 2));
+
+    // For easier integration with your PRESET_LOCATIONS
+    console.log("\nFor PRESET_LOCATIONS array:");
+    console.log(`{
+  name: "Custom Location",
+  lat: 0, // Update this value
+  lng: 0, // Update this value
+  heading: ${headingDegrees.toFixed(2)},
+  tilt: ${tilt.toFixed(2)},
+  position: { x: ${position.x.toFixed(2)}, y: ${position.y.toFixed(
+      2
+    )}, z: ${position.z.toFixed(2)} },
+  target: { x: ${target.x.toFixed(2)}, y: ${target.y.toFixed(
+      2
+    )}, z: ${target.z.toFixed(2)} },
+  distance: ${distance.toFixed(2)}
+},`);
   }
 }
 
