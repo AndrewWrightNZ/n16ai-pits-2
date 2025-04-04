@@ -36,8 +36,6 @@ export default function TilesShadowWrapper({
   useEffect(() => {
     if (!tilesGroup) return;
 
-    console.log("TilesShadowWrapper: Processing tiles for shadows");
-
     // Process function to traverse the tree and set shadow properties
     const processMesh = (object: THREE.Object3D) => {
       if (processedMeshes.current.has(object.uuid)) return;
@@ -97,11 +95,7 @@ export default function TilesShadowWrapper({
       };
 
       checkForNewObjects(tilesGroup);
-
-      if (newObjectsFound) {
-        console.log("TilesShadowWrapper: Processed new objects");
-      }
-    }, 1000); // Check every second
+    }, 5000);
 
     return () => {
       clearInterval(checkInterval);

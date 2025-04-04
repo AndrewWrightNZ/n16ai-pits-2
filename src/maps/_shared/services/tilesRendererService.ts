@@ -101,11 +101,6 @@ export class TilesRendererService {
     this.apiKey = apiKey;
     this.useWhiteMaterial = useWhiteMaterial;
 
-    console.log(
-      "TilesRendererService initialized, useWhiteMaterial:",
-      useWhiteMaterial
-    );
-
     // Store initial camera position and rotation for movement detection
     this.lastCameraPosition.copy(camera.position);
     this.lastCameraRotation.copy(camera.rotation);
@@ -139,8 +134,6 @@ export class TilesRendererService {
    */
   configureLoadingStrategy(): void {
     if (!this.tilesRenderer) return;
-
-    console.log("Configuring loading strategy for center prioritization");
 
     // Lower error target means more detail is loaded before moving on to other areas
     // 6-8 is typically default, 0.5-2 prioritizes detail
@@ -351,8 +344,6 @@ export class TilesRendererService {
 
     // Set up the display callback to intercept tiles as they're created
     if (this.useWhiteMaterial) {
-      console.log("Setting up display callback for white material replacement");
-
       // This is the key - we intercept each object as it's about to be added to the scene
       tilesRenderer.displayCallback = (_: any, object: THREE.Object3D) => {
         this.replaceMaterialsWithWhite(object);
@@ -388,7 +379,6 @@ export class TilesRendererService {
           this.tileUpdateScheduled = true;
           setTimeout(() => {
             if (this.tilesRenderer) {
-              console.log("Executing tile load recovery...");
               this.tilesRenderer.errorTarget = 0.2;
 
               // Force update several times
@@ -430,7 +420,6 @@ export class TilesRendererService {
 
       // Process all tiles again after load completes
       setTimeout(() => {
-        console.log("Processing all tiles after load complete");
         if (this.useWhiteMaterial) {
           this.processExistingTiles(tilesRenderer.group);
         }
@@ -439,7 +428,6 @@ export class TilesRendererService {
         if (this.tilesRenderer) {
           setTimeout(() => {
             if (this.tilesRenderer) {
-              console.log("Running delayed detail update after initial load");
               this.tilesRenderer.errorTarget = 0.2;
               for (let i = 0; i < 3; i++) {
                 this.tilesRenderer.update();
@@ -485,8 +473,6 @@ export class TilesRendererService {
   forceLoadVisibleTiles(): void {
     if (!this.tilesRenderer) return;
 
-    console.log("Forcing loading of visible tiles at maximum detail");
-
     // Store original error target
     const originalErrorTarget = this.tilesRenderer.errorTarget || 1;
 
@@ -521,7 +507,6 @@ export class TilesRendererService {
     setTimeout(() => {
       if (this.tilesRenderer) {
         this.tilesRenderer.errorTarget = originalErrorTarget;
-        console.log("Restored original error target:", originalErrorTarget);
       }
     }, 5000);
   }
@@ -531,8 +516,6 @@ export class TilesRendererService {
    */
   detectAndFixMissingTiles(): void {
     if (!this.tilesRenderer) return;
-
-    console.log("Running missing tiles detection and recovery...");
 
     // Store original settings
     const originalErrorTarget = this.tilesRenderer.errorTarget || 1;
@@ -561,7 +544,6 @@ export class TilesRendererService {
     // Schedule additional forced updates
     setTimeout(() => {
       if (this.tilesRenderer) {
-        console.log("Running second pass of missing tiles recovery...");
         this.tilesRenderer.errorTarget = 0.02; // Even more detail
 
         // Force update several more times
@@ -572,9 +554,6 @@ export class TilesRendererService {
         // Restore original settings after recovery completed
         setTimeout(() => {
           if (this.tilesRenderer) {
-            console.log(
-              "Missing tiles recovery complete, restoring normal settings"
-            );
             this.tilesRenderer.errorTarget = originalErrorTarget;
           }
         }, 3000);
@@ -607,8 +586,6 @@ export class TilesRendererService {
     if (this.materialOverrideInterval) {
       clearInterval(this.materialOverrideInterval);
     }
-
-    console.log("Starting material override interval");
 
     this.materialOverrideInterval = setInterval(() => {
       if (this.tilesRenderer && this.useWhiteMaterial) {
@@ -694,11 +671,6 @@ export class TilesRendererService {
 
           // Replace materials with white material
           if (child.material && !child.userData.whiteMatApplied) {
-            // Debug original material
-            if (replacedCount === 0) {
-              console.log("Sample original material:", child.material);
-            }
-
             if (Array.isArray(child.material)) {
               // For meshes with multiple materials, create a new array of materials
               const newMaterials = child.material.map(() => {
@@ -730,9 +702,6 @@ export class TilesRendererService {
     // Update total count and log
     if (replacedCount > 0) {
       this.materialReplacementCount += replacedCount;
-      console.log(
-        `Replaced ${replacedCount} materials in tile, total: ${this.materialReplacementCount}`
-      );
     }
   }
 
@@ -742,15 +711,6 @@ export class TilesRendererService {
    */
   private processExistingTiles(group: THREE.Object3D): void {
     // Don't log every time during interval
-    const shouldLog = !this.materialOverrideInterval || Math.random() < 0.1;
-
-    if (shouldLog) {
-      console.log(
-        "Processing existing tiles, children count:",
-        group.children.length
-      );
-    }
-
     let processedCount = 0;
 
     group.traverse((child) => {
@@ -761,10 +721,6 @@ export class TilesRendererService {
         }
       }
     });
-
-    if (shouldLog && processedCount > 0) {
-      console.log(`Processed ${processedCount} objects in the tiles group`);
-    }
   }
 
   /**
@@ -773,8 +729,6 @@ export class TilesRendererService {
    */
   public forceUpdateMaterials(): void {
     if (!this.tilesRenderer) return;
-
-    console.log("Forcing update of all materials");
 
     // If white material is enabled, re-process all tiles
     if (this.useWhiteMaterial) {
@@ -796,7 +750,6 @@ export class TilesRendererService {
   public forceWhiteMaterialOnObject(object: THREE.Object3D): void {
     if (!this.useWhiteMaterial) return;
 
-    console.log("Forcing white material on specific object");
     object.userData.whiteMatApplied = false;
     this.replaceMaterialsWithWhite(object);
   }
@@ -880,7 +833,6 @@ export class TilesRendererService {
     if (this.useWhiteMaterial === useWhite) return;
 
     this.useWhiteMaterial = useWhite;
-    console.log("White material mode set to:", useWhite);
 
     // Update existing tiles if the tilesRenderer exists
     if (this.tilesRenderer && this.useWhiteMaterial) {
@@ -953,8 +905,6 @@ export class TilesRendererService {
   setupShadowsForTiles(): void {
     if (!this.tilesRenderer) return;
 
-    console.log("Setting up shadows for tiles");
-
     // Create a set to track processed objects
     this.processedObjects.clear();
 
@@ -1006,8 +956,6 @@ export class TilesRendererService {
 
     // Apply to all tiles
     applyShadowSettings(this.tilesRenderer.group);
-
-    console.log(`Setup shadows for ${this.processedObjects.size} objects`);
 
     // Force material update after shadow setup
     if (this.useWhiteMaterial) {

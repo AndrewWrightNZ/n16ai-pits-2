@@ -251,7 +251,6 @@ export class CameraPositioner {
     };
 
     // Log formatted object for easy copy/paste
-    console.log("Current Camera Position:");
     console.log(JSON.stringify(locationData, null, 2));
 
     // For easier integration with your PRESET_LOCATIONS

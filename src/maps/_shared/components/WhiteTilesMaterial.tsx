@@ -163,10 +163,6 @@ export default function WhiteTilesMaterial({
 
       // Store reference to the shadow material
       shadowOverlayMaterials.current.set(shadowMesh.uuid, shadowMaterial);
-
-      if (isDebug) {
-        console.log("Created shadow overlay for mesh", mesh.uuid);
-      }
     } catch (error) {
       if (isDebug) {
         console.error("Error creating shadow overlay:", error);
@@ -187,10 +183,6 @@ export default function WhiteTilesMaterial({
       // Store original material if not already stored
       if (!originalMaterials.current.has(object.uuid)) {
         originalMaterials.current.set(object.uuid, object.material);
-
-        if (isDebug) {
-          console.log(`Stored original material for ${object.uuid}`);
-        }
       }
 
       // Replace with white material
@@ -234,10 +226,13 @@ export default function WhiteTilesMaterial({
         }
       }
 
-      // Special case for any object below the ground level - hide it
-      if (object.position.y < groundLevelY - 10) {
-        object.visible = false;
-      }
+      // // Special case for any object below the ground level - hide it <- bug bug bug
+      // if (object.position.y < groundLevelY - 10) {
+      //   console.log(
+      //     `Hiding object ${object.uuid} below ground level: ${object.position.y}`
+      //   );
+      //   // object.visible = false;
+      // }
     }
 
     // Process all children
@@ -270,11 +265,7 @@ export default function WhiteTilesMaterial({
       };
 
       findAndProcessNewObjects(tilesGroup);
-
-      if (isDebug && newObjectsFound) {
-        console.log("Processed new objects in the scene");
-      }
-    }, 1000); // Check every second
+    }, 5000);
 
     // Cleanup
     return () => {

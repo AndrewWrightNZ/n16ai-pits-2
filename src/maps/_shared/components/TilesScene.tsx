@@ -18,7 +18,6 @@ import {
 // Import components
 import TilesShadowWrapper from "./TilesShadowWrapper";
 import WhiteTilesMaterial from "./WhiteTilesMaterial";
-// import MultiLayerGround from "./";
 
 // Import data
 import { PRESET_LOCATIONS } from "../hooks/locationsData";
@@ -104,16 +103,11 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
             const tilesRenderer =
               tilesRendererServiceRef.current.getTilesRenderer();
             if (tilesRenderer) {
-              console.log("Tiles group:", tilesRenderer.group);
-              console.log(
-                `Group has ${tilesRenderer.group.children.length} children`
-              );
               // Additional logging for tile visibility
               let visibleTiles = 0;
               tilesRenderer.group.traverse((object) => {
                 if (object.visible) visibleTiles++;
               });
-              console.log(`Visible tiles: ${visibleTiles}`);
             }
           }
         },
@@ -145,16 +139,10 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
                 tilesRendererServiceRef.current.update();
               }
 
-              console.log("Forced loading of visible tiles at maximum detail");
-
               // Reset error target after a delay
               setTimeout(() => {
                 if (tilesRenderer) {
                   tilesRenderer.errorTarget = originalErrorTarget;
-                  console.log(
-                    "Restored original error target:",
-                    originalErrorTarget
-                  );
                 }
               }, 5000);
             }
@@ -166,7 +154,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
             const tilesRenderer =
               tilesRendererServiceRef.current.getTilesRenderer();
             if (tilesRenderer) {
-              console.log("Setting high detail mode (errorTarget = 0.2)");
               tilesRenderer.errorTarget = 0.2;
               if ("maximumMemoryUsage" in tilesRenderer) {
                 tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // Increase memory limit to 4GB
@@ -184,7 +171,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
             const tilesRenderer =
               tilesRendererServiceRef.current.getTilesRenderer();
             if (tilesRenderer) {
-              console.log("Setting performance mode (errorTarget = 6)");
               tilesRenderer.errorTarget = 6;
               tilesRendererServiceRef.current.update();
             }
@@ -196,8 +182,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
             const tilesRenderer =
               tilesRendererServiceRef.current.getTilesRenderer();
             if (tilesRenderer) {
-              console.log("Optimizing current view...");
-
               // Set a lower error target for center prioritization
               tilesRenderer.errorTarget = 0.5;
 
@@ -223,8 +207,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
                   }
                 }
               }, 1000);
-
-              console.log("View optimization applied");
             }
           }
         },
@@ -234,8 +216,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
             const tilesRenderer =
               tilesRendererServiceRef.current.getTilesRenderer();
             if (tilesRenderer) {
-              console.log("Checking for missing tiles...");
-
               // Force load all visible tiles at maximum detail
               tilesRenderer.errorTarget = 0.05;
               if ("maxDepth" in tilesRenderer) {
@@ -258,7 +238,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
                     for (let i = 0; i < 3; i++) {
                       tilesRendererServiceRef.current.update();
                     }
-                    console.log("Missing tiles recovery complete");
                   }
                 }
               }, 2000);
@@ -267,7 +246,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         },
         // Reload the entire tile set
         reloadTiles: () => {
-          console.log("Reloading tiles...");
           if (tilesRendererServiceRef.current) {
             // Store current camera position and target
             if (camera && orbitControlsRef.current) {
@@ -383,16 +361,10 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     // Set callbacks
     tilesRendererService.setCallbacks({
       onLoadError: (error) => {
-        console.error("Tiles loading error:", error);
         onSetError(`Tiles loading error: ${error.message}`);
 
         // Automatically attempt recovery for certain types of errors
         if (tileLoadRetryCountRef.current < 3) {
-          console.log(
-            `Attempting tile load recovery (attempt ${
-              tileLoadRetryCountRef.current + 1
-            }/3)...`
-          );
           setTimeout(() => {
             if (typeof window !== "undefined" && (window as any).debugTiles) {
               (window as any).debugTiles.reloadTiles();
@@ -404,11 +376,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
       onLoadComplete: () => {
         onSetIsLoading(false);
         setTilesLoaded(true);
-        setMissingTilesDetected(false); // Reset flag
-
-        // Log completion
-        console.log("Tiles loading complete, setting up shadows");
-
+        setMissingTilesDetected(false);
         // Setup shadows once tiles are loaded
         tilesRendererService.setupShadowsForTiles();
 
@@ -458,9 +426,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         onSetTileCount(count);
         // If we have a very low count that might indicate incomplete loading
         if (count < 5 && tilesLoaded) {
-          console.warn(
-            "Very few tiles loaded, potential missing tiles issue detected"
-          );
           setMissingTilesDetected(true);
           // Trigger recovery only if not already retrying
           if (tileLoadRetryCountRef.current === 0) {
@@ -478,7 +443,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     tilesRendererService.initializeWithConfig({
       errorTarget: 0.5,
       maxDepth: 100,
-      maximumMemoryUsage: 4000 * 1024 * 1024, // 4GB
+      maximumMemoryUsage: 6000 * 1024 * 1024, // 4GB
       loadSiblings: true, // Load neighboring tiles to reduce popping
       skipLevelOfDetail: false, // Don't skip LODs for more complete loading
       maxConcurrentRequests: 32, // Increase concurrent tile requests
@@ -525,64 +490,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     };
   }, [camera, renderer, scene, currentLocation, tileLoadRetryCountRef.current]);
 
-  // If location changes, reposition camera
-  useEffect(() => {
-    if (!cameraPositionerRef.current) return;
-
-    const locationData = PRESET_LOCATIONS[currentLocation];
-    if (locationData) {
-      cameraPositionerRef.current.positionCameraAtLocation(locationData);
-
-      // Force high detail loading after location change
-      if (tilesRendererServiceRef.current) {
-        // Wait a short delay for the camera to settle
-        setTimeout(() => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer && tilesRenderer.errorTarget !== undefined) {
-              // Set error target lower temporarily for better initial load
-              tilesRenderer.errorTarget = 0.2;
-
-              // Increase depth if available
-              if ("maxDepth" in tilesRenderer) {
-                tilesRenderer.maxDepth = 200;
-              }
-
-              // Increase memory limit if available
-              if ("maximumMemoryUsage" in tilesRenderer) {
-                tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024;
-              }
-
-              // Force several updates
-              for (let i = 0; i < 5; i++) {
-                tilesRendererServiceRef.current.update();
-              }
-
-              // Return to normal error after initial load, but still keep detail relatively high
-              setTimeout(() => {
-                if (tilesRenderer) {
-                  tilesRenderer.errorTarget = 0.5;
-
-                  // Force another update pass after a delay to catch missing tiles
-                  setTimeout(() => {
-                    if (tilesRenderer) {
-                      tilesRenderer.errorTarget = 0.2;
-                      for (let i = 0; i < 3; i++) {
-                        tilesRendererServiceRef.current?.update();
-                      }
-                      tilesRenderer.errorTarget = 0.5;
-                    }
-                  }, 2000);
-                }
-              }, 3000);
-            }
-          }
-        }, 500);
-      }
-    }
-  }, [currentLocation]);
-
   // Update orbit controls auto-rotation
   useEffect(() => {
     if (cameraPositionerRef.current) {
@@ -614,7 +521,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         event.preventDefault();
         if (cameraPositionerRef.current) {
           cameraPositionerRef.current.logCurrentPosition();
-          console.log("Camera position logged via keyboard shortcut (Ctrl+L)");
         }
       }
 
@@ -623,7 +529,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         event.preventDefault();
         if (tilesRendererServiceRef.current) {
           (window as any).debugTiles.forceLoadVisibleTiles();
-          console.log("Force-loading visible tiles (Ctrl+D)");
         }
       }
 
@@ -632,7 +537,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         event.preventDefault();
         if (typeof window !== "undefined" && (window as any).debugTiles) {
           (window as any).debugTiles.detectMissingTiles();
-          console.log("Running missing tiles detection and recovery (Ctrl+R)");
         }
       }
     };
@@ -648,7 +552,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
   useEffect(() => {
     if (!tilesLoaded || !missingTilesDetected) return;
 
-    console.log("Missing tiles detected, running automatic recovery...");
     if (typeof window !== "undefined" && (window as any).debugTiles) {
       (window as any).debugTiles.detectMissingTiles();
     }
@@ -700,7 +603,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
               if (tilesRenderer && tilesRenderer.errorTarget !== undefined) {
                 // Only update if not already at high detail
                 if (tilesRenderer.errorTarget > 0.4) {
-                  console.log("Camera stationary, increasing detail level");
                   tilesRenderer.errorTarget = 0.2;
 
                   // Force updates in succession
