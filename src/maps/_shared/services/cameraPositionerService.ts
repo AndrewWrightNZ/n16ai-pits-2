@@ -138,7 +138,40 @@ export class CameraPositioner {
 
     // Update tile renderer error target
     if (this.tilesRenderer) {
-      this.tilesRenderer.errorTarget = 4;
+      this.tilesRenderer.errorTarget = 1;
+      this.tilesRenderer.update();
+    }
+
+    // Update CSM after camera position changes
+    if (this.csm) {
+      this.csm.updateFrustums();
+      this.csm.update();
+    }
+  }
+
+  /**
+   * Restore camera to a previously saved position and target
+   * @param position The camera position to restore
+   * @param target The orbit controls target to restore
+   */
+  restorePosition(position: THREE.Vector3, target: THREE.Vector3): void {
+    if (!this.camera || !this.orbitControls.current) return;
+
+    // Set camera position
+    this.camera.position.copy(position);
+
+    // Set orbit controls target
+    this.orbitControls.current.target.copy(target);
+
+    // Update the controls
+    this.orbitControls.current.update();
+
+    // Update camera
+    this.camera.updateProjectionMatrix();
+
+    // Update tile renderer to refresh with new camera position
+    if (this.tilesRenderer) {
+      this.tilesRenderer.errorTarget = 0.2; // High detail for restored position
       this.tilesRenderer.update();
     }
 

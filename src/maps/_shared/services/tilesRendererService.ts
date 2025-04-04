@@ -16,6 +16,16 @@ export type ExtendedTilesRenderer = TilesRenderer & {
   displayCallback?: (tile: any, object: THREE.Object3D) => void;
   errorTarget?: number;
   maxDepth?: number;
+  lruCache?: any;
+  skipTraversal?: boolean;
+  errorThreshold?: number;
+  loadSiblings?: boolean;
+  skipLevelOfDetail?: boolean;
+  optimizeVisibility?: boolean;
+  enableDebugVisual?: boolean; // For debugging which tiles are being loaded
+  traversalCallback?: (tile: any, depth: number, isSeen: boolean) => number; // For prioritizing tiles
+  maximumMemoryUsage?: number; // Memory limit in bytes
+  maxConcurrentRequests?: number; // Maximum number of concurrent requests
 };
 
 // Event callbacks type definitions
@@ -24,6 +34,16 @@ type LoadProgressCallback = (progress: number) => void;
 type LoadCompleteCallback = () => void;
 type AttributionsCallback = (attributions: string) => void;
 type TileCountCallback = (count: number) => void;
+
+// Configuration interface for initializing tiles renderer
+interface TilesRendererConfig {
+  errorTarget?: number;
+  maxDepth?: number;
+  maximumMemoryUsage?: number;
+  loadSiblings?: boolean;
+  skipLevelOfDetail?: boolean;
+  maxConcurrentRequests?: number;
+}
 
 /**
  * Service to manage 3D Tiles renderer
@@ -40,6 +60,15 @@ export class TilesRendererService {
   private materialOverrideInterval: any = null;
   private lastCopyrightUpdateTime = 0;
   private processedObjects = new Set<string>();
+  private centerRaycaster = new THREE.Raycaster();
+  private centerVector = new THREE.Vector2(0, 0); // Center of screen
+  private lastCameraPosition = new THREE.Vector3();
+  private lastCameraRotation = new THREE.Euler();
+  private isMoving = false;
+  private movementCheckInterval: any = null;
+  private tileUpdateScheduled = false;
+  private consecutiveErrorCount = 0;
+  private lastErrorTime = 0;
 
   // Flag to enable white material replacement
   private useWhiteMaterial: boolean = false;
@@ -76,6 +105,10 @@ export class TilesRendererService {
       "TilesRendererService initialized, useWhiteMaterial:",
       useWhiteMaterial
     );
+
+    // Store initial camera position and rotation for movement detection
+    this.lastCameraPosition.copy(camera.position);
+    this.lastCameraRotation.copy(camera.rotation);
   }
 
   /**
@@ -102,9 +135,181 @@ export class TilesRendererService {
   }
 
   /**
-   * Initialize the TilesRenderer
+   * Configure the tile loading strategy to prioritize visible tiles in center
+   */
+  configureLoadingStrategy(): void {
+    if (!this.tilesRenderer) return;
+
+    console.log("Configuring loading strategy for center prioritization");
+
+    // Lower error target means more detail is loaded before moving on to other areas
+    // 6-8 is typically default, 0.5-2 prioritizes detail
+    this.tilesRenderer.errorTarget = 0.5;
+
+    // Higher depth means more detail is loaded
+    this.tilesRenderer.maxDepth = 200;
+
+    // Increase memory limit for more tiles
+    if ("maximumMemoryUsage" in this.tilesRenderer) {
+      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 4GB
+    }
+
+    // Increase cache size to keep more tiles in memory
+    if (this.tilesRenderer.lruCache) {
+      this.tilesRenderer.lruCache.minSize = 4000; // Increase from 2000
+    }
+
+    // Enable loading of sibling tiles to reduce gaps
+    if ("loadSiblings" in this.tilesRenderer) {
+      this.tilesRenderer.loadSiblings = true;
+    }
+
+    // Don't skip levels of detail for more complete loading
+    if ("skipLevelOfDetail" in this.tilesRenderer) {
+      this.tilesRenderer.skipLevelOfDetail = false;
+    }
+
+    // Increase concurrent requests for faster loading
+    if ("maxConcurrentRequests" in this.tilesRenderer) {
+      this.tilesRenderer.maxConcurrentRequests = 32;
+    }
+
+    // Add traversal callback to modify error multipliers based on distance from center
+    this.setupCenterPrioritization();
+
+    // Start tracking camera movement
+    this.startMovementDetection();
+  }
+
+  /**
+   * Set up a callback to prioritize tiles in the center of the view
+   */
+  private setupCenterPrioritization(): void {
+    if (!this.tilesRenderer) return;
+
+    // Set up callback to prioritize center tiles
+    this.tilesRenderer.traversalCallback = (
+      tile: any,
+      depth: number,
+      isSeen: boolean
+    ) => {
+      // Default error multiplier
+      let errorMultiplier = 1.0;
+
+      // Skip adjusting priority if tile isn't visible
+      if (!isSeen) return errorMultiplier;
+
+      try {
+        // Get the center point of the tile's bounding volume
+        const boundingVolume = tile.boundingVolume;
+        if (!boundingVolume || !boundingVolume.sphere) return errorMultiplier;
+
+        // Create a vector for the center of the tile
+        const center = new THREE.Vector3(
+          boundingVolume.sphere.center[0],
+          boundingVolume.sphere.center[1],
+          boundingVolume.sphere.center[2]
+        );
+
+        // Convert to screen space
+        const tempVector = center.clone();
+        tempVector.project(this.camera);
+
+        // Calculate distance from center of screen (0,0) in NDC space
+        const distFromCenter = Math.sqrt(
+          tempVector.x * tempVector.x + tempVector.y * tempVector.y
+        );
+
+        // Adjust error multiplier based on distance from center
+        // Tiles closer to center get lower error multiplier (higher priority)
+        if (distFromCenter < 0.2) {
+          // Very center - highest priority
+          errorMultiplier = 0.3;
+        } else if (distFromCenter < 0.4) {
+          // Near center - high priority
+          errorMultiplier = 0.5;
+        } else if (distFromCenter < 0.7) {
+          // Within screen - normal priority
+          errorMultiplier = 0.8;
+        } else if (distFromCenter < 1.0) {
+          // Edge of screen - slightly lower priority
+          errorMultiplier = 1.2;
+        } else {
+          // Outside screen - lowest priority
+          errorMultiplier = 2.0;
+        }
+
+        // If camera is moving, slightly reduce detail overall except for center
+        if (this.isMoving && distFromCenter > 0.3) {
+          errorMultiplier *= 1.5;
+        }
+
+        // Adjust multiplier based on depth to prevent excessive detail at far distances
+        if (depth > 30) {
+          errorMultiplier *= 1.2;
+        }
+      } catch (e) {
+        // If anything fails, just return default multiplier
+        console.error("Error in traversal callback:", e);
+      }
+
+      return errorMultiplier;
+    };
+  }
+
+  /**
+   * Start tracking camera movement to adjust loading strategy
+   */
+  private startMovementDetection(): void {
+    // Clear existing interval if any
+    if (this.movementCheckInterval) {
+      clearInterval(this.movementCheckInterval);
+    }
+
+    // Check for camera movement every 100ms
+    this.movementCheckInterval = setInterval(() => {
+      if (!this.camera) return;
+
+      const positionChanged = !this.lastCameraPosition.equals(
+        this.camera.position
+      );
+      const rotationChanged =
+        this.lastCameraRotation.x !== this.camera.rotation.x ||
+        this.lastCameraRotation.y !== this.camera.rotation.y ||
+        this.lastCameraRotation.z !== this.camera.rotation.z;
+
+      // Update movement state
+      this.isMoving = positionChanged || rotationChanged;
+
+      // Update error target based on movement
+      if (this.tilesRenderer) {
+        if (this.isMoving) {
+          // During movement, increase error target for smoother navigation
+          this.tilesRenderer.errorTarget = 4;
+        } else {
+          // When stationary, decrease error target for higher detail
+          this.tilesRenderer.errorTarget = 0.5;
+        }
+      }
+
+      // Save current position and rotation
+      this.lastCameraPosition.copy(this.camera.position);
+      this.lastCameraRotation.copy(this.camera.rotation);
+    }, 100);
+  }
+
+  /**
+   * Initialize the TilesRenderer with default configuration
    */
   initialize(): void {
+    this.initializeWithConfig({});
+  }
+
+  /**
+   * Initialize the TilesRenderer with custom configuration
+   * @param config Configuration options for the tiles renderer
+   */
+  initializeWithConfig(config: TilesRendererConfig): void {
     const rootUrl = `https://tile.googleapis.com/v1/3dtiles/root.json?key=${this.apiKey}`;
     const tilesRenderer = new TilesRenderer(rootUrl) as ExtendedTilesRenderer;
 
@@ -118,10 +323,31 @@ export class TilesRendererService {
       })
     );
 
-    // Configure renderer settings based on performance mode
-    tilesRenderer.errorTarget = 0.5;
-    tilesRenderer.maxDepth = 60; // AW NOTE: Big impact on fluffiness
-    tilesRenderer.lruCache.minSize = 2000;
+    // Configure renderer with default settings
+    tilesRenderer.errorTarget = config.errorTarget || 0.5;
+    tilesRenderer.maxDepth = config.maxDepth || 200;
+    tilesRenderer.lruCache.minSize = 4000;
+
+    // Apply advanced config options if provided
+    if (config.maximumMemoryUsage !== undefined) {
+      tilesRenderer.maximumMemoryUsage = config.maximumMemoryUsage;
+    } else {
+      tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 4GB default
+    }
+
+    if (config.loadSiblings !== undefined) {
+      tilesRenderer.loadSiblings = config.loadSiblings;
+    }
+
+    if (config.skipLevelOfDetail !== undefined) {
+      tilesRenderer.skipLevelOfDetail = config.skipLevelOfDetail;
+    }
+
+    if (config.maxConcurrentRequests !== undefined) {
+      tilesRenderer.maxConcurrentRequests = config.maxConcurrentRequests;
+    } else {
+      tilesRenderer.maxConcurrentRequests = 32; // Default to higher concurrent requests
+    }
 
     // Set up the display callback to intercept tiles as they're created
     if (this.useWhiteMaterial) {
@@ -139,6 +365,49 @@ export class TilesRendererService {
 
     // Set up event listeners
     tilesRenderer.addEventListener("load-error", (ev: any) => {
+      console.error("Tile load error:", ev.error);
+
+      // Track consecutive errors for potential recovery
+      const now = Date.now();
+      if (now - this.lastErrorTime < 5000) {
+        this.consecutiveErrorCount++;
+      } else {
+        this.consecutiveErrorCount = 1;
+      }
+      this.lastErrorTime = now;
+
+      // If we hit multiple consecutive errors, trigger recovery
+      if (this.consecutiveErrorCount >= 3) {
+        console.warn(
+          "Multiple consecutive load errors detected, scheduling recovery..."
+        );
+        this.consecutiveErrorCount = 0;
+
+        // Schedule aggressive reload of visible tiles
+        if (!this.tileUpdateScheduled) {
+          this.tileUpdateScheduled = true;
+          setTimeout(() => {
+            if (this.tilesRenderer) {
+              console.log("Executing tile load recovery...");
+              this.tilesRenderer.errorTarget = 0.2;
+
+              // Force update several times
+              for (let i = 0; i < 5; i++) {
+                this.tilesRenderer.update();
+              }
+
+              // Reset error target after recovery
+              setTimeout(() => {
+                if (this.tilesRenderer) {
+                  this.tilesRenderer.errorTarget = 0.5;
+                }
+                this.tileUpdateScheduled = false;
+              }, 2000);
+            }
+          }, 1000);
+        }
+      }
+
       if (this.onLoadError) {
         this.onLoadError(new Error(ev.error?.message || "Unknown error"));
       }
@@ -165,6 +434,24 @@ export class TilesRendererService {
         if (this.useWhiteMaterial) {
           this.processExistingTiles(tilesRenderer.group);
         }
+
+        // Schedule a few more updates at increasing detail levels
+        if (this.tilesRenderer) {
+          setTimeout(() => {
+            if (this.tilesRenderer) {
+              console.log("Running delayed detail update after initial load");
+              this.tilesRenderer.errorTarget = 0.2;
+              for (let i = 0; i < 3; i++) {
+                this.tilesRenderer.update();
+              }
+              setTimeout(() => {
+                if (this.tilesRenderer) {
+                  this.tilesRenderer.errorTarget = 0.5;
+                }
+              }, 2000);
+            }
+          }, 2000);
+        }
       }, 1000);
     });
 
@@ -177,6 +464,9 @@ export class TilesRendererService {
     this.scene.add(tilesRenderer.group);
     this.tilesRenderer = tilesRenderer;
 
+    // Apply optimized loading strategy
+    this.configureLoadingStrategy();
+
     // Start checking load progress
     this.checkLoadProgress();
 
@@ -184,6 +474,130 @@ export class TilesRendererService {
     if (this.useWhiteMaterial) {
       this.startMaterialOverrideInterval();
     }
+
+    // Reset consecutive error count
+    this.consecutiveErrorCount = 0;
+  }
+
+  /**
+   * Force loading of visible tiles at maximum detail
+   */
+  forceLoadVisibleTiles(): void {
+    if (!this.tilesRenderer) return;
+
+    console.log("Forcing loading of visible tiles at maximum detail");
+
+    // Store original error target
+    const originalErrorTarget = this.tilesRenderer.errorTarget || 1;
+
+    // Set extremely low error target to force maximum detail
+    this.tilesRenderer.errorTarget = 0.05;
+
+    // Increase maximum memory usage for this operation
+    if ("maximumMemoryUsage" in this.tilesRenderer) {
+      const originalMemLimit =
+        this.tilesRenderer.maximumMemoryUsage || 2000 * 1024 * 1024;
+      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 5GB for max detail
+
+      // Force update several times to ensure tiles get loaded
+      for (let i = 0; i < 10; i++) {
+        this.tilesRenderer.update();
+      }
+
+      // Reset memory limit after a delay
+      setTimeout(() => {
+        if (this.tilesRenderer && "maximumMemoryUsage" in this.tilesRenderer) {
+          this.tilesRenderer.maximumMemoryUsage = originalMemLimit;
+        }
+      }, 5000);
+    } else {
+      // Force update several times to ensure tiles get loaded
+      for (let i = 0; i < 10; i++) {
+        this.tilesRenderer.update();
+      }
+    }
+
+    // Reset error target after a delay
+    setTimeout(() => {
+      if (this.tilesRenderer) {
+        this.tilesRenderer.errorTarget = originalErrorTarget;
+        console.log("Restored original error target:", originalErrorTarget);
+      }
+    }, 5000);
+  }
+
+  /**
+   * Detect and fix missing tiles issue
+   */
+  detectAndFixMissingTiles(): void {
+    if (!this.tilesRenderer) return;
+
+    console.log("Running missing tiles detection and recovery...");
+
+    // Store original settings
+    const originalErrorTarget = this.tilesRenderer.errorTarget || 1;
+
+    // First pass: aggressive loading at maximum detail
+    this.tilesRenderer.errorTarget = 0.05;
+
+    // Maximize detail settings
+    if ("maxDepth" in this.tilesRenderer) {
+      this.tilesRenderer.maxDepth = 200;
+    }
+
+    if ("maximumMemoryUsage" in this.tilesRenderer) {
+      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 5GB for recovery
+    }
+
+    if ("loadSiblings" in this.tilesRenderer) {
+      this.tilesRenderer.loadSiblings = true; // Ensure we load siblings
+    }
+
+    // Force update several times to ensure tiles get loaded
+    for (let i = 0; i < 5; i++) {
+      this.tilesRenderer.update();
+    }
+
+    // Schedule additional forced updates
+    setTimeout(() => {
+      if (this.tilesRenderer) {
+        console.log("Running second pass of missing tiles recovery...");
+        this.tilesRenderer.errorTarget = 0.02; // Even more detail
+
+        // Force update several more times
+        for (let i = 0; i < 3; i++) {
+          this.tilesRenderer.update();
+        }
+
+        // Restore original settings after recovery completed
+        setTimeout(() => {
+          if (this.tilesRenderer) {
+            console.log(
+              "Missing tiles recovery complete, restoring normal settings"
+            );
+            this.tilesRenderer.errorTarget = originalErrorTarget;
+          }
+        }, 3000);
+      }
+    }, 2000);
+  }
+
+  /**
+   * Identify tiles in the center of the screen
+   */
+  identifyCenterTiles(): THREE.Object3D[] {
+    if (!this.tilesRenderer || !this.camera) return [];
+
+    // Create a raycaster from the camera through the center of the screen
+    this.centerRaycaster.setFromCamera(this.centerVector, this.camera);
+
+    // Find tiles intersecting with the center ray
+    const intersects = this.centerRaycaster.intersectObjects(
+      this.tilesRenderer.group.children,
+      true
+    );
+
+    return intersects.map((intersect) => intersect.object);
   }
 
   /**
@@ -425,6 +839,37 @@ export class TilesRendererService {
       lat * THREE.MathUtils.DEG2RAD,
       lon * THREE.MathUtils.DEG2RAD
     );
+
+    // After repositioning, force a loading priority reset
+    if (this.tilesRenderer) {
+      // Lower error target for higher detail at new location
+      this.tilesRenderer.errorTarget = 0.2;
+
+      // Force update several times to recalculate priorities
+      for (let i = 0; i < 5; i++) {
+        this.tilesRenderer.update();
+      }
+
+      // Schedule additional updates after a brief delay
+      setTimeout(() => {
+        if (this.tilesRenderer) {
+          // Further reduce error target for super-detailed loading
+          this.tilesRenderer.errorTarget = 0.1;
+
+          // Force additional updates
+          for (let i = 0; i < 3; i++) {
+            this.tilesRenderer.update();
+          }
+
+          // Return to normal detail level
+          setTimeout(() => {
+            if (this.tilesRenderer) {
+              this.tilesRenderer.errorTarget = 0.5;
+            }
+          }, 2000);
+        }
+      }, 1000);
+    }
   }
 
   /**
@@ -577,6 +1022,11 @@ export class TilesRendererService {
     if (this.materialOverrideInterval) {
       clearInterval(this.materialOverrideInterval);
       this.materialOverrideInterval = null;
+    }
+
+    if (this.movementCheckInterval) {
+      clearInterval(this.movementCheckInterval);
+      this.movementCheckInterval = null;
     }
 
     if (!this.tilesRenderer) return;
