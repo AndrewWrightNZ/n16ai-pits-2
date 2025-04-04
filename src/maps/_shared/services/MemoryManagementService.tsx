@@ -59,7 +59,6 @@ export class MemoryManagementService {
   // State tracking
   private lastOptimizationTime = 0;
   private lastGarbageCollectionTime: number | null = null;
-  private currentPressureLevel: MemoryPressureLevel = MemoryPressureLevel.LOW;
   private disposedGeometries: Set<THREE.BufferGeometry> = new Set();
   private listeners: Array<(stats: MemoryStats) => void> = [];
 
@@ -156,7 +155,6 @@ export class MemoryManagementService {
     if (!this.tilesRenderer) return;
 
     const stats = this.getMemoryStats();
-    this.currentPressureLevel = stats.pressureLevel;
 
     // Notify all listeners of the current stats
     this.listeners.forEach((listener) => listener(stats));
