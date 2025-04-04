@@ -151,8 +151,8 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
     );
 
     // Configure CSM based on performance mode
-    const shadowMapSize = true ? 2048 : 4096;
-    const cascades = true ? 2 : 3;
+    const shadowMapSize = 2048;
+    const cascades = 2;
 
     // Initialize CSM with configuration
     const timeOfDay = new Date(rawTimeOfDay);

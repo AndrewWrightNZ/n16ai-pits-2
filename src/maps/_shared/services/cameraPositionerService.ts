@@ -126,20 +126,19 @@ export class CameraPositioner {
     // Configure camera basics
     this.camera.up.set(0, 1, 0);
     this.camera.near = 1;
-    this.camera.far = true ? 10000 : 20000;
+    this.camera.far = 5000;
     this.camera.updateProjectionMatrix();
 
     // Configure orbit controls
     if (this.orbitControls.current) {
       this.orbitControls.current.minDistance = 50;
-      this.orbitControls.current.maxDistance =
-        location.distance || (true ? 800 : 1000);
+      this.orbitControls.current.maxDistance = location.distance || 800;
       this.orbitControls.current.update();
     }
 
     // Update tile renderer error target
     if (this.tilesRenderer) {
-      this.tilesRenderer.errorTarget = true ? 4 : 2;
+      this.tilesRenderer.errorTarget = 4;
       this.tilesRenderer.update();
     }
 

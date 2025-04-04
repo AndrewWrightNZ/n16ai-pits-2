@@ -249,7 +249,7 @@ export class TilesRendererService {
   private createWhiteMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      roughness: true ? 0.7 : 0.85,
+      roughness: 0.85,
       metalness: 0.0,
       flatShading: false,
       transparent: false,
@@ -531,7 +531,7 @@ export class TilesRendererService {
           const distanceToCamera = this.camera.position.distanceTo(
             object.position
           );
-          const shadowCastDistance = true ? 300 : 500;
+          const shadowCastDistance = 300;
 
           object.castShadow = distanceToCamera < shadowCastDistance;
         } else {
