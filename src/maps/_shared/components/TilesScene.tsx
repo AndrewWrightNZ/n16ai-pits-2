@@ -537,7 +537,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
           brightness={0.8}
           roughness={0.9}
           shadowIntensity={0.8}
-          isDebug={false}
         />
       )}
 
