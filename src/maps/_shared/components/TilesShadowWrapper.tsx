@@ -79,12 +79,9 @@ export default function TilesShadowWrapper({
 
     // Setup observer to handle new objects added to the scene
     const checkInterval = setInterval(() => {
-      let newObjectsFound = false;
-
       const checkForNewObjects = (object: THREE.Object3D) => {
         if (!processedMeshes.current.has(object.uuid)) {
           processMesh(object);
-          newObjectsFound = true;
         }
 
         if (object.children && object.children.length > 0) {

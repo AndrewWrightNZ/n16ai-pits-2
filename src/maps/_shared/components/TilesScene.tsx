@@ -117,14 +117,14 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
     // Configure CSM based on performance mode
     const shadowMapSize = 2048;
-    const cascades = 2;
+    const cascades = 3;
 
     // Initialize CSM with configuration
     const timeOfDay = new Date(rawTimeOfDay);
     csmController.initialize(timeOfDay, {
       shadowMapSize,
       cascades,
-      maxFar: 5000,
+      maxFar: 500,
     });
 
     // Provide the light reference
