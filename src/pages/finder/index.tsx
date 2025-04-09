@@ -1,30 +1,26 @@
-import sunLogo from "../../assets/bigBoldSun.svg";
-import { useEffect } from "react";
 import { Helmet } from "react-helmet";
+import usePubs from "./_shared/hooks/usePubs";
 
 function Finder() {
-  // Animation for sun logo
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-      @keyframes spin {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .spin-animation {
-        animation: spin 10s linear infinite;
-      }
-    `;
-    document.head.appendChild(style);
+  //
 
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
+  // Hooks
+  const {
+    data: {
+      pubs = [],
+      selectedPub = null,
+
+      // Filters
+      selectedFilters = [],
+    },
+    // operations: { onSetMapBounds },
+  } = usePubs();
+
+  console.log("Pubs in the Sun - Finder");
+  console.log("Pubs:", pubs);
+  console.log("Selected Pub:", selectedPub);
+
+  console.log("Selected Filters:", selectedFilters);
 
   return (
     <>
@@ -44,25 +40,14 @@ function Finder() {
         </header>
 
         <main className="flex flex-col items-center justify-center">
-          <div className="flex justify-center mb-4">
-            <img
-              src={sunLogo}
-              className="w-20 h-20 spin-animation"
-              alt="Pubs in the Sun logo - a bright sun"
-            />
-          </div>
           <h2 className="text-2xl font-medium font-poppins mb-2 text-center">
             Use the Pubs in the Sun map to find the best sunny beer gardens near
             you.
           </h2>
           <p className="text-sm font-normal font-poppins text-center">
-            <time dateTime="2025-05">Start searching</time>
+            Search from over {pubs.length} pub we track in London
           </p>
         </main>
-
-        <footer className="absolute bottom-4 text-xs text-gray-500 font-poppins">
-          <p>© 2025 Pubs in the Sun. All rights reserved.</p>
-        </footer>
       </div>
     </>
   );

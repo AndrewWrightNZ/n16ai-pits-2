@@ -1,31 +1,7 @@
 import sunLogo from "../../assets/bigBoldSun.svg";
-import { useEffect } from "react";
 import { Helmet } from "react-helmet";
 
 function App() {
-  // Animation for sun logo
-  useEffect(() => {
-    const style = document.createElement("style");
-    style.textContent = `
-      @keyframes spin {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .spin-animation {
-        animation: spin 10s linear infinite;
-      }
-    `;
-    document.head.appendChild(style);
-
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
   return (
     <>
       <Helmet>
@@ -47,7 +23,7 @@ function App() {
           <div className="flex justify-center mb-4">
             <img
               src={sunLogo}
-              className="w-20 h-20 spin-animation"
+              className="w-20 h-20"
               alt="Pubs in the Sun logo - a bright sun"
             />
           </div>
