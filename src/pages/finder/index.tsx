@@ -12,7 +12,7 @@ import RenderPubsOfType from "./_shared/components/renderPubsOfType";
 // Map container style
 const mapContainerStyle = {
   width: "100%",
-  height: "600px",
+  height: "80%",
   borderRadius: "12px",
 };
 
@@ -92,6 +92,10 @@ function Finder() {
   const handleInfoWindowClose = useCallback(() => {
     setActiveInfoWindow(null);
     onSetSelectedPubId(0);
+
+    if (mapInstance) {
+      mapInstance.setZoom(13); // Reset zoom level
+    }
   }, [onSetSelectedPubId]);
 
   // Effect to center map on selected pub
@@ -119,12 +123,12 @@ function Finder() {
         />
       </Helmet>
 
-      <div className="bg-[#F3F1E5] min-h-screen flex flex-col items-center p-4">
-        <header className="w-full max-w-6xl mb-6">
+      <div className="bg-[#F3F1E5] min-h-screen flex flex-col items-center">
+        <header className="w-full mb-6">
           <h1 className="sr-only">Pubs in the Sun</h1>
         </header>
 
-        <main className="w-full max-w-6xl flex flex-col items-center">
+        <main className="w-full flex flex-col items-center">
           <div className="w-full mb-8">
             <h2 className="text-2xl font-medium font-poppins mb-2 text-center">
               Use the Pubs in the Sun map to find the best sunny beer gardens
@@ -158,7 +162,7 @@ function Finder() {
             {/* Filter controls could go here */}
 
             {/* Google Maps Component */}
-            <div className="w-full h-[600px] rounded-lg overflow-hidden shadow-lg">
+            <div className="w-full h-[90vh] rounded-lg overflow-hidden shadow-lg">
               <LoadScript
                 googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
               >
@@ -169,9 +173,8 @@ function Finder() {
                   onLoad={onMapLoad}
                   onBoundsChanged={onBoundsChanged}
                   options={{
-                    styles: [
-                      // You can add custom map styling here if desired
-                    ],
+                    gestureHandling: "greedy",
+                    styles: [],
                     mapTypeControl: true,
                     streetViewControl: true,
                     zoomControl: true,
