@@ -30,7 +30,12 @@ function Finder() {
 
   // Hooks from your existing code
   const {
-    data: { pubs = [], selectedPub = null, selectedFilters = [] },
+    data: {
+      pubs = [],
+      pubsInTheSun = [],
+      selectedPub = null,
+      selectedFilters = [],
+    },
     operations: { onSetMapBounds, onSetSelectedPubId },
   } = usePubs();
 
@@ -135,7 +140,8 @@ function Finder() {
               near you.
             </h2>
             <p className="text-sm font-normal font-poppins text-center mb-4">
-              Search from over {pubs.length} pubs we track in London
+              Search from over {pubs.length} pubs we track in London (showing{" "}
+              {pubsInTheSun.length})
             </p>
 
             <div className="w-full flex justify-center mb-4">
