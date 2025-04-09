@@ -11,6 +11,9 @@ export const Route = createRootRoute({
         <Link to="/finder" className="[&.active]:font-bold">
           Finder
         </Link>
+        <Link to="/scene" className="[&.active]:font-bold">
+          3D Scene
+        </Link>
       </div>
       <hr />
       <Outlet />

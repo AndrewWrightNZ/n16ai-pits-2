@@ -11,11 +11,18 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SceneImport } from './routes/scene'
 import { Route as FinderImport } from './routes/finder'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
+
+const SceneRoute = SceneImport.update({
+  id: '/scene',
+  path: '/scene',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const FinderRoute = FinderImport.update({
   id: '/finder',
@@ -60,6 +67,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinderImport
       parentRoute: typeof rootRoute
     }
+    '/scene': {
+      id: '/scene'
+      path: '/scene'
+      fullPath: '/scene'
+      preLoaderRoute: typeof SceneImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -69,12 +83,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/finder': typeof FinderRoute
+  '/scene': typeof SceneRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/finder': typeof FinderRoute
+  '/scene': typeof SceneRoute
 }
 
 export interface FileRoutesById {
@@ -82,14 +98,15 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/finder': typeof FinderRoute
+  '/scene': typeof SceneRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/finder'
+  fullPaths: '/' | '/about' | '/finder' | '/scene'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/finder'
-  id: '__root__' | '/' | '/about' | '/finder'
+  to: '/' | '/about' | '/finder' | '/scene'
+  id: '__root__' | '/' | '/about' | '/finder' | '/scene'
   fileRoutesById: FileRoutesById
 }
 
@@ -97,12 +114,14 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   FinderRoute: typeof FinderRoute
+  SceneRoute: typeof SceneRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   FinderRoute: FinderRoute,
+  SceneRoute: SceneRoute,
 }
 
 export const routeTree = rootRoute
@@ -117,7 +136,8 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
-        "/finder"
+        "/finder",
+        "/scene"
       ]
     },
     "/": {
@@ -128,6 +148,9 @@ export const routeTree = rootRoute
     },
     "/finder": {
       "filePath": "finder.tsx"
+    },
+    "/scene": {
+      "filePath": "scene.tsx"
     }
   }
 }
