@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as SceneImport } from './routes/scene'
 import { Route as FinderImport } from './routes/finder'
+import { Route as AreaIdentifierImport } from './routes/area-identifier'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 
@@ -27,6 +28,12 @@ const SceneRoute = SceneImport.update({
 const FinderRoute = FinderImport.update({
   id: '/finder',
   path: '/finder',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AreaIdentifierRoute = AreaIdentifierImport.update({
+  id: '/area-identifier',
+  path: '/area-identifier',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -60,6 +67,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutImport
       parentRoute: typeof rootRoute
     }
+    '/area-identifier': {
+      id: '/area-identifier'
+      path: '/area-identifier'
+      fullPath: '/area-identifier'
+      preLoaderRoute: typeof AreaIdentifierImport
+      parentRoute: typeof rootRoute
+    }
     '/finder': {
       id: '/finder'
       path: '/finder'
@@ -82,6 +96,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/area-identifier': typeof AreaIdentifierRoute
   '/finder': typeof FinderRoute
   '/scene': typeof SceneRoute
 }
@@ -89,6 +104,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/area-identifier': typeof AreaIdentifierRoute
   '/finder': typeof FinderRoute
   '/scene': typeof SceneRoute
 }
@@ -97,22 +113,24 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/area-identifier': typeof AreaIdentifierRoute
   '/finder': typeof FinderRoute
   '/scene': typeof SceneRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/finder' | '/scene'
+  fullPaths: '/' | '/about' | '/area-identifier' | '/finder' | '/scene'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/finder' | '/scene'
-  id: '__root__' | '/' | '/about' | '/finder' | '/scene'
+  to: '/' | '/about' | '/area-identifier' | '/finder' | '/scene'
+  id: '__root__' | '/' | '/about' | '/area-identifier' | '/finder' | '/scene'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AreaIdentifierRoute: typeof AreaIdentifierRoute
   FinderRoute: typeof FinderRoute
   SceneRoute: typeof SceneRoute
 }
@@ -120,6 +138,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AreaIdentifierRoute: AreaIdentifierRoute,
   FinderRoute: FinderRoute,
   SceneRoute: SceneRoute,
 }
@@ -136,6 +155,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
+        "/area-identifier",
         "/finder",
         "/scene"
       ]
@@ -145,6 +165,9 @@ export const routeTree = rootRoute
     },
     "/about": {
       "filePath": "about.tsx"
+    },
+    "/area-identifier": {
+      "filePath": "area-identifier.tsx"
     },
     "/finder": {
       "filePath": "finder.tsx"

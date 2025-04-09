@@ -14,6 +14,9 @@ export const Route = createRootRoute({
         <Link to="/scene" className="[&.active]:font-bold">
           3D Scene
         </Link>
+        <Link to="/area-identifier" className="[&.active]:font-bold">
+          Area identifier
+        </Link>
       </div>
       <hr />
       <Outlet />

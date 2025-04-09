@@ -1,0 +1,184 @@
+import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useThree, useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { OrbitControls } from "@react-three/drei";
+import { TilesRendererService } from "../../../../maps/_shared/services/tilesRendererService";
+import CameraPositioner from "../../../../maps/_shared/services/cameraPositionerService";
+import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
+import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
+
+const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+// Define a type for the ref
+export interface TilesSceneRef {
+  getTilesService: () => TilesRendererService | null;
+}
+
+// Main scene component
+const BasicTilesScene = forwardRef<TilesSceneRef>(function TilesScene(_, ref) {
+  // Refs for service instances
+  const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
+  const cameraPositionerRef = useRef<CameraPositioner | null>(null);
+  const orbitControlsRef = useRef<any>(null);
+
+  // Expose the TilesRendererService via ref
+  useImperativeHandle(ref, () => ({
+    getTilesService: () => tilesRendererServiceRef.current,
+  }));
+
+  // Hooks
+  const {
+    data: {
+      // View
+      isOrbiting,
+
+      // Location
+      currentLocation,
+    },
+    operations: {
+      // Loading
+      onSetIsLoading,
+      onSetLoadingProgress,
+      onSetError,
+      onSetTileCount,
+
+      // View
+      onSetCopyrightInfo,
+    },
+  } = useMapSettings();
+
+  // R3F hooks
+  const { scene, camera, gl: renderer } = useThree();
+
+  // Initialize 3D Tiles
+  useEffect(() => {
+    if (!camera || !renderer || !scene) return;
+
+    onSetIsLoading(true);
+    onSetError(null);
+
+    // Create TilesRendererService without any material modifications
+    const tilesRendererService = new TilesRendererService(
+      camera,
+      renderer,
+      scene,
+      API_KEY,
+      false // Don't force white material in the service
+    );
+
+    // Set callbacks
+    tilesRendererService.setCallbacks({
+      onLoadError: (error) => {
+        onSetError(`Tiles loading error: ${error.message}`);
+      },
+      onLoadProgress: (progress) => onSetLoadingProgress(progress),
+      onLoadComplete: () => {
+        onSetIsLoading(false);
+
+        // Update tile count
+        const tilesRenderer = tilesRendererService.getTilesRenderer();
+        if (tilesRenderer) {
+          onSetTileCount(tilesRenderer.group.children.length);
+
+          // Apply balanced settings - prioritize performance
+          if (tilesRenderer.errorTarget) {
+            tilesRenderer.errorTarget = 1.0; // Higher error target = less detail but better performance
+          }
+          if ("maxDepth" in tilesRenderer) {
+            tilesRenderer.maxDepth = 100; // Lower max depth for performance
+          }
+          if ("maximumMemoryUsage" in tilesRenderer) {
+            tilesRenderer.maximumMemoryUsage = 4000 * 1024 * 1024; // 4GB - moderate memory limit
+          }
+        }
+      },
+      onAttributions: (attributions) => onSetCopyrightInfo(attributions),
+      onTileCount: (count) => {
+        onSetTileCount(count);
+      },
+    });
+
+    // Initialize with performance-focused config
+    tilesRendererService.initializeWithConfig({
+      errorTarget: 1.0, // Higher error = less detail but better performance
+      maxDepth: 50, // Reduced depth
+      maximumMemoryUsage: 4000 * 1024 * 1024, // 4GB
+      loadSiblings: false, // Don't load neighboring tiles for performance
+      skipLevelOfDetail: true, // Skip LODs for better performance
+      maxConcurrentRequests: 16, // Fewer concurrent requests
+    });
+
+    tilesRendererServiceRef.current = tilesRendererService;
+
+    // Create camera positioner
+    const cameraPositioner = new CameraPositioner(
+      camera as THREE.PerspectiveCamera,
+      orbitControlsRef
+    );
+    cameraPositioner.setTilesRenderer(tilesRendererService.getTilesRenderer());
+    cameraPositionerRef.current = cameraPositioner;
+
+    // Use preset location
+    const locationData = PRESET_LOCATIONS[currentLocation];
+    if (locationData) {
+      cameraPositioner.positionCameraAtLocation(locationData);
+    }
+
+    return () => {
+      // Cleanup on unmount
+      if (tilesRendererServiceRef.current) {
+        tilesRendererServiceRef.current.dispose();
+        tilesRendererServiceRef.current = null;
+      }
+      cameraPositionerRef.current = null;
+    };
+  }, [camera, renderer, scene, currentLocation]);
+
+  // Update orbit controls auto-rotation
+  useEffect(() => {
+    if (cameraPositionerRef.current) {
+      cameraPositionerRef.current.setAutoRotate(isOrbiting, 1.0);
+    }
+  }, [isOrbiting]);
+
+  // Simplified update loop without all the dynamic error adjustments
+  useFrame(() => {
+    // Simple update for tiles renderer
+    if (tilesRendererServiceRef.current) {
+      // Check if camera is moving or rotating
+      const isMoving =
+        orbitControlsRef.current && orbitControlsRef.current.isDragging;
+
+      // Get the tiles renderer
+      const tilesRenderer = tilesRendererServiceRef.current.getTilesRenderer();
+      if (tilesRenderer && tilesRenderer.errorTarget !== undefined) {
+        // Simple error target adjustment based on movement
+        tilesRenderer.errorTarget = isMoving ? 8.0 : 2.0;
+      }
+
+      // Update the renderer
+      tilesRendererServiceRef.current.update();
+    }
+  });
+
+  return (
+    <>
+      {/* Simple lighting for better visibility */}
+      <ambientLight intensity={0.7} color={new THREE.Color(0xffffff)} />
+      <directionalLight intensity={0.8} position={[1, 1, 1]} />
+
+      {/* Controls (orbit, panning, etc.) */}
+      <OrbitControls
+        ref={orbitControlsRef}
+        enableDamping
+        dampingFactor={0.1}
+        screenSpacePanning={false}
+        maxPolarAngle={Math.PI / 2}
+        minDistance={100}
+        maxDistance={1000}
+      />
+    </>
+  );
+});
+
+export default BasicTilesScene;
