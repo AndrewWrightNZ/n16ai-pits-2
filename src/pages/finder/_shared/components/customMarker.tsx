@@ -12,6 +12,7 @@ import * as fn from "../../../../_shared/utils";
 
 // Components
 import React from "react";
+import { ChevronRight } from "lucide-react";
 
 interface MarkerWrapperProps {
   children: React.ReactNode;
@@ -54,7 +55,7 @@ export const StandardMarkerInternals: React.FC<MarkerInternalsProps> = ({
 }) => {
   return (
     <div
-      className={`flex relative justify-start items-center w-[20px] h-[20px] bg-white rounded-[20px] p-[5px] left-0 top-0 border border-amber-500 shadow-lg ${className}`}
+      className={`flex relative justify-start items-center w-[30px] h-[30px] bg-white rounded-[20px] p-[5px] left-0 top-0 border border-gray-500 shadow-lg ${className}`}
       onMouseEnter={onMouseEnter}
       onClick={onClick}
       style={style}
@@ -73,7 +74,7 @@ export const ExpandedMarkerInternals: React.FC<MarkerInternalsProps> = ({
 }) => {
   return (
     <div
-      className={`flex absolute justify-start items-center w-fit bg-white rounded-[20px] p-[5px] h-[20px] border border-amber-300 shadow-xl left-0 top-0 hover:cursor-pointer ${className}`}
+      className={`flex absolute justify-start items-center w-fit bg-white rounded-[20px] p-[5px] h-[30px] border border-gray-500 shadow-xl left-0 top-0 hover:cursor-pointer ${className}`}
       onMouseLeave={onMouseLeave}
       onClick={onClick}
       style={style}
@@ -88,27 +89,11 @@ export const MarkerNameText: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   return (
-    <span className="text-xs font-medium text-amber-800 mx-1 flex items-center">
+    <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
       {children}
     </span>
   );
 };
-
-// ChevronRight icon as an SVG component
-const ChevronRightIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className="w-4 h-4"
-  >
-    <path
-      fillRule="evenodd"
-      d="M16.28 11.47a.75.75 0 0 1 0 1.06l-7.5 7.5a.75.75 0 0 1-1.06-1.06L14.69 12 7.72 5.03a.75.75 0 0 1 1.06-1.06l7.5 7.5Z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
 
 interface CustomMarkerProps {
   pubDetails: Pub;
@@ -206,7 +191,7 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
               />
               <MarkerNameText>
                 {potentiallyTruncatedName}
-                <ChevronRightIcon />
+                <ChevronRight size={16} />
               </MarkerNameText>
             </ExpandedMarkerInternals>
           ) : (

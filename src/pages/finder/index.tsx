@@ -183,8 +183,8 @@ function Finder() {
                 >
                   {/* Render pubs by sun category */}
                   <RenderPubsOfType filterName="full_sun" />
-                  <RenderPubsOfType filterName="partial_sun" />
-                  <RenderPubsOfType filterName="no_sun" />
+                  {/* <RenderPubsOfType filterName="partial_sun" />
+                  <RenderPubsOfType filterName="no_sun" /> */}
 
                   {/* Show info window for active pub */}
                   {activeInfoWindow && (

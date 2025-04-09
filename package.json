@@ -25,6 +25,7 @@
     "3d-tiles-renderer": "^0.4.7",
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
+    "lucide-react": "^0.487.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-helmet": "^6.1.0",
