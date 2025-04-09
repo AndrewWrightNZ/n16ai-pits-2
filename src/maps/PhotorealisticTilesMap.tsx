@@ -14,6 +14,7 @@ import ControlsPanel from "./_shared/components/ControlsPanel";
 // Hooks
 import useMapSettings from "./_shared/hooks/useMapSettings";
 import { useDaylightLighting } from "./_shared/hooks/useDaylightLighting";
+import EnhancedMemoryMonitor from "./_shared/components/EnhancedMemoryMonitor";
 
 export default function PhotorealisticTilesMap() {
   // Ref to access TilesRendererService
@@ -143,6 +144,8 @@ export default function PhotorealisticTilesMap() {
             {copyrightInfo}
           </div>
         )}
+
+        <EnhancedMemoryMonitor refreshInterval={2000} />
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ import useMapSettings from "../hooks/useMapSettings";
 import ShadowsManager from "../services/shadowManager";
 import CSMController from "../controllers/csmController";
 import CameraPositioner from "../services/cameraPositionerService";
+import { memoryManager } from "../services/MemoryManagementService";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -56,7 +57,7 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
   // State
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [shadowOpacity, setShadowOpacity] = useState(0.6);
-  const [useWhiteMaterial, setUseWhiteMaterial] = useState(true);
+  // const [useWhiteMaterial, setUseWhiteMaterial] = useState(true);
   const [missingTilesDetected, setMissingTilesDetected] = useState(false);
 
   // Hooks
@@ -84,197 +85,6 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
   // R3F hooks
   const { scene, camera, gl: renderer } = useThree();
-
-  // Ground level for shadows and ground replacement
-  const groundHeight = 60;
-
-  // Debug function to add to window
-  useEffect(() => {
-    // Add debug functions to window for console access
-    if (typeof window !== "undefined") {
-      (window as any).debugTiles = {
-        forceWhiteMaterials: () => {
-          if (tilesRendererServiceRef.current) {
-            tilesRendererServiceRef.current.forceUpdateMaterials();
-          }
-        },
-        logTiles: () => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer) {
-              // Additional logging for tile visibility
-              let visibleTiles = 0;
-              tilesRenderer.group.traverse((object) => {
-                if (object.visible) visibleTiles++;
-              });
-            }
-          }
-        },
-        toggleWhiteMaterial: () => {
-          setUseWhiteMaterial(!useWhiteMaterial);
-        },
-        // Add the camera position logging function
-        logCameraPosition: () => {
-          if (cameraPositionerRef.current) {
-            cameraPositionerRef.current.logCurrentPosition();
-          } else {
-            console.error("Camera positioner not available");
-          }
-        },
-        // Add tile loading optimization functions
-        forceLoadVisibleTiles: () => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer) {
-              // Store original error target
-              const originalErrorTarget = tilesRenderer.errorTarget || 1;
-
-              // Set extremely low error target to force maximum detail
-              tilesRenderer.errorTarget = 0.05;
-
-              // Force update several times to ensure tiles get loaded
-              for (let i = 0; i < 10; i++) {
-                tilesRendererServiceRef.current.update();
-              }
-
-              // Reset error target after a delay
-              setTimeout(() => {
-                if (tilesRenderer) {
-                  tilesRenderer.errorTarget = originalErrorTarget;
-                }
-              }, 5000);
-            }
-          }
-        },
-        // Set a very low error target to force maximum detail
-        setHighDetail: () => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer) {
-              tilesRenderer.errorTarget = 0.2;
-              if ("maximumMemoryUsage" in tilesRenderer) {
-                tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // Increase memory limit to 4GB
-              }
-              if ("maxDepth" in tilesRenderer) {
-                tilesRenderer.maxDepth = 200;
-              }
-              tilesRendererServiceRef.current.update();
-            }
-          }
-        },
-        // Set a higher error target for performance
-        setPerformanceMode: () => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer) {
-              tilesRenderer.errorTarget = 6;
-              tilesRendererServiceRef.current.update();
-            }
-          }
-        },
-        // Reload the current view with optimized settings
-        optimizeCurrentView: () => {
-          if (tilesRendererServiceRef.current && camera) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer) {
-              // Set a lower error target for center prioritization
-              tilesRenderer.errorTarget = 0.5;
-
-              // If the renderer has these properties, set them for optimization
-              if ("maxDepth" in tilesRenderer) {
-                tilesRenderer.maxDepth = 200;
-              }
-
-              if ("maximumMemoryUsage" in tilesRenderer) {
-                tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // Increase memory limit to 4GB
-              }
-
-              // Force multiple updates to refresh the view
-              for (let i = 0; i < 5; i++) {
-                tilesRendererServiceRef.current.update();
-              }
-
-              // Schedule additional updates
-              setTimeout(() => {
-                if (tilesRendererServiceRef.current && tilesRenderer) {
-                  for (let i = 0; i < 3; i++) {
-                    tilesRendererServiceRef.current.update();
-                  }
-                }
-              }, 1000);
-            }
-          }
-        },
-        // Detect and fix missing tiles
-        detectMissingTiles: () => {
-          if (tilesRendererServiceRef.current) {
-            const tilesRenderer =
-              tilesRendererServiceRef.current.getTilesRenderer();
-            if (tilesRenderer) {
-              // Force load all visible tiles at maximum detail
-              tilesRenderer.errorTarget = 0.05;
-              if ("maxDepth" in tilesRenderer) {
-                tilesRenderer.maxDepth = 200;
-              }
-
-              // Refresh the renderer multiple times
-              for (let i = 0; i < 5; i++) {
-                tilesRendererServiceRef.current.update();
-              }
-
-              // Schedule additional forced updates
-              setTimeout(() => {
-                if (tilesRendererServiceRef.current) {
-                  // Lower error target even further
-                  const tr = tilesRendererServiceRef.current.getTilesRenderer();
-                  if (tr) {
-                    tr.errorTarget = 0.02;
-                    // Force update several more times
-                    for (let i = 0; i < 3; i++) {
-                      tilesRendererServiceRef.current.update();
-                    }
-                  }
-                }
-              }, 2000);
-            }
-          }
-        },
-        // Reload the entire tile set
-        reloadTiles: () => {
-          if (tilesRendererServiceRef.current) {
-            // Store current camera position and target
-            if (camera && orbitControlsRef.current) {
-              lastCameraPositionRef.current = camera.position.clone();
-              lastCameraTargetRef.current =
-                orbitControlsRef.current.target.clone();
-            }
-
-            // Dispose and reload
-            tilesRendererServiceRef.current.dispose();
-            tilesRendererServiceRef.current = null;
-
-            // Force re-mount by toggling state
-            setTilesLoaded(false);
-            tileLoadRetryCountRef.current++;
-
-            // Reinitialize tiles with the next useEffect cycle
-          }
-        },
-      };
-    }
-
-    return () => {
-      // Remove debug functions
-      if (typeof window !== "undefined") {
-        (window as any).debugTiles = undefined;
-      }
-    };
-  }, [useWhiteMaterial, camera]);
 
   // Initialize shadow manager
   useEffect(() => {
@@ -307,14 +117,14 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
     // Configure CSM based on performance mode
     const shadowMapSize = 2048;
-    const cascades = 2;
+    const cascades = 3;
 
     // Initialize CSM with configuration
     const timeOfDay = new Date(rawTimeOfDay);
     csmController.initialize(timeOfDay, {
       shadowMapSize,
       cascades,
-      maxFar: 5000,
+      maxFar: 500,
     });
 
     // Provide the light reference
@@ -420,6 +230,14 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
 
         // Reset retry counter after successful load
         tileLoadRetryCountRef.current = 0;
+
+        if (tilesRenderer) {
+          memoryManager.initialize(tilesRenderer, camera);
+        } else {
+          console.warn(
+            "Cannot initialize memory manager: tiles renderer is null"
+          );
+        }
       },
       onAttributions: (attributions) => onSetCopyrightInfo(attributions),
       onTileCount: (count) => {
@@ -715,12 +533,10 @@ const TilesScene = forwardRef<TilesSceneRef, {}>(function TilesScene(_, ref) {
         <WhiteTilesMaterial
           tilesGroup={getCurrentTilesRenderer()!.group}
           shadowOpacity={shadowOpacity}
-          enabled={useWhiteMaterial}
+          enabled={true} // TODO: Add back in state management
           brightness={0.8}
           roughness={0.9}
           shadowIntensity={0.8}
-          groundLevelY={groundHeight}
-          isDebug={false}
         />
       )}
 

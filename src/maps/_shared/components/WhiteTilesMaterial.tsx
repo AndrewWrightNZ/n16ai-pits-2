@@ -8,10 +8,8 @@ interface WhiteTilesMaterialProps {
   enabled?: boolean;
   brightness?: number;
   roughness?: number;
-  isDebug?: boolean;
   // New props for shadow enhancement
   shadowIntensity?: number;
-  groundLevelY?: number;
 }
 
 export default function WhiteTilesMaterial({
@@ -20,9 +18,7 @@ export default function WhiteTilesMaterial({
   enabled = true,
   brightness = 1.0,
   roughness = 0.8,
-  isDebug = false,
   shadowIntensity = 0.8,
-  groundLevelY = 60,
 }: WhiteTilesMaterialProps) {
   const originalMaterials = useRef<
     Map<string, THREE.Material | THREE.Material[]>
@@ -164,9 +160,9 @@ export default function WhiteTilesMaterial({
       // Store reference to the shadow material
       shadowOverlayMaterials.current.set(shadowMesh.uuid, shadowMaterial);
     } catch (error) {
-      if (isDebug) {
-        console.error("Error creating shadow overlay:", error);
-      }
+      console.log(
+        `Error creating shadow overlay for mesh ${mesh.uuid}: ${error}`
+      );
     }
   };
 
@@ -250,12 +246,9 @@ export default function WhiteTilesMaterial({
 
     // Set up a recurring check for new objects
     const checkIntervalId = setInterval(() => {
-      let newObjectsFound = false;
-
       const findAndProcessNewObjects = (object: THREE.Object3D) => {
         if (!processedObjects.current.has(object.uuid)) {
           processObject(object);
-          newObjectsFound = true;
         }
 
         // Check children
@@ -276,7 +269,7 @@ export default function WhiteTilesMaterial({
         removeShadowOverlays(tilesGroup);
       }
     };
-  }, [tilesGroup, isActive, groundLevelY]);
+  }, [tilesGroup, isActive]);
 
   // Update shadow overlay opacity when shadowOpacity changes
   useEffect(() => {

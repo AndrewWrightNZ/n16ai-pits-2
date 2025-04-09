@@ -7,7 +7,7 @@ import {
 } from "3d-tiles-renderer/plugins";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
-// Type for extended TilesRenderer with additional properties
+// Update your ExtendedTilesRenderer type definition to include properly typed statistics
 export type ExtendedTilesRenderer = TilesRenderer & {
   loadProgress?: number;
   setLatLonToYUp?: (lat: number, lon: number) => void;
@@ -22,10 +22,21 @@ export type ExtendedTilesRenderer = TilesRenderer & {
   loadSiblings?: boolean;
   skipLevelOfDetail?: boolean;
   optimizeVisibility?: boolean;
-  enableDebugVisual?: boolean; // For debugging which tiles are being loaded
-  traversalCallback?: (tile: any, depth: number, isSeen: boolean) => number; // For prioritizing tiles
-  maximumMemoryUsage?: number; // Memory limit in bytes
-  maxConcurrentRequests?: number; // Maximum number of concurrent requests
+  enableDebugVisual?: boolean;
+  traversalCallback?: (tile: any, depth: number, isSeen: boolean) => number;
+  maximumMemoryUsage?: number;
+  maxConcurrentRequests?: number;
+  statistics?: {
+    memoryUsage?: number;
+    geometryCount?: number;
+    textureCount?: number;
+    tilesToProcess?: number;
+    tilesProcessed?: number;
+    tilesLoaded?: number;
+    averageTimings?: Record<string, number>;
+    [key: string]: any; // Allow for additional statistics properties
+  };
+  memoryUsed?: number; // Alternative property used in some versions
 };
 
 // Event callbacks type definitions
@@ -129,42 +140,132 @@ export class TilesRendererService {
     if (onTileCount) this.onTileCount = onTileCount;
   }
 
+  // Add this method to your TilesRendererService class
+
+  /**
+   * Gets the memory usage statistics from the tiles renderer
+   * @returns Memory usage in bytes or undefined if not available
+   */
+  public getMemoryUsage(): number | undefined {
+    if (!this.tilesRenderer) return undefined;
+
+    // Try to access memory usage from statistics
+    if ("statistics" in this.tilesRenderer && this.tilesRenderer.statistics) {
+      if ("memoryUsage" in this.tilesRenderer.statistics) {
+        return this.tilesRenderer.statistics.memoryUsage;
+      }
+    }
+
+    // Alternative approach: if maximumMemoryUsage and memoryUsed are available properties
+    if (
+      "maximumMemoryUsage" in this.tilesRenderer &&
+      "memoryUsed" in this.tilesRenderer
+    ) {
+      return this.tilesRenderer.memoryUsed;
+    }
+
+    // If both approaches fail, try to use the three.js estimated memory usage
+    let totalGeometryMemory = 0;
+    let totalTextureMemory = 0;
+
+    this.tilesRenderer.group.traverse((node) => {
+      // Type check: only process nodes that are Meshes
+      if (node instanceof THREE.Mesh) {
+        if (node.geometry) {
+          // Estimate geometry memory
+          const geometry = node.geometry;
+          if (geometry.index) {
+            totalGeometryMemory += geometry.index.array.byteLength;
+          }
+
+          for (const attribute in geometry.attributes) {
+            if (geometry.attributes[attribute].array) {
+              totalGeometryMemory +=
+                geometry.attributes[attribute].array.byteLength;
+            }
+          }
+        }
+
+        if (node.material) {
+          // Handle both single material and material array
+          const materials = Array.isArray(node.material)
+            ? node.material
+            : [node.material];
+
+          materials.forEach((material) => {
+            if (material.map) {
+              totalTextureMemory += this.estimateTextureMemory(material.map);
+            }
+            if (material.normalMap) {
+              totalTextureMemory += this.estimateTextureMemory(
+                material.normalMap
+              );
+            }
+          });
+        }
+      }
+    });
+
+    return totalGeometryMemory + totalTextureMemory;
+  }
+
+  /**
+   * Estimates the memory used by a texture
+   * @param texture The texture to estimate memory for
+   * @returns Estimated memory in bytes
+   */
+  private estimateTextureMemory(texture: THREE.Texture): number {
+    if (!texture || !texture.image) return 0;
+
+    const { width, height } = texture.image;
+    // Estimate bytes per pixel (RGBA = 4 bytes per pixel)
+    const bytesPerPixel = 4;
+
+    return width * height * bytesPerPixel;
+  }
+
   /**
    * Configure the tile loading strategy to prioritize visible tiles in center
    */
   configureLoadingStrategy(): void {
     if (!this.tilesRenderer) return;
 
-    // Lower error target means more detail is loaded before moving on to other areas
-    // 6-8 is typically default, 0.5-2 prioritizes detail
-    this.tilesRenderer.errorTarget = 0.5;
+    // CHANGE: Higher error target means less detail (more memory efficient)
+    // Changed from 0.5 to 2.0
+    this.tilesRenderer.errorTarget = 2.0;
 
-    // Higher depth means more detail is loaded
-    this.tilesRenderer.maxDepth = 200;
+    // CHANGE: Lower max depth to reduce the number of detailed tiles loaded
+    // Changed from 200 to 50
+    this.tilesRenderer.maxDepth = 50;
 
-    // Increase memory limit for more tiles
+    // CHANGE: Decrease memory limit for more aggressive memory management
+    // Changed from 6000MB to 2000MB (2GB)
     if ("maximumMemoryUsage" in this.tilesRenderer) {
-      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 4GB
+      this.tilesRenderer.maximumMemoryUsage = 2000 * 1024 * 1024; // 2GB
     }
 
-    // Increase cache size to keep more tiles in memory
+    // CHANGE: Decreased cache size to keep fewer tiles in memory
+    // Changed from 4000 to 1000
     if (this.tilesRenderer.lruCache) {
-      this.tilesRenderer.lruCache.minSize = 4000; // Increase from 2000
+      this.tilesRenderer.lruCache.minSize = 1000;
     }
 
-    // Enable loading of sibling tiles to reduce gaps
+    // CHANGE: Disable loading of sibling tiles to reduce memory usage
+    // Changed from true to false
     if ("loadSiblings" in this.tilesRenderer) {
-      this.tilesRenderer.loadSiblings = true;
+      this.tilesRenderer.loadSiblings = false;
     }
 
-    // Don't skip levels of detail for more complete loading
+    // CHANGE: Skip levels of detail to reduce memory usage
+    // Changed from false to true
     if ("skipLevelOfDetail" in this.tilesRenderer) {
-      this.tilesRenderer.skipLevelOfDetail = false;
+      this.tilesRenderer.skipLevelOfDetail = true;
     }
 
-    // Increase concurrent requests for faster loading
+    // CHANGE: Decrease concurrent requests to reduce memory spikes
+    // Changed from 32 to 16
     if ("maxConcurrentRequests" in this.tilesRenderer) {
-      this.tilesRenderer.maxConcurrentRequests = 32;
+      this.tilesRenderer.maxConcurrentRequests = 16;
     }
 
     // Add traversal callback to modify error multipliers based on distance from center
@@ -278,10 +379,12 @@ export class TilesRendererService {
       if (this.tilesRenderer) {
         if (this.isMoving) {
           // During movement, increase error target for smoother navigation
-          this.tilesRenderer.errorTarget = 4;
+          // CHANGE: Increased from 4 to 8 for more aggressive memory optimization during movement
+          this.tilesRenderer.errorTarget = 8;
         } else {
           // When stationary, decrease error target for higher detail
-          this.tilesRenderer.errorTarget = 0.5;
+          // CHANGE: Increased from 0.5 to 2.0 to maintain memory efficiency
+          this.tilesRenderer.errorTarget = 2.0;
         }
       }
 
@@ -317,15 +420,19 @@ export class TilesRendererService {
     );
 
     // Configure renderer with default settings
-    tilesRenderer.errorTarget = config.errorTarget || 0.5;
-    tilesRenderer.maxDepth = config.maxDepth || 200;
-    tilesRenderer.lruCache.minSize = 4000;
+    // CHANGE: Higher error target (2.0 instead of 0.5) for less detail
+    tilesRenderer.errorTarget = config.errorTarget || 2.0;
+    // CHANGE: Lower max depth (50 instead of 200) for fewer nested tiles
+    tilesRenderer.maxDepth = config.maxDepth || 50;
+    // CHANGE: Smaller cache size (1000 instead of 4000)
+    tilesRenderer.lruCache.minSize = 1000;
 
     // Apply advanced config options if provided
     if (config.maximumMemoryUsage !== undefined) {
       tilesRenderer.maximumMemoryUsage = config.maximumMemoryUsage;
     } else {
-      tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 4GB default
+      // CHANGE: Reduced memory limit from 6GB to 2GB
+      tilesRenderer.maximumMemoryUsage = 2000 * 1024 * 1024; // 2GB default
     }
 
     if (config.loadSiblings !== undefined) {
@@ -339,7 +446,8 @@ export class TilesRendererService {
     if (config.maxConcurrentRequests !== undefined) {
       tilesRenderer.maxConcurrentRequests = config.maxConcurrentRequests;
     } else {
-      tilesRenderer.maxConcurrentRequests = 32; // Default to higher concurrent requests
+      // CHANGE: Reduced from 32 to 16 concurrent requests
+      tilesRenderer.maxConcurrentRequests = 16;
     }
 
     // Set up the display callback to intercept tiles as they're created
@@ -379,7 +487,8 @@ export class TilesRendererService {
           this.tileUpdateScheduled = true;
           setTimeout(() => {
             if (this.tilesRenderer) {
-              this.tilesRenderer.errorTarget = 0.2;
+              // CHANGE: Less aggressive recovery (0.5 -> 1.0)
+              this.tilesRenderer.errorTarget = 1.0;
 
               // Force update several times
               for (let i = 0; i < 5; i++) {
@@ -389,7 +498,8 @@ export class TilesRendererService {
               // Reset error target after recovery
               setTimeout(() => {
                 if (this.tilesRenderer) {
-                  this.tilesRenderer.errorTarget = 0.5;
+                  // CHANGE: Reset to higher error target (0.5 -> 2.0)
+                  this.tilesRenderer.errorTarget = 2.0;
                 }
                 this.tileUpdateScheduled = false;
               }, 2000);
@@ -428,13 +538,15 @@ export class TilesRendererService {
         if (this.tilesRenderer) {
           setTimeout(() => {
             if (this.tilesRenderer) {
-              this.tilesRenderer.errorTarget = 0.2;
+              // CHANGE: Less aggressive loading (0.2 -> 1.0)
+              this.tilesRenderer.errorTarget = 1.0;
               for (let i = 0; i < 3; i++) {
                 this.tilesRenderer.update();
               }
               setTimeout(() => {
                 if (this.tilesRenderer) {
-                  this.tilesRenderer.errorTarget = 0.5;
+                  // CHANGE: Reset to higher error target (0.5 -> 2.0)
+                  this.tilesRenderer.errorTarget = 2.0;
                 }
               }, 2000);
             }
@@ -476,17 +588,20 @@ export class TilesRendererService {
     // Store original error target
     const originalErrorTarget = this.tilesRenderer.errorTarget || 1;
 
-    // Set extremely low error target to force maximum detail
-    this.tilesRenderer.errorTarget = 0.05;
+    // CHANGE: Set less aggressive error target (0.05 -> 1.0)
+    this.tilesRenderer.errorTarget = 1.0;
 
     // Increase maximum memory usage for this operation
     if ("maximumMemoryUsage" in this.tilesRenderer) {
       const originalMemLimit =
         this.tilesRenderer.maximumMemoryUsage || 2000 * 1024 * 1024;
-      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 5GB for max detail
+
+      // CHANGE: Less memory allocation during force load (6GB -> 3GB)
+      this.tilesRenderer.maximumMemoryUsage = 3000 * 1024 * 1024; // 3GB for detail
 
       // Force update several times to ensure tiles get loaded
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 5; i++) {
+        // CHANGE: Reduced iterations (10 -> 5)
         this.tilesRenderer.update();
       }
 
@@ -498,7 +613,8 @@ export class TilesRendererService {
       }, 5000);
     } else {
       // Force update several times to ensure tiles get loaded
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 5; i++) {
+        // CHANGE: Reduced iterations (10 -> 5)
         this.tilesRenderer.update();
       }
     }
@@ -521,15 +637,18 @@ export class TilesRendererService {
     const originalErrorTarget = this.tilesRenderer.errorTarget || 1;
 
     // First pass: aggressive loading at maximum detail
-    this.tilesRenderer.errorTarget = 0.05;
+    // CHANGE: Less aggressive loading (0.05 -> 1.0)
+    this.tilesRenderer.errorTarget = 1.0;
 
     // Maximize detail settings
     if ("maxDepth" in this.tilesRenderer) {
-      this.tilesRenderer.maxDepth = 200;
+      // CHANGE: Lower max depth (200 -> 80)
+      this.tilesRenderer.maxDepth = 80;
     }
 
     if ("maximumMemoryUsage" in this.tilesRenderer) {
-      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 5GB for recovery
+      // CHANGE: Lower memory allocation (6GB -> 3GB)
+      this.tilesRenderer.maximumMemoryUsage = 3000 * 1024 * 1024; // 3GB for recovery
     }
 
     if ("loadSiblings" in this.tilesRenderer) {
@@ -537,17 +656,20 @@ export class TilesRendererService {
     }
 
     // Force update several times to ensure tiles get loaded
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
+      // CHANGE: Reduced iterations (5 -> 3)
       this.tilesRenderer.update();
     }
 
     // Schedule additional forced updates
     setTimeout(() => {
       if (this.tilesRenderer) {
-        this.tilesRenderer.errorTarget = 0.02; // Even more detail
+        // CHANGE: Less aggressive error target (0.02 -> 0.5)
+        this.tilesRenderer.errorTarget = 0.5;
 
         // Force update several more times
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 2; i++) {
+          // CHANGE: Reduced iterations (3 -> 2)
           this.tilesRenderer.update();
         }
 
@@ -795,29 +917,32 @@ export class TilesRendererService {
 
     // After repositioning, force a loading priority reset
     if (this.tilesRenderer) {
-      // Lower error target for higher detail at new location
-      this.tilesRenderer.errorTarget = 0.2;
+      // CHANGE: Higher error target for lower memory usage (0.2 -> 1.0)
+      this.tilesRenderer.errorTarget = 1.0;
 
       // Force update several times to recalculate priorities
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 3; i++) {
+        // CHANGE: Reduced iterations (5 -> 3)
         this.tilesRenderer.update();
       }
 
       // Schedule additional updates after a brief delay
       setTimeout(() => {
         if (this.tilesRenderer) {
-          // Further reduce error target for super-detailed loading
-          this.tilesRenderer.errorTarget = 0.1;
+          // CHANGE: Higher error target (0.1 -> 1.0)
+          this.tilesRenderer.errorTarget = 1.0;
 
           // Force additional updates
-          for (let i = 0; i < 3; i++) {
+          for (let i = 0; i < 2; i++) {
+            // CHANGE: Reduced iterations (3 -> 2)
             this.tilesRenderer.update();
           }
 
           // Return to normal detail level
           setTimeout(() => {
             if (this.tilesRenderer) {
-              this.tilesRenderer.errorTarget = 0.5;
+              // CHANGE: Higher error target (0.5 -> 2.0)
+              this.tilesRenderer.errorTarget = 2.0;
             }
           }, 2000);
         }
@@ -926,7 +1051,8 @@ export class TilesRendererService {
           const distanceToCamera = this.camera.position.distanceTo(
             object.position
           );
-          const shadowCastDistance = 300;
+          // CHANGE: Reduced shadow cast distance (300 -> 200)
+          const shadowCastDistance = 200;
 
           object.castShadow = distanceToCamera < shadowCastDistance;
         } else {
