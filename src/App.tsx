@@ -2,15 +2,13 @@
 import ThreeDTilesMap from "./maps/PhotorealisticTilesMap";
 
 // Context
-import { MapSettingsProvider } from "./maps/_shared/context/useMapSettingsContext";
+import GeneralProviders from "./providers";
 
 const App = () => {
   return (
-    <>
-      <MapSettingsProvider>
-        <ThreeDTilesMap />
-      </MapSettingsProvider>
-    </>
+    <GeneralProviders>
+      <ThreeDTilesMap />
+    </GeneralProviders>
   );
 };
 

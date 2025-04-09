@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-routes": "router generate"
   },
   "dependencies": {
     "@react-google-maps/api": "^2.20.6",
@@ -15,20 +16,26 @@
     "@react-three/fiber": "^9.0.4",
     "@react-three/postprocessing": "^3.0.4",
     "@tailwindcss/vite": "^4.0.11",
+    "@tanstack/react-router": "^1.115.2",
+    "@tanstack/router-devtools": "^1.115.2",
     "@types/three": "^0.174.0",
     "3d-tiles-renderer": "^0.4.7",
     "clsx": "^2.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-helmet": "^6.1.0",
     "tailwind-merge": "^3.0.2",
     "three": "^0.174.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
     "@tailwindcss/postcss": "^4.0.11",
+    "@tanstack/react-router-devtools": "^1.115.2",
+    "@tanstack/router-plugin": "^1.115.2",
     "@types/google.maps": "^3.58.1",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/react-helmet": "^6.1.11",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.21.0",
