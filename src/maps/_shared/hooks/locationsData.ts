@@ -28,14 +28,14 @@ export const PRESET_LOCATIONS: Record<string, PresetLocation> = {
   sanFrancisco: {
     lat: 37.7749,
     lng: -122.4194,
-    altitude: 500,
+    altitude: 182,
     heading: 0,
     description: "San Francisco",
   },
   newYork: {
     lat: 40.7128,
     lng: -74.006,
-    altitude: 500,
+    altitude: 182,
     heading: 45,
     description: "New York",
   },

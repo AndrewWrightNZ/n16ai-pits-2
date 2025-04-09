@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
 import BasicTilesScene, { TilesSceneRef } from "./BasicTileScene";
 import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedMemoryMonitor";
+import DraggableLocationsModal from "./DraggableLocationsModal";
 
 export default function SimplePhotorealisticTilesMap() {
   // Ref to access TilesRendererService
@@ -49,6 +50,8 @@ export default function SimplePhotorealisticTilesMap() {
           {/* Just use the BasicTilesScene */}
           <BasicTilesScene ref={tilesSceneRef} />
         </Canvas>
+
+        <DraggableLocationsModal />
 
         {/* Loading overlay */}
         {isLoading && (
