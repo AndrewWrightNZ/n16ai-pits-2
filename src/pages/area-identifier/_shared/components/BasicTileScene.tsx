@@ -171,8 +171,8 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
 
       // Initialize with performance-focused config
       tilesRendererService.initializeWithConfig({
-        errorTarget: 1.0, // Higher error = less detail but better performance
-        maxDepth: 50, // Reduced depth
+        errorTarget: 0.2,
+        maxDepth: 200, // Reduced depth
         maximumMemoryUsage: 4000 * 1024 * 1024, // 4GB
         loadSiblings: false, // Don't load neighboring tiles for performance
         skipLevelOfDetail: true, // Skip LODs for better performance
