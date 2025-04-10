@@ -2,14 +2,11 @@ import * as THREE from "three";
 import { useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
-// Import the EnhancedTilesScene instead of BasicTilesScene
 import EnhancedTilesScene, { TilesSceneRef } from "./BasicTileScene";
 import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedMemoryMonitor";
 import DraggableLocationsModal from "./DraggableLocationsModal";
-import {
-  convertCameraToPresetLocation,
-  PRESET_LOCATIONS,
-} from "../../../../maps/_shared/hooks/locationsData";
+import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
+import { Pub } from "../../../../_shared/types";
 
 export default function SimplePhotorealisticTilesMap() {
   // Ref to access TilesRendererService and camera functions
@@ -35,9 +32,10 @@ export default function SimplePhotorealisticTilesMap() {
 
       // View - only for copyright info
       copyrightInfo,
-
+    },
+    operations: {
       // Location
-      currentLocation,
+      onSetCurrentLocation,
     },
   } = useMapSettings();
 
@@ -75,112 +73,67 @@ export default function SimplePhotorealisticTilesMap() {
     }
   }, [isLoading]);
 
-  // Function to save the current camera view
-  const saveCurrentView = () => {
-    if (tilesSceneRef.current) {
-      const state = tilesSceneRef.current.saveCameraState();
-      if (state) {
-        const viewData = {
-          position: {
-            x: parseFloat(state.position.x.toFixed(2)),
-            y: parseFloat(state.position.y.toFixed(2)),
-            z: parseFloat(state.position.z.toFixed(2)),
-          },
-          target: {
-            x: parseFloat(state.target.x.toFixed(2)),
-            y: parseFloat(state.target.y.toFixed(2)),
-            z: parseFloat(state.target.z.toFixed(2)),
-          },
-        };
+  // Simple function to jump to pub location using lat/lng
+  const handleJumpToPub = (pub: Pub) => {
+    if (!pub.latitude || !pub.longitude) return;
 
-        // Save to localStorage or your state management
-        const savedViews = JSON.parse(
-          localStorage.getItem("savedCameraViews") || "[]"
-        );
-        savedViews.push(viewData);
-        localStorage.setItem("savedCameraViews", JSON.stringify(savedViews));
+    // Create a temporary location key
+    const tempKey = `temp_pub_${pub.id}`;
 
-        alert("View saved!");
-        console.log("Saved view:", viewData);
-      }
-    }
+    // Create a basic location object with just lat/lng
+    const tempLocation = {
+      lat: pub.latitude,
+      lng: pub.longitude,
+      altitude: 250, // Default viewing height
+      heading: 0, // Default heading
+      description: pub.name,
+    };
+
+    // Add to PRESET_LOCATIONS temporarily
+    PRESET_LOCATIONS[tempKey] = tempLocation;
+
+    // Set as current location
+    onSetCurrentLocation(tempKey);
+
+    // Show camera panel after a short delay
+    setTimeout(() => {
+      setShowCameraPanel(true);
+    }, 1000);
   };
 
-  // Function to copy camera location to clipboard
-  const copyViewToClipboard = () => {
-    if (tilesSceneRef.current) {
-      const position = tilesSceneRef.current.getCameraPosition();
-      const target = tilesSceneRef.current.getCameraTarget();
+  // Function to copy the current camera position for adding to presets
+  const copyCurrentPositionAsPreset = () => {
+    if (!tilesSceneRef.current) return;
 
-      if (position && target) {
-        const cameraData = {
-          position: {
-            x: parseFloat(position.x.toFixed(2)),
-            y: parseFloat(position.y.toFixed(2)),
-            z: parseFloat(position.z.toFixed(2)),
-          },
-          target: {
-            x: parseFloat(target.x.toFixed(2)),
-            y: parseFloat(target.y.toFixed(2)),
-            z: parseFloat(target.z.toFixed(2)),
-          },
-        };
+    const position = tilesSceneRef.current.getCameraPosition();
+    const target = tilesSceneRef.current.getCameraTarget();
 
-        navigator.clipboard.writeText(JSON.stringify(cameraData, null, 2));
-        alert("Camera position copied to clipboard!");
-      }
+    if (!position || !target) return;
+
+    // Create a simple preset template with current position
+    const presetCode = `
+  my_location: {
+    lat: 51.5074, // Update with correct latitude
+    lng: -0.1278, // Update with correct longitude
+    altitude: ${parseFloat(Math.abs(position.y).toFixed(2))},
+    heading: 0,   // Update as needed
+    description: "My Custom Location",
+    // Camera position details
+    position: {
+      x: ${parseFloat(position.x.toFixed(2))},
+      y: ${parseFloat(position.y.toFixed(2))},
+      z: ${parseFloat(position.z.toFixed(2))}
+    },
+    target: {
+      x: ${parseFloat(target.x.toFixed(2))},
+      y: ${parseFloat(target.y.toFixed(2))},
+      z: ${parseFloat(target.z.toFixed(2))}
     }
-  };
+  },`;
 
-  // Function to save current camera position as a new preset location
-  const saveAsPresetLocation = () => {
-    if (tilesSceneRef.current) {
-      const position = tilesSceneRef.current.getCameraPosition();
-      const target = tilesSceneRef.current.getCameraTarget();
-
-      if (position && target) {
-        const cameraData = {
-          position: {
-            x: position.x,
-            y: position.y,
-            z: position.z,
-          },
-          target: {
-            x: target.x,
-            y: target.y,
-            z: target.z,
-          },
-        };
-
-        // Get location name from user
-        const locationName = prompt(
-          "Enter a name for this location:",
-          "My Location"
-        );
-
-        if (locationName) {
-          // Convert to PresetLocation format
-          const presetLocation = convertCameraToPresetLocation(
-            cameraData,
-            locationName,
-            {
-              lat: PRESET_LOCATIONS[currentLocation]?.lat || 0, // Replace with actual latitude if available
-              lng: PRESET_LOCATIONS[currentLocation]?.lng || 0, // Replace with actual longitude if available
-            }
-          );
-
-          // Log the formatted preset - you can copy this to your PRESET_LOCATIONS object
-          console.log("New Preset Location:");
-          console.log(JSON.stringify(presetLocation, null, 2));
-
-          // Optional: Copy to clipboard for easy pasting
-          navigator.clipboard.writeText(
-            JSON.stringify(presetLocation, null, 2)
-          );
-          alert(`Preset location "${locationName}" copied to clipboard!`);
-        }
-      }
-    }
+    // Copy to clipboard
+    navigator.clipboard.writeText(presetCode);
+    alert("Position code copied! Update lat/lng values before using.");
   };
 
   return (
@@ -206,11 +159,15 @@ export default function SimplePhotorealisticTilesMap() {
             gl.domElement.style.transformOrigin = "center center";
           }}
         >
-          {/* Use the EnhancedTilesScene instead of BasicTilesScene */}
+          {/* Use the EnhancedTilesScene for camera tracking */}
           <EnhancedTilesScene ref={tilesSceneRef} />
         </Canvas>
 
-        <DraggableLocationsModal />
+        {/* Simplified location modal with pub jumping capability */}
+        <DraggableLocationsModal
+          onJumpToPub={handleJumpToPub}
+          title="Locations & Pubs"
+        />
 
         {/* Camera Details Button - always visible */}
         <button
@@ -222,7 +179,7 @@ export default function SimplePhotorealisticTilesMap() {
 
         {/* Camera Details Panel - conditionally rendered */}
         {showCameraPanel && !isLoading && (
-          <div className="absolute top-32 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
+          <div className="absolute top-26 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
             <h3 className="text-sm font-bold mb-2">Camera Details</h3>
             <div className="text-xs space-y-1">
               <div>
@@ -236,26 +193,16 @@ export default function SimplePhotorealisticTilesMap() {
                 {cameraInfo.target.z}
               </div>
             </div>
-            <div className="mt-3 flex space-x-2">
-              <button
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
-                onClick={saveCurrentView}
-              >
-                Save View
-              </button>
-              <button
-                className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-2 py-1 rounded"
-                onClick={copyViewToClipboard}
-              >
-                Copy Position
-              </button>
-
+            <div className="mt-3">
               <button
                 className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded"
-                onClick={saveAsPresetLocation}
+                onClick={copyCurrentPositionAsPreset}
               >
-                Save as Preset
+                Copy Current Position
               </button>
+              <p className="text-xs text-gray-400 mt-1">
+                Use orbit controls to adjust view before copying
+              </p>
             </div>
           </div>
         )}
