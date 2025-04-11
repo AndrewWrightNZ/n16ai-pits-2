@@ -141,6 +141,7 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
         >
           <option value="">Select Pub Area</option>
           <option value="pavement">Pavement</option>
+          <option value="frontage-seating">Frontage seating</option>
           <option value="terrace">Terrace</option>
           <option value="beer-garden">Beer garden</option>
           {/* Add more options as needed */}

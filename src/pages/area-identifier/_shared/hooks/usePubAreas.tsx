@@ -79,13 +79,15 @@ const usePubAreas = (): PubAreasResponse => {
   // Queries
 
   const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPub?.id];
-  const { data: areasForPub = [], isLoading: isLoadingAreasForPub } = useQuery({
+  const {
+    data: areasForPub = [],
+    isLoading: isLoadingAreasForPub,
+    refetch: onRefetchAreasForPub,
+  } = useQuery({
     queryKey: GET_PUB_AREAS_QUERY_KEY,
     queryFn: () => fetchAreasForPub(),
     enabled: !!selectedPub,
   });
-
-  console.log("areasForPub", areasForPub);
 
   //
 
@@ -137,6 +139,8 @@ const usePubAreas = (): PubAreasResponse => {
             description: "",
             type: "",
           });
+
+          onRefetchAreasForPub();
         },
         onError: (error) => {
           console.error("Error saving pub area details:", error);
