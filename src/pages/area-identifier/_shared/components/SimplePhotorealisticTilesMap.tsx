@@ -8,19 +8,19 @@ import DraggableLocationsModal from "./DraggableLocationsModal";
 import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
 import { Pub } from "../../../../_shared/types";
 
-// Define an interface for camera view data
-interface CameraViewData {
-  position: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  target: {
-    x: number;
-    y: number;
-    z: number;
-  };
-}
+// // Define an interface for camera view data
+// interface CameraViewData {
+//   position: {
+//     x: number;
+//     y: number;
+//     z: number;
+//   };
+//   target: {
+//     x: number;
+//     y: number;
+//     z: number;
+//   };
+// }
 
 export default function SimplePhotorealisticTilesMap() {
   // Ref to access TilesRendererService and camera functions
@@ -31,12 +31,15 @@ export default function SimplePhotorealisticTilesMap() {
     position: { x: 0, y: 0, z: 0 },
     target: { x: 0, y: 0, z: 0 },
   });
+  const [pubAreaName, setPubAreaName] = useState("");
+  const [pubAreaType, setPubAreaType] = useState("");
+  const [pubAreaDescription, setPubAreaDescription] = useState("");
 
   // State to track the currently selected pub
   const [selectedPub, setSelectedPub] = useState<Pub | null>(null);
 
   // State to control camera panel visibility
-  const [showCameraPanel, setShowCameraPanel] = useState(false);
+  const [showCameraPanel, setShowCameraPanel] = useState(true);
 
   // Hooks - only keep what's needed for loading states
   const {
@@ -133,6 +136,7 @@ export default function SimplePhotorealisticTilesMap() {
     // Get lat/lng from the selected pub if available
     const lat = selectedPub?.latitude || 51.5074;
     const lng = selectedPub?.longitude || -0.1278;
+    const pubId = selectedPub?.id || 0;
     const pubName = selectedPub?.name || "My Custom Location";
     const locationKey = selectedPub
       ? selectedPub.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
@@ -159,58 +163,31 @@ export default function SimplePhotorealisticTilesMap() {
     }
   },`;
 
+    const newPubArea = {
+      pubId,
+      name: pubAreaName,
+      description: pubAreaDescription,
+      type: pubAreaType,
+      latitude: lat,
+      longitude: lng,
+      camera_view: {
+        position: {
+          x: parseFloat(position.x.toFixed(2)),
+          y: parseFloat(position.y.toFixed(2)),
+          z: parseFloat(position.z.toFixed(2)),
+        },
+        target: {
+          x: parseFloat(target.x.toFixed(2)),
+          y: parseFloat(target.y.toFixed(2)),
+          z: parseFloat(target.z.toFixed(2)),
+        },
+      },
+    };
+
+    console.log("New pub area data:", newPubArea);
+
     // Copy to clipboard
     navigator.clipboard.writeText(presetCode);
-    alert("Complete position data copied to clipboard!");
-  };
-
-  // Function to save current view to pub data
-  const saveViewToPub = () => {
-    if (!selectedPub || !tilesSceneRef.current) return;
-
-    const position = tilesSceneRef.current.getCameraPosition();
-    const target = tilesSceneRef.current.getCameraTarget();
-
-    if (!position || !target) return;
-
-    // Create camera view data object
-    const cameraViewData: CameraViewData = {
-      position: {
-        x: parseFloat(position.x.toFixed(2)),
-        y: parseFloat(position.y.toFixed(2)),
-        z: parseFloat(position.z.toFixed(2)),
-      },
-      target: {
-        x: parseFloat(target.x.toFixed(2)),
-        y: parseFloat(target.y.toFixed(2)),
-        z: parseFloat(target.z.toFixed(2)),
-      },
-    };
-
-    // Create a complete data object to save to database
-    const pubViewData = {
-      pub_id: selectedPub.id,
-      latitude: selectedPub.latitude,
-      longitude: selectedPub.longitude,
-      name: selectedPub.name,
-      camera_view: cameraViewData,
-    };
-
-    // Convert to JSON for saving to database
-    const jsonData = JSON.stringify(pubViewData, null, 2);
-
-    // Copy to clipboard (you would normally send this to your backend)
-    navigator.clipboard.writeText(jsonData);
-
-    // Show confirmation
-    alert(
-      `View data for "${selectedPub.name}" copied to clipboard!\n\nIn a real implementation, this would be saved to your database.`
-    );
-
-    console.log("Pub view data to save:", pubViewData);
-
-    // Here you would typically make an API call to save this data
-    // Example: savePubView(pubViewData);
   };
 
   return (
@@ -280,21 +257,40 @@ export default function SimplePhotorealisticTilesMap() {
               )}
             </div>
             <div className="mt-3 flex flex-col space-y-2">
-              <button
-                className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded"
-                onClick={copyCurrentPositionAsPreset}
-              >
-                Copy as PRESET_LOCATIONS Entry
-              </button>
+              <input
+                type="text"
+                value={pubAreaName}
+                onChange={(e) => setPubAreaName(e.target.value)}
+                placeholder="Enter Pub Area Name"
+                className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
+              />
+              <input
+                type="text"
+                value={pubAreaDescription}
+                onChange={(e) => setPubAreaDescription(e.target.value)}
+                placeholder="Enter Pub Area Description"
+                className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
+              />
 
-              {selectedPub && (
-                <button
-                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
-                  onClick={saveViewToPub}
-                >
-                  Save View to Pub Data
-                </button>
-              )}
+              <select
+                className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
+                value={pubAreaType}
+                onChange={(e) => setPubAreaType(e.target.value)}
+              >
+                <option value="">Select Pub Area</option>
+                <option value="pavement">Pavement</option>
+                <option value="terrace">Terrace</option>
+                <option value="beer-garden">Beer garden</option>
+                {/* Add more options as needed */}
+              </select>
+
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded disabled:opacity-50"
+                onClick={copyCurrentPositionAsPreset}
+                disabled={!pubAreaName || !pubAreaDescription || !pubAreaType}
+              >
+                Save PubArea view
+              </button>
 
               <p className="text-xs text-gray-400 mt-1">
                 Use orbit controls to adjust view before saving
