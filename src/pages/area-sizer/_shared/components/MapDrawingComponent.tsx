@@ -10,9 +10,14 @@ import { Loader } from "@googlemaps/js-api-loader";
 // API key from environment variables
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+interface PolygonCoordinate {
+  lat: number;
+  lng: number;
+}
+
 interface MapDrawingComponentProps {
   onAreaChange?: (area: number) => void;
-  onShapeChange?: (shape: google.maps.Polygon | null) => void;
+  onPolygonComplete?: (coordinates: PolygonCoordinate[]) => void;
   initialCenter?: { lat: number; lng: number };
   initialZoom?: number;
   height?: string;
@@ -21,20 +26,19 @@ interface MapDrawingComponentProps {
 
 export interface MapDrawingRef {
   clearShape: () => void;
-  getShapeCoordinates: () => Array<{ lat: number; lng: number }> | null;
+  getShapeCoordinates: () => PolygonCoordinate[] | null;
   calculateCurrentArea: () => number;
   isMapReady: boolean;
   getMap: () => google.maps.Map | null;
-  getDrawingManager: () => google.maps.drawing.DrawingManager | null;
-  panTo: (lat: number, lng: number) => void;
+  setCenter: (lat: number, lng: number) => void;
+  setZoom: (zoom: number) => void;
 }
 
-// Extremely simplified drawing component - focus only on essential functionality
 const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
   (
     {
       onAreaChange,
-      onShapeChange,
+      onPolygonComplete,
       initialCenter = { lat: 51.5074, lng: -0.1278 },
       initialZoom = 18,
       height = "500px",
@@ -42,17 +46,17 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
     },
     ref
   ) => {
-    // DOM elements and Google Maps objects
+    // Basic refs
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<google.maps.Map | null>(null);
     const drawingManagerRef = useRef<google.maps.drawing.DrawingManager | null>(
       null
     );
     const shapeRef = useRef<google.maps.Polygon | null>(null);
-    const isMountedRef = useRef(true);
     const loadingDivRef = useRef<HTMLDivElement | null>(null);
+    const isMountedRef = useRef(true);
 
-    // Area calculation function
+    // Calculate area for a polygon
     const calculateArea = useCallback(
       (shape: google.maps.Polygon): number => {
         if (!shape || !window.google) return 0;
@@ -74,61 +78,13 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
       [onAreaChange]
     );
 
-    // Clear the current shape
-    const clearShape = useCallback(() => {
-      if (shapeRef.current) {
-        shapeRef.current.setMap(null);
-        shapeRef.current = null;
-
-        if (isMountedRef.current) {
-          if (onAreaChange) onAreaChange(0);
-          if (onShapeChange) onShapeChange(null);
-        }
-      }
-    }, [onAreaChange, onShapeChange]);
-
-    // Pan the map to a specific location
-    const panTo = useCallback((lat: number, lng: number) => {
-      if (!mapInstanceRef.current) {
-        console.log("Map not initialized yet");
-        return;
-      }
-
-      try {
-        // Pan the map to the specified coordinates
-        mapInstanceRef.current.panTo({ lat, lng });
-
-        // Set an appropriate zoom level for viewing a pub
-        mapInstanceRef.current.setZoom(19);
-
-        // Add a marker if needed
-        // This is optional, but can be useful to mark the selected pub
-        if (window.google) {
-          // Clear any existing markers first
-          // This assumes you're tracking markers somewhere, which you should add if needed
-
-          // Create a new marker
-          new google.maps.Marker({
-            position: { lat, lng },
-            map: mapInstanceRef.current,
-            animation: google.maps.Animation.DROP,
-          });
-        }
-      } catch (error) {
-        console.error("Error panning to location:", error);
-      }
-    }, []);
-
     // Get coordinates of the current shape
-    const getShapeCoordinates = useCallback((): Array<{
-      lat: number;
-      lng: number;
-    }> | null => {
+    const getShapeCoordinates = useCallback((): PolygonCoordinate[] | null => {
       if (!shapeRef.current) return null;
 
       try {
         const path = shapeRef.current.getPath();
-        const coordinates: Array<{ lat: number; lng: number }> = [];
+        const coordinates: PolygonCoordinate[] = [];
 
         for (let i = 0; i < path.getLength(); i++) {
           const point = path.getAt(i);
@@ -145,19 +101,47 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
       }
     }, []);
 
-    // Initialize Google Maps once
-    useEffect(() => {
-      // Clean up any existing state first (in case of remounting)
+    // Clear the current shape
+    const clearShape = useCallback(() => {
       if (shapeRef.current) {
         shapeRef.current.setMap(null);
         shapeRef.current = null;
-      }
 
-      if (drawingManagerRef.current) {
-        drawingManagerRef.current.setMap(null);
-        drawingManagerRef.current = null;
-      }
+        if (isMountedRef.current && onAreaChange) {
+          onAreaChange(0);
+        }
 
+        // Let parent know polygon is gone
+        if (onPolygonComplete) {
+          onPolygonComplete([]);
+        }
+      }
+    }, [onAreaChange, onPolygonComplete]);
+
+    // Set center position (without any side effects)
+    const setCenter = useCallback((lat: number, lng: number) => {
+      if (!mapInstanceRef.current) return;
+
+      try {
+        mapInstanceRef.current.setCenter({ lat, lng });
+      } catch (error) {
+        console.error("Error setting center:", error);
+      }
+    }, []);
+
+    // Set zoom level (without any side effects)
+    const setZoom = useCallback((zoom: number) => {
+      if (!mapInstanceRef.current) return;
+
+      try {
+        mapInstanceRef.current.setZoom(zoom);
+      } catch (error) {
+        console.error("Error setting zoom:", error);
+      }
+    }, []);
+
+    // Initialize Google Maps
+    useEffect(() => {
       // Set mounted flag
       isMountedRef.current = true;
 
@@ -177,15 +161,13 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
 
           if (!isMountedRef.current || !mapRef.current) return;
 
-          // Create the map with custom styles to remove labels
+          // Create the map
           const map = new google.maps.Map(mapRef.current, {
             center: initialCenter,
             zoom: initialZoom,
             mapTypeId: google.maps.MapTypeId.HYBRID,
             streetViewControl: false,
-            // Disable 45-degree tilt
-            tilt: 0,
-            // Disable labels
+            tilt: 0, // Disable 45-degree tilt
             styles: [
               {
                 featureType: "all",
@@ -193,17 +175,15 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
                 stylers: [{ visibility: "off" }],
               },
             ],
-            // Additional options to improve the look
-            disableDefaultUI: false,
             zoomControl: true,
             mapTypeControl: true,
             scaleControl: true,
-            rotateControl: false, // Disable rotate control
+            rotateControl: false,
           });
 
           mapInstanceRef.current = map;
 
-          // Create drawing manager with polygon mode
+          // Create drawing manager
           const drawingManager = new google.maps.drawing.DrawingManager({
             drawingMode: google.maps.drawing.OverlayType.POLYGON,
             drawingControl: true,
@@ -235,7 +215,7 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
               drawingManager.setDrawingMode(null);
 
               if (event.type === google.maps.drawing.OverlayType.POLYGON) {
-                // Remove previous shape if it exists
+                // Clear previous shape
                 if (shapeRef.current) {
                   shapeRef.current.setMap(null);
                 }
@@ -247,15 +227,26 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
                 // Calculate area
                 calculateArea(newShape);
 
-                if (onShapeChange && isMountedRef.current) {
-                  onShapeChange(newShape);
+                // Get and store the coordinates
+                const coordinates = getShapeCoordinates();
+
+                // Notify parent component of the completed polygon
+                if (coordinates && onPolygonComplete) {
+                  onPolygonComplete(coordinates);
                 }
 
                 // Add listeners for shape editing
                 const path = newShape.getPath();
                 const pathUpdateHandler = () => {
                   if (isMountedRef.current) {
+                    // Recalculate area
                     calculateArea(newShape);
+
+                    // Update coordinates in parent if available
+                    const updatedCoordinates = getShapeCoordinates();
+                    if (updatedCoordinates && onPolygonComplete) {
+                      onPolygonComplete(updatedCoordinates);
+                    }
                   }
                 };
 
@@ -297,19 +288,23 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
       return () => {
         isMountedRef.current = false;
 
-        // Clear the shape
         if (shapeRef.current) {
           shapeRef.current.setMap(null);
           shapeRef.current = null;
         }
 
-        // Clear the drawing manager
         if (drawingManagerRef.current) {
           drawingManagerRef.current.setMap(null);
           drawingManagerRef.current = null;
         }
       };
-    }, [initialCenter, initialZoom, calculateArea, onShapeChange]);
+    }, [
+      initialCenter,
+      initialZoom,
+      calculateArea,
+      getShapeCoordinates,
+      onPolygonComplete,
+    ]);
 
     // Export methods via ref
     useImperativeHandle(
@@ -321,10 +316,10 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
           shapeRef.current ? calculateArea(shapeRef.current) : 0,
         isMapReady: !!mapInstanceRef.current,
         getMap: () => mapInstanceRef.current,
-        getDrawingManager: () => drawingManagerRef.current,
-        panTo,
+        setCenter,
+        setZoom,
       }),
-      [clearShape, getShapeCoordinates, calculateArea, panTo]
+      [clearShape, getShapeCoordinates, calculateArea, setCenter, setZoom]
     );
 
     return (

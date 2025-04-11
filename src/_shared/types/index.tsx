@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { PolygonCoordinate } from "../../pages/area-identifier/_shared/hooks/usePubAreas";
 
 export interface Pub {
   id: number;
@@ -34,6 +35,7 @@ export interface PubArea {
   pub_id: number;
   created_at: string;
   floor_area: number;
+  coordinates: PolygonCoordinate[];
 }
 
 export interface CameraPosition {

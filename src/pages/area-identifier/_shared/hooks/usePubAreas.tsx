@@ -40,9 +40,15 @@ interface CreateNewPubAreaProps {
   };
 }
 
+export interface PolygonCoordinate {
+  lat: number;
+  lng: number;
+}
+
 interface SaveFloorAreaPayload {
   pub_area_id: number;
   floor_area: number;
+  coordinates: PolygonCoordinate[];
 }
 
 interface PubAreasOperations {
@@ -125,16 +131,21 @@ const usePubAreas = (): PubAreasResponse => {
   );
 
   const { mutate: saveFloorArea, isPending: isSavingFloorArea } = useMutation({
-    mutationFn: async ({ pub_area_id, floor_area }: SaveFloorAreaPayload) => {
+    mutationFn: async ({
+      pub_area_id,
+      floor_area,
+      coordinates,
+    }: SaveFloorAreaPayload) => {
       console.log("Saving floor area:", {
         pub_area_id,
         floor_area,
+        coordinates,
       });
 
       // Update floor aera for the pub area
       const { data, error } = await supabaseClient
         .from("pub_area")
-        .update({ floor_area })
+        .update({ floor_area, coordinates })
         .eq("id", pub_area_id);
       if (error) throw error;
       return data;
