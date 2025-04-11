@@ -64,10 +64,10 @@ const CreatePubArea = ({
   },`;
 
     onSavePubAreaDetails({
-      pubId,
+      pub_id: pubId,
       latitude: lat,
       longitude: lng,
-      cameraPosition: {
+      camera_position: {
         position: {
           x: parseFloat(position.x.toFixed(2)),
           y: parseFloat(position.y.toFixed(2)),

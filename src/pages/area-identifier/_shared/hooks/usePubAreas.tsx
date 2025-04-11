@@ -1,3 +1,5 @@
+import { useMutation } from "@tanstack/react-query";
+import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
 import {
   PubAreasState,
   usePubAreasContext,
@@ -21,10 +23,21 @@ interface SimpleCameraPosition {
 }
 
 interface SavePubAreaDetailsPayload {
-  pubId: number;
+  pub_id: number;
   latitude: number;
   longitude: number;
-  cameraPosition: SimpleCameraPosition;
+  camera_position: SimpleCameraPosition;
+}
+
+interface CreateNewPubAreaProps {
+  draftPubArea: {
+    name: string;
+    description: string;
+    type: string;
+    latitude: number;
+    longitude: number;
+    camera_position: SimpleCameraPosition;
+  };
 }
 
 interface PubAreasOperations {
@@ -53,7 +66,30 @@ const usePubAreas = (): PubAreasResponse => {
 
   //
 
-  // Update details
+  // Mutations
+  const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
+    {
+      mutationFn: async ({ draftPubArea }: CreateNewPubAreaProps) => {
+        // Create a unique ID from the timestamp
+        const id = Date.now();
+
+        const { data, error } = await supabaseClient.from("pub_area").insert([
+          {
+            ...draftPubArea,
+            id,
+          },
+        ]);
+
+        if (error) throw error;
+
+        return data;
+      },
+    }
+  );
+
+  //
+
+  // Handlers
   const onUpdatePubAreaDetails = (newDetails: Partial<PubAreasState>) => {
     updatePubAreasState(newDetails);
   };
@@ -65,6 +101,20 @@ const usePubAreas = (): PubAreasResponse => {
       type,
       ...payload,
     };
+
+    saveNewPubArea(
+      {
+        draftPubArea: completePubAreaDetails,
+      },
+      {
+        onSuccess: () => {
+          console.log("Pub area details saved successfully!");
+        },
+        onError: (error) => {
+          console.error("Error saving pub area details:", error);
+        },
+      }
+    );
 
     console.log(
       "Complete pub area details to save to DB:",
