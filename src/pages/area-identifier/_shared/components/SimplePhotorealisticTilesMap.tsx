@@ -1,13 +1,35 @@
 import * as THREE from "three";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
+
+// Hooks
+import usePubAreas from "../hooks/usePubAreas";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
-import BasicTilesScene, { TilesSceneRef } from "./BasicTileScene";
+
+// Components
+import CreatePubArea from "./CreatePubArea";
+import DraggableLocationsModal from "./DraggableLocationsModal";
+import EnhancedTilesScene, { TilesSceneRef } from "./BasicTileScene";
 import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedMemoryMonitor";
 
+// Data
+import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
+
+// Types
+import { Pub } from "../../../../_shared/types";
+
 export default function SimplePhotorealisticTilesMap() {
-  // Ref to access TilesRendererService
+  // Ref to access TilesRendererService and camera functions
   const tilesSceneRef = useRef<TilesSceneRef>(null);
+
+  // State for tracking camera details
+  const [cameraInfo, setCameraInfo] = useState({
+    position: { x: 0, y: 0, z: 0 },
+    target: { x: 0, y: 0, z: 0 },
+  });
+
+  // State to control camera panel visibility
+  const [showCameraPanel, setShowCameraPanel] = useState(true);
 
   // Hooks - only keep what's needed for loading states
   const {
@@ -21,7 +43,80 @@ export default function SimplePhotorealisticTilesMap() {
       // View - only for copyright info
       copyrightInfo,
     },
+    operations: {
+      // Location
+      onSetCurrentLocation,
+    },
   } = useMapSettings();
+
+  const {
+    operations: { onSetSelectedPub },
+  } = usePubAreas();
+
+  // Function to update camera information
+  const updateCameraInfo = () => {
+    if (tilesSceneRef.current) {
+      const position = tilesSceneRef.current.getCameraPosition();
+      const target = tilesSceneRef.current.getCameraTarget();
+
+      if (position && target) {
+        setCameraInfo({
+          position: {
+            x: parseFloat(position.x.toFixed(2)),
+            y: parseFloat(position.y.toFixed(2)),
+            z: parseFloat(position.z.toFixed(2)),
+          },
+          target: {
+            x: parseFloat(target.x.toFixed(2)),
+            y: parseFloat(target.y.toFixed(2)),
+            z: parseFloat(target.z.toFixed(2)),
+          },
+        });
+      }
+    }
+  };
+
+  // Update camera info at regular intervals
+  useEffect(() => {
+    if (!isLoading) {
+      const intervalId = setInterval(() => {
+        updateCameraInfo();
+      }, 1000); // Update every second
+
+      return () => clearInterval(intervalId);
+    }
+  }, [isLoading]);
+
+  // Function to jump to pub location using lat/lng
+  const handleJumpToPub = (pub: Pub) => {
+    if (!pub.latitude || !pub.longitude) return;
+
+    // Store the selected pub for later use
+    onSetSelectedPub(pub);
+
+    // Create a temporary location key
+    const tempKey = `temp_pub_${pub.id}`;
+
+    // Create a basic location object with just lat/lng
+    const tempLocation = {
+      lat: pub.latitude,
+      lng: pub.longitude,
+      altitude: 250, // Default viewing height
+      heading: 0, // Default heading
+      description: pub.name,
+    };
+
+    // Add to PRESET_LOCATIONS temporarily
+    PRESET_LOCATIONS[tempKey] = tempLocation;
+
+    // Set as current location
+    onSetCurrentLocation(tempKey);
+
+    // Show camera panel after a short delay
+    setTimeout(() => {
+      setShowCameraPanel(true);
+    }, 1000);
+  };
 
   return (
     <div className="relative">
@@ -46,9 +141,30 @@ export default function SimplePhotorealisticTilesMap() {
             gl.domElement.style.transformOrigin = "center center";
           }}
         >
-          {/* Just use the BasicTilesScene */}
-          <BasicTilesScene ref={tilesSceneRef} />
+          {/* Use the EnhancedTilesScene for camera tracking */}
+          <EnhancedTilesScene ref={tilesSceneRef} />
         </Canvas>
+
+        {/* Simplified location modal with pub jumping capability */}
+        <DraggableLocationsModal
+          onJumpToPub={handleJumpToPub}
+          title="Locations & Pubs"
+        />
+
+        {/* Camera Details Button - always visible */}
+        <button
+          className="absolute top-22 right-4 bg-black/70 text-white px-3 py-1.5 rounded z-20 text-sm flex items-center"
+          onClick={() => setShowCameraPanel(!showCameraPanel)}
+        >
+          {showCameraPanel ? "Hide Camera Details" : "Show Camera Details"}
+        </button>
+
+        {!isLoading && showCameraPanel && (
+          <CreatePubArea
+            cameraInfo={cameraInfo}
+            tilesSceneRef={tilesSceneRef}
+          />
+        )}
 
         {/* Loading overlay */}
         {isLoading && (
