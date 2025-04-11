@@ -177,12 +177,28 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
 
           if (!isMountedRef.current || !mapRef.current) return;
 
-          // Create the map
+          // Create the map with custom styles to remove labels
           const map = new google.maps.Map(mapRef.current, {
             center: initialCenter,
             zoom: initialZoom,
             mapTypeId: google.maps.MapTypeId.HYBRID,
             streetViewControl: false,
+            // Disable 45-degree tilt
+            tilt: 0,
+            // Disable labels
+            styles: [
+              {
+                featureType: "all",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }],
+              },
+            ],
+            // Additional options to improve the look
+            disableDefaultUI: false,
+            zoomControl: true,
+            mapTypeControl: true,
+            scaleControl: true,
+            rotateControl: false, // Disable rotate control
           });
 
           mapInstanceRef.current = map;
