@@ -17,6 +17,9 @@ export const Route = createRootRoute({
         <Link to="/area-identifier" className="[&.active]:font-bold">
           Area identifier
         </Link>
+        <Link to="/area-sizer" className="[&.active]:font-bold">
+          Area sizer
+        </Link>
       </div>
       <hr />
       <Outlet />
