@@ -10,6 +10,30 @@ export interface Pub {
   vision_mask_points: number[];
 }
 
+export interface SimpleCameraPosition {
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  target: {
+    x: number;
+    y: number;
+    z: number;
+  };
+}
+
+export interface PubArea {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  latitude: number;
+  longitude: number;
+  camera_position: SimpleCameraPosition;
+  pub_id: number;
+}
+
 export interface CameraPosition {
   position: THREE.Vector3;
   lookingAt: THREE.Vector3;

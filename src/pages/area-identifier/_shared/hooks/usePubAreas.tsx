@@ -1,25 +1,18 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
 import {
   PubAreasState,
   usePubAreasContext,
 } from "../providers/PubAreasProvider";
+import { Pub, PubArea, SimpleCameraPosition } from "../../../../_shared/types";
 
 interface PubAreasData extends PubAreasState {
-  // Add properties relevant to PubAreasData
-}
+  // Loading
+  isSavingNewPubArea: boolean;
+  isLoadingAreasForPub: boolean;
 
-interface SimpleCameraPosition {
-  position: {
-    x: number;
-    y: number;
-    z: number;
-  };
-  target: {
-    x: number;
-    y: number;
-    z: number;
-  };
+  // Areas
+  areasForPub: PubArea[];
 }
 
 interface SavePubAreaDetailsPayload {
@@ -41,6 +34,9 @@ interface CreateNewPubAreaProps {
 }
 
 interface PubAreasOperations {
+  // Select pub
+  onSetSelectedPub: (pub: Pub) => void;
+
   // Add properties relevant to PubAreasOperations
   onUpdatePubAreaDetails: (newDetails: Partial<PubAreasState>) => void;
 
@@ -62,7 +58,34 @@ const usePubAreas = (): PubAreasResponse => {
   //
 
   // Variables
-  const { name, description, type } = pubAreasState;
+  const { name, description, type, selectedPub } = pubAreasState;
+
+  //
+
+  // Query functions
+  const fetchAreasForPub = async (): Promise<PubArea[]> => {
+    // Fetch where pubId is selectedPubId and the date is today
+    const { data, error } = await supabaseClient
+      .from("pub_area")
+      .select()
+      .eq("pub_id", selectedPub?.id);
+
+    if (error) throw error;
+    return data;
+  };
+
+  //
+
+  // Queries
+
+  const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPub?.id];
+  const { data: areasForPub = [], isLoading: isLoadingAreasForPub } = useQuery({
+    queryKey: GET_PUB_AREAS_QUERY_KEY,
+    queryFn: () => fetchAreasForPub(),
+    enabled: !!selectedPub,
+  });
+
+  console.log("areasForPub", areasForPub);
 
   //
 
@@ -108,25 +131,44 @@ const usePubAreas = (): PubAreasResponse => {
       },
       {
         onSuccess: () => {
-          console.log("Pub area details saved successfully!");
+          // Reset the details
+          updatePubAreasState({
+            name: "",
+            description: "",
+            type: "",
+          });
         },
         onError: (error) => {
           console.error("Error saving pub area details:", error);
         },
       }
     );
+  };
 
-    console.log(
-      "Complete pub area details to save to DB:",
-      completePubAreaDetails
-    );
+  const onSetSelectedPub = (pub: Pub) => {
+    updatePubAreasState({
+      selectedPub: pub,
+      name: "",
+      description: "",
+      type: "",
+    });
   };
 
   return {
     data: {
       ...pubAreasState,
+
+      // Loading
+      isSavingNewPubArea,
+      isLoadingAreasForPub,
+
+      // Areas
+      areasForPub,
     },
     operations: {
+      // Select pub
+      onSetSelectedPub,
+
       // Update details
       onUpdatePubAreaDetails,
 

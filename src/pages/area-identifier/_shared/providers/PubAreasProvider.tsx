@@ -1,10 +1,12 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { Pub } from "../../../../_shared/types";
 
 export interface PubAreasState {
   // Area details
   name: string;
   description: string;
   type: string;
+  selectedPub: Pub | null;
 
   // Timestamp for localStorage
   timestamp: number;
@@ -26,6 +28,7 @@ const defaultState: PubAreasState = {
   name: "",
   description: "",
   type: "",
+  selectedPub: null,
 
   // Timestamp for localStorage
   timestamp: Date.now(),

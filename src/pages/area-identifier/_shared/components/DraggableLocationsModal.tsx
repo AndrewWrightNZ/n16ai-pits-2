@@ -142,25 +142,6 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
     }
   };
 
-  // Function to generate simple location code for a pub
-  const generateLocationCode = () => {
-    if (!selectedPub) return "";
-
-    const locationKey = selectedPub.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "_");
-    const basicLocation = createBasicLocationFromPub(selectedPub);
-
-    return `${locationKey}: ${JSON.stringify(basicLocation, null, 2)},`;
-  };
-
-  // Function to copy location code to clipboard
-  const copyLocationToClipboard = () => {
-    const code = generateLocationCode();
-    navigator.clipboard.writeText(code);
-    alert("Location code copied to clipboard!");
-  };
-
   return (
     <div
       ref={modalRef}
@@ -310,21 +291,6 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
                 </div>
               ))}
           </div>
-
-          {/* Simple copy button for selected pub */}
-          {showPubs && selectedPub && (
-            <div className="mt-3 border-t border-gray-700 pt-3 flex items-center justify-between">
-              <span className="text-xs text-gray-400">
-                Now use orbit controls to adjust the view
-              </span>
-              <button
-                className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
-                onClick={copyLocationToClipboard}
-              >
-                Copy Location
-              </button>
-            </div>
-          )}
         </div>
       )}
     </div>

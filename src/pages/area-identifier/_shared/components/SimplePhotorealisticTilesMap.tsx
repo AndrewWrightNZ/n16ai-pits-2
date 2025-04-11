@@ -16,6 +16,7 @@ import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
 
 // Types
 import { Pub } from "../../../../_shared/types";
+import usePubAreas from "../hooks/usePubAreas";
 
 export default function SimplePhotorealisticTilesMap() {
   // Ref to access TilesRendererService and camera functions
@@ -26,9 +27,6 @@ export default function SimplePhotorealisticTilesMap() {
     position: { x: 0, y: 0, z: 0 },
     target: { x: 0, y: 0, z: 0 },
   });
-
-  // State to track the currently selected pub
-  const [selectedPub, setSelectedPub] = useState<Pub | null>(null);
 
   // State to control camera panel visibility
   const [showCameraPanel, setShowCameraPanel] = useState(true);
@@ -50,6 +48,10 @@ export default function SimplePhotorealisticTilesMap() {
       onSetCurrentLocation,
     },
   } = useMapSettings();
+
+  const {
+    operations: { onSetSelectedPub },
+  } = usePubAreas();
 
   // Function to update camera information
   const updateCameraInfo = () => {
@@ -90,7 +92,7 @@ export default function SimplePhotorealisticTilesMap() {
     if (!pub.latitude || !pub.longitude) return;
 
     // Store the selected pub for later use
-    setSelectedPub(pub);
+    onSetSelectedPub(pub);
 
     // Create a temporary location key
     const tempKey = `temp_pub_${pub.id}`;
@@ -159,7 +161,6 @@ export default function SimplePhotorealisticTilesMap() {
 
         {!isLoading && showCameraPanel && (
           <CreatePubArea
-            selectedPub={selectedPub}
             cameraInfo={cameraInfo}
             tilesSceneRef={tilesSceneRef}
           />

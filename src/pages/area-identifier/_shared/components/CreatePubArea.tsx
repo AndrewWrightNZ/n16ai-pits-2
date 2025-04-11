@@ -1,8 +1,6 @@
-import { Pub } from "../../../../_shared/types";
 import usePubAreas from "../hooks/usePubAreas";
 
 interface CreatePubAreaProps {
-  selectedPub: Pub | null;
   cameraInfo: {
     position: { x: number; y: number; z: number };
     target: { x: number; y: number; z: number };
@@ -10,17 +8,26 @@ interface CreatePubAreaProps {
   tilesSceneRef: React.RefObject<any>;
 }
 
-const CreatePubArea = ({
-  selectedPub,
-  cameraInfo,
-  tilesSceneRef,
-}: CreatePubAreaProps) => {
+const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
   //
 
   // Hooks
-  // Use the pub areas hook instead of individual state variables
   const {
-    data: { name, description, type },
+    data: {
+      // Loading
+      isSavingNewPubArea,
+
+      // Pub
+      selectedPub,
+
+      // Deaft details
+      name,
+      description,
+      type,
+
+      // Areas
+      areasForPub = [],
+    },
     operations: { onUpdatePubAreaDetails, onSavePubAreaDetails },
   } = usePubAreas();
 
@@ -88,7 +95,7 @@ const CreatePubArea = ({
   return (
     <div className="absolute top-36 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
       <h3 className="text-sm font-bold mb-2">
-        Camera Details {selectedPub && `- ${selectedPub.name}`}
+        Pub Areas {selectedPub && `- ${selectedPub.name}`}
       </h3>
       <div className="text-xs space-y-1">
         <div>
@@ -142,15 +149,17 @@ const CreatePubArea = ({
         <button
           className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded disabled:opacity-50"
           onClick={copyCurrentPositionAsPreset}
-          disabled={!name || !description || !type}
+          disabled={
+            !name || !description || !type || !selectedPub || isSavingNewPubArea
+          }
         >
-          Save PubArea view
+          {isSavingNewPubArea ? "Saving... " : "Save PubArea view"}
         </button>
-
-        <p className="text-xs text-gray-400 mt-1">
-          Use orbit controls to adjust view before saving
-        </p>
       </div>
+
+      <h3 className="text-sm font-bold mb-2 mt-4">
+        Existing Pub Areas ({areasForPub?.length})
+      </h3>
     </div>
   );
 };
