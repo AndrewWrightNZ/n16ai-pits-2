@@ -89,9 +89,33 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
 
     // Pan the map to a specific location
     const panTo = useCallback((lat: number, lng: number) => {
-      if (mapInstanceRef.current) {
+      if (!mapInstanceRef.current) {
+        console.log("Map not initialized yet");
+        return;
+      }
+
+      try {
+        // Pan the map to the specified coordinates
         mapInstanceRef.current.panTo({ lat, lng });
-        mapInstanceRef.current.setZoom(19); // Zoom in closer
+
+        // Set an appropriate zoom level for viewing a pub
+        mapInstanceRef.current.setZoom(19);
+
+        // Add a marker if needed
+        // This is optional, but can be useful to mark the selected pub
+        if (window.google) {
+          // Clear any existing markers first
+          // This assumes you're tracking markers somewhere, which you should add if needed
+
+          // Create a new marker
+          new google.maps.Marker({
+            position: { lat, lng },
+            map: mapInstanceRef.current,
+            animation: google.maps.Animation.DROP,
+          });
+        }
+      } catch (error) {
+        console.error("Error panning to location:", error);
       }
     }, []);
 

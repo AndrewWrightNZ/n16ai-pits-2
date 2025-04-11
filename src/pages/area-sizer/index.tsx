@@ -3,6 +3,8 @@ import MapDrawingComponent, {
   MapDrawingRef,
 } from "./_shared/components/MapDrawingComponent";
 import usePubs from "../finder/_shared/hooks/usePubs";
+import PubList from "./_shared/components/SelectPubFromList";
+
 interface AreaData {
   id: string;
   pubId: number;
@@ -27,17 +29,84 @@ const PubAreaSizer: React.FC = () => {
     type: "info",
   });
 
+  // Add this debug state to track map readiness
+  const [isMapReady, setIsMapReady] = useState(false);
+
   // Refs
   const mapRef = useRef<MapDrawingRef>(null);
 
   // Fetch pubs data using the hook
-  const { data: pubsData } = usePubs();
-  const { selectedPub, pubs } = pubsData;
+  const { data: pubsData, operations: pubsOperations } = usePubs();
+
+  const { pubs, selectedPub, selectedPubId } = pubsData;
+
+  const { onSetSelectedPubId } = pubsOperations;
 
   // Handle area changes
   const handleAreaChange = (newArea: number): void => {
     setArea(newArea);
   };
+
+  // Handle pub selection
+  const handleSelectPub = (pubId: number): void => {
+    console.log(`Selecting pub with ID: ${pubId}`);
+    onSetSelectedPubId(pubId);
+  };
+
+  // Check if map is ready when component mounts
+  useEffect(() => {
+    const checkMapReady = setInterval(() => {
+      if (mapRef.current && mapRef.current.isMapReady) {
+        console.log("Map is now ready!");
+        setIsMapReady(true);
+        clearInterval(checkMapReady);
+      }
+    }, 500);
+
+    return () => clearInterval(checkMapReady);
+  }, []);
+
+  // When selected pub changes, center the map on it
+  useEffect(() => {
+    console.log("selectedPub changed:", selectedPub?.name);
+
+    if (selectedPub && mapRef.current) {
+      // Force a slight delay to ensure the map is fully initialized
+      setTimeout(() => {
+        console.log(
+          `Attempting to pan to: ${selectedPub.name} at ${selectedPub.latitude}, ${selectedPub.longitude}`
+        );
+
+        // Make sure map is ready before trying to pan
+        if (mapRef.current && mapRef.current.isMapReady) {
+          try {
+            mapRef.current.panTo(selectedPub.latitude, selectedPub.longitude);
+            console.log("Pan command sent successfully");
+
+            // Check if this pub already has a saved area
+            const existingArea = savedAreas.find(
+              (savedArea) => savedArea.pubId === selectedPub.id
+            );
+
+            if (existingArea) {
+              showNotification(
+                `${selectedPub.name} already has a saved area of ${existingArea.area.toFixed(2)} m²`,
+                "info"
+              );
+            }
+          } catch (error) {
+            console.error("Error panning to location:", error);
+            showNotification(
+              "Unable to center map on selected pub. Try again.",
+              "error"
+            );
+          }
+        } else {
+          console.warn("Map not ready yet. Cannot pan to location.");
+        }
+      }, 300);
+    }
+  }, [selectedPub, isMapReady]);
 
   // Save the current area
   const saveArea = (): void => {
@@ -103,16 +172,29 @@ const PubAreaSizer: React.FC = () => {
     }
 
     const dataStr = JSON.stringify(savedAreas, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
 
-    const link = document.createElement("a");
-    link.href = dataUri;
-    link.download = "pub-areas.json";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      // Create a Blob and download via URL
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
 
-    showNotification("Data exported successfully", "success");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "pub-areas.json";
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      showNotification("Data exported successfully", "success");
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      showNotification("Failed to export data", "error");
+    }
   };
 
   // Show a notification
@@ -132,20 +214,42 @@ const PubAreaSizer: React.FC = () => {
     }, 3000);
   };
 
-  // When selected pub changes, center the map on it
-  useEffect(() => {
+  // Debug button to manually trigger panning
+  const debugPanToSelectedPub = () => {
     if (selectedPub && mapRef.current) {
+      console.log(`Debug: Manually panning to ${selectedPub.name}`);
       mapRef.current.panTo(selectedPub.latitude, selectedPub.longitude);
+    } else {
+      console.log("No pub selected or map not available");
     }
-  }, [selectedPub]);
+  };
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-2">Pub Outside Area Measurement</h1>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Map */}
-        <div className="w-full md:w-2/3 bg-white rounded shadow-md overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left sidebar - Pub List */}
+        <div className="w-full lg:w-1/4">
+          <PubList
+            pubs={pubs}
+            selectedPubId={selectedPubId}
+            onSelectPub={handleSelectPub}
+          />
+
+          {/* Debug button - only visible during development */}
+          {process.env.NODE_ENV === "development" && (
+            <button
+              onClick={debugPanToSelectedPub}
+              className="mt-4 p-2 bg-yellow-200 text-yellow-800 text-sm rounded"
+            >
+              Debug: Pan to selected pub
+            </button>
+          )}
+        </div>
+
+        {/* Center - Map */}
+        <div className="w-full lg:w-2/4 bg-white rounded-lg shadow-md overflow-hidden">
           <MapDrawingComponent
             ref={mapRef}
             onAreaChange={handleAreaChange}
@@ -154,10 +258,10 @@ const PubAreaSizer: React.FC = () => {
           />
         </div>
 
-        {/* Controls */}
-        <div className="w-full md:w-1/3">
-          {/* Current Pub */}
-          <div className="bg-white p-4 rounded shadow-md mb-4">
+        {/* Right sidebar - Controls & Saved Areas */}
+        <div className="w-full lg:w-1/4 space-y-4">
+          {/* Selected Pub */}
+          <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-2">Selected Pub</h2>
             {selectedPub ? (
               <div>
@@ -165,6 +269,10 @@ const PubAreaSizer: React.FC = () => {
                 <p className="text-sm text-gray-600">
                   {selectedPub.address_text}
                 </p>
+                <div className="text-xs text-gray-500 mt-1">
+                  Coordinates: {selectedPub.latitude.toFixed(5)},{" "}
+                  {selectedPub.longitude.toFixed(5)}
+                </div>
               </div>
             ) : (
               <p className="text-gray-500 italic">Select a pub from the list</p>
@@ -172,7 +280,7 @@ const PubAreaSizer: React.FC = () => {
           </div>
 
           {/* Measurement */}
-          <div className="bg-white p-4 rounded shadow-md mb-4">
+          <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-2">Area Measurement</h2>
             <div className="bg-gray-50 p-3 rounded mb-3">
               <p className="text-gray-700">Outside Area Size:</p>
@@ -206,7 +314,7 @@ const PubAreaSizer: React.FC = () => {
           </div>
 
           {/* Saved Areas */}
-          <div className="bg-white p-4 rounded shadow-md">
+          <div className="bg-white p-4 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-lg font-semibold">Saved Areas</h2>
               {savedAreas.length > 0 && (
@@ -241,22 +349,10 @@ const PubAreaSizer: React.FC = () => {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="mt-4 bg-white p-4 rounded shadow-md">
-        <h2 className="text-lg font-semibold mb-2">How to Use</h2>
-        <ol className="list-decimal pl-6 space-y-1">
-          <li>Select a pub from your pubs list</li>
-          <li>Use the polygon drawing tool to outline the outside area</li>
-          <li>The area will be calculated automatically</li>
-          <li>Click "Save Area" to store the measurement</li>
-          <li>Export the data when you're finished</li>
-        </ol>
-      </div>
-
       {/* Notification */}
       {notification.visible && (
         <div
-          className={`fixed bottom-4 right-4 p-3 rounded shadow-lg max-w-xs animate-fade-in ${
+          className={`fixed bottom-4 right-4 p-3 rounded shadow-lg max-w-xs ${
             notification.type === "success"
               ? "bg-green-50 border-l-4 border-green-500 text-green-700"
               : notification.type === "error"
