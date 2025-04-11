@@ -3,6 +3,7 @@ import { useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 
 // Hooks
+import usePubAreas from "../hooks/usePubAreas";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
 
 // Components
@@ -16,7 +17,6 @@ import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
 
 // Types
 import { Pub } from "../../../../_shared/types";
-import usePubAreas from "../hooks/usePubAreas";
 
 export default function SimplePhotorealisticTilesMap() {
   // Ref to access TilesRendererService and camera functions

@@ -15,7 +15,7 @@ import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// Define a type for the ref with enhanced camera tracking functionality
+// Define a type for the ref with enhanced camera tracking and control functionality
 export interface TilesSceneRef {
   getTilesService: () => TilesRendererService | null;
   getCameraPosition: () => THREE.Vector3 | null;
@@ -26,6 +26,9 @@ export interface TilesSceneRef {
     target: THREE.Vector3;
     rotation: THREE.Euler;
   } | null;
+  // New methods for camera control
+  setCameraPosition: (position: { x: number; y: number; z: number }) => void;
+  setCameraTarget: (target: { x: number; y: number; z: number }) => void;
 }
 
 // Main scene component
@@ -70,6 +73,33 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
 
         lastCameraStateRef.current = state;
         return state;
+      },
+      // New methods for camera control
+      setCameraPosition: (position) => {
+        const camera = cameraRef.current;
+        if (camera) {
+          camera.position.set(position.x, position.y, position.z);
+          // Update the camera state reference
+          if (lastCameraStateRef.current) {
+            lastCameraStateRef.current.position = camera.position.clone();
+          }
+          // Update controls if needed
+          if (orbitControlsRef.current) {
+            orbitControlsRef.current.update();
+          }
+        }
+      },
+      setCameraTarget: (target) => {
+        const controls = orbitControlsRef.current;
+        if (controls && controls.target) {
+          controls.target.set(target.x, target.y, target.z);
+          // Update the camera state reference
+          if (lastCameraStateRef.current) {
+            lastCameraStateRef.current.target = controls.target.clone();
+          }
+          // Update the controls
+          controls.update();
+        }
       },
     }));
 
