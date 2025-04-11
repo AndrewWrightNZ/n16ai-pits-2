@@ -352,41 +352,6 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
       }
     }, [rawTimeOfDay]);
 
-    // Add this new useEffect for the keyboard shortcut
-    useEffect(() => {
-      const handleKeyDown = (event: KeyboardEvent) => {
-        // Use Ctrl+L or Command+L as shortcut for logging camera position
-        if ((event.ctrlKey || event.metaKey) && event.key === "l") {
-          event.preventDefault();
-          if (cameraPositionerRef.current) {
-            cameraPositionerRef.current.logCurrentPosition();
-          }
-        }
-
-        // Add Ctrl+D shortcut for forcing high detail loading
-        if ((event.ctrlKey || event.metaKey) && event.key === "d") {
-          event.preventDefault();
-          if (tilesRendererServiceRef.current) {
-            (window as any).debugTiles.forceLoadVisibleTiles();
-          }
-        }
-
-        // Add Ctrl+R shortcut for fixing missing tiles
-        if ((event.ctrlKey || event.metaKey) && event.key === "r") {
-          event.preventDefault();
-          if (typeof window !== "undefined" && (window as any).debugTiles) {
-            (window as any).debugTiles.detectMissingTiles();
-          }
-        }
-      };
-
-      window.addEventListener("keydown", handleKeyDown);
-
-      return () => {
-        window.removeEventListener("keydown", handleKeyDown);
-      };
-    }, [cameraPositionerRef.current, tilesRendererServiceRef.current]);
-
     // Missing tiles detection mechanism
     useEffect(() => {
       if (!tilesLoaded || !missingTilesDetected) return;
