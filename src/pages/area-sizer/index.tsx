@@ -4,10 +4,14 @@ import React, { useRef, useState, useEffect } from "react";
 import MapDrawingComponent, {
   MapDrawingRef,
 } from "./_shared/components/MapDrawingComponent";
+import SavedAreas from "./_shared/components/SavedAreas";
 import PubList from "./_shared/components/SelectPubFromList";
 
 // Hooks
 import usePubs from "../finder/_shared/hooks/usePubs";
+import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
+import { Pub } from "../../_shared/types";
+
 interface AreaData {
   id: string;
   pubId: number;
@@ -21,19 +25,20 @@ interface AreaData {
 const PubAreaSizer: React.FC = () => {
   // State
   const [area, setArea] = useState<number>(0);
-
-  // Add this debug state to track map readiness
   const [isMapReady, setIsMapReady] = useState(false);
+  const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
 
   // Refs
   const mapRef = useRef<MapDrawingRef>(null);
 
-  // Fetch pubs data using the hook
-  const { data: pubsData, operations: pubsOperations } = usePubs();
+  // Hooks
+  const {
+    data: { areasForPub = [], selectedPub },
+    operations: { onSetSelectedPub },
+  } = usePubAreas();
+  const { data: pubsData } = usePubs();
 
-  const { pubs, selectedPub, selectedPubId } = pubsData;
-
-  const { onSetSelectedPubId } = pubsOperations;
+  const { pubs } = pubsData;
 
   // Handle area changes
   const handleAreaChange = (newArea: number): void => {
@@ -41,8 +46,27 @@ const PubAreaSizer: React.FC = () => {
   };
 
   // Handle pub selection
-  const handleSelectPub = (pubId: number): void => {
-    onSetSelectedPubId(pubId);
+  const handleSelectPub = (pub: Pub): void => {
+    // Clear the selected area when changing pubs
+    setSelectedAreaId(null);
+    onSetSelectedPub(pub);
+  };
+
+  // Handle saved area selection
+  const handleSelectArea = (areaId: number): void => {
+    setSelectedAreaId(areaId);
+
+    // Find the selected area
+    const selectedArea = areasForPub.find((area) => area.id === areaId);
+
+    if (selectedArea && mapRef.current) {
+      // Pan to the area's location
+      mapRef.current.panTo(selectedArea.latitude, selectedArea.longitude);
+
+      // TODO: In a full implementation, we would load and display the polygon/shape
+      // This would require additional data in the area object (coordinates array)
+      // and implementing a method in MapDrawingComponent to render a saved shape
+    }
   };
 
   // Check if map is ready when component mounts
@@ -60,6 +84,9 @@ const PubAreaSizer: React.FC = () => {
   // When selected pub changes, center the map on it
   useEffect(() => {
     if (selectedPub && mapRef.current) {
+      // Reset selected area when changing pubs
+      setSelectedAreaId(null);
+
       // Force a slight delay to ensure the map is fully initialized
       setTimeout(() => {
         // Make sure map is ready before trying to pan
@@ -99,6 +126,9 @@ const PubAreaSizer: React.FC = () => {
     };
 
     console.log("Save area data to DB:", newAreaData);
+
+    // In a real implementation, you would save this to your backend
+    // and then refresh areasForPub with the updated data
   };
 
   // Clear the current area
@@ -107,6 +137,8 @@ const PubAreaSizer: React.FC = () => {
       mapRef.current.clearShape();
     }
     setArea(0);
+    // Also clear the selected area
+    setSelectedAreaId(null);
   };
 
   return (
@@ -117,17 +149,15 @@ const PubAreaSizer: React.FC = () => {
           {/* Measurement */}
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-2">Area Measurement</h2>
-            <div className="bg-gray-50 p-3 rounded mb-3">
-              <p className="text-gray-700">Outside Area Size:</p>
-              <p className="text-xl font-semibold text-blue-600">
-                {area.toFixed(2)} m²
-              </p>
-              <p className="text-sm text-gray-500">
-                {(area * 10.7639).toFixed(2)} sq ft
-              </p>
-            </div>
+            <p className="text-gray-700">Calculated Area Size:</p>
+            <p className="text-xl font-semibold text-blue-600">
+              {area.toFixed(2)} m²
+            </p>
+            <p className="text-sm text-gray-500">
+              {(area * 10.7639).toFixed(2)} sq ft
+            </p>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
               <button
                 onClick={clearArea}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
@@ -149,22 +179,18 @@ const PubAreaSizer: React.FC = () => {
           </div>
 
           {/* Saved Areas */}
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-lg font-semibold">Saved Areas</h2>
-            </div>
+          {selectedPub && (
+            <SavedAreas
+              areas={areasForPub}
+              onSelectArea={handleSelectArea}
+              selectedAreaId={selectedAreaId}
+            />
+          )}
 
-            {true ? (
-              <p className="text-gray-500 italic text-sm">No areas saved yet</p>
-            ) : (
-              <div className="max-h-60 overflow-y-auto">
-                <p>Zaved areas here</p>
-              </div>
-            )}
-          </div>
+          {/* Pub Selection */}
           <PubList
             pubs={pubs}
-            selectedPubId={selectedPubId}
+            selectedPub={selectedPub}
             onSelectPub={handleSelectPub}
           />
         </div>

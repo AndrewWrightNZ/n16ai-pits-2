@@ -32,6 +32,8 @@ export interface PubArea {
   longitude: number;
   camera_position: SimpleCameraPosition;
   pub_id: number;
+  created_at: string;
+  floor_area: number;
 }
 
 export interface CameraPosition {
