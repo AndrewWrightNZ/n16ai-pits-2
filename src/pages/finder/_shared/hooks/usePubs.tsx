@@ -2,27 +2,11 @@ import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 // Hooks
-// import useAnalytics from "../analytics/useAnalytics";
 import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
 
 // Contexts
 import { PubState, usePubContext } from "../providers/PubProvider";
 import { Pub } from "../../../../_shared/types";
-
-// Types
-// import { GooglePlaceDetails } from "../../pages/admin/addNew/addressAutocomplete";
-
-// Types
-// import { Pub } from "../../types/pub";
-// import { CameraPosition } from "../threeDScene/utils";
-
-// Utils
-// import * as fn from "../../../../_shared/utils";
-
-// Types
-// import { SunEvalReport, SunEvaluation } from "../../types/sunEvaluation";
-// import theme from "../../theme";
-// import { useMediaQuery } from "@mui/material";
 
 //
 
@@ -107,31 +91,6 @@ const usePubs = (): HookShape => {
   //
 
   // Queries
-
-  // Create a Date object
-  //   const date = new Date();
-
-  // Get time components
-  //   const hours = date.getHours().toString().padStart(2, "0");
-  //   const minutes = date.getMinutes().toString().padStart(2, "0");
-
-  // Format time
-  //   const rawCurrentTime = [hours, minutes];
-
-  // Round up time
-  //   const roundedUpCurrentTime = fn.roundUpCurrentTime(rawCurrentTime);
-
-  // Format date
-  //   const year = date.getFullYear();
-  //   const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  //   const day = date.getDate().toString().padStart(2, "0");
-
-  //   const HARDCODE_FOR_WINTER = true;
-
-  //   const formattedCurrentDate = HARDCODE_FOR_WINTER
-  //     ? "19-09-2024"
-  //     : `${day}-${month}-${year}`;
-
   const GET_PUBS_QUERY_KEY = ["pubs"];
 
   const { data: pubs = [], isLoading } = useQuery({
@@ -209,9 +168,6 @@ const usePubs = (): HookShape => {
         updatePubState({ selectedPubId: 0 });
       } else {
         updatePubState({ selectedPubId: id });
-        // setTimeout(() => {
-        //   updateThreeDSceneState({ show3dMap: true });
-        // }, 1000);
 
         const selectedPub = pubs.find((pub: Pub) => pub.id === id);
         const isDev = import.meta.env.DEV;
