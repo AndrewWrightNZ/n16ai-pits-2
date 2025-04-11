@@ -8,10 +8,14 @@ import {
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "@react-three/drei";
+
+// Services
 import { TilesRendererService } from "../../../../maps/_shared/services/tilesRendererService";
 import CameraPositioner from "../../../../maps/_shared/services/cameraPositionerService";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
-import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
+
+// Hooks
+import usePubAreas from "../hooks/usePubAreas";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -108,9 +112,6 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       data: {
         // View
         isOrbiting,
-
-        // Location
-        currentLocation,
       },
       operations: {
         // Loading
@@ -123,6 +124,10 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
         onSetCopyrightInfo,
       },
     } = useMapSettings();
+
+    const {
+      data: { selectedPub },
+    } = usePubAreas();
 
     // R3F hooks
     const { scene, camera, gl: renderer } = useThree();
@@ -221,13 +226,15 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       );
       cameraPositionerRef.current = cameraPositioner;
 
-      // Use preset location
-      const locationData = PRESET_LOCATIONS[currentLocation];
+      const newLocationsData = {
+        altitude: 250,
+        heading: 0,
+        lat: selectedPub?.latitude || 0,
+        lng: selectedPub?.longitude || 0,
+      };
 
-      console.log("Location data:", locationData);
-
-      if (locationData) {
-        cameraPositioner.positionCameraAtLocation(locationData);
+      if (newLocationsData) {
+        cameraPositioner.positionCameraAtLocation(newLocationsData);
 
         // Initial camera state after positioning
         setTimeout(() => {
@@ -243,7 +250,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
         }
         cameraPositionerRef.current = null;
       };
-    }, [camera, renderer, scene, currentLocation, handleCameraChange]);
+    }, [camera, renderer, scene, selectedPub, handleCameraChange]);
 
     // Update orbit controls auto-rotation
     useEffect(() => {

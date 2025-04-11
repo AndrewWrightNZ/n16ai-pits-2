@@ -12,9 +12,6 @@ import DraggableLocationsModal from "./DraggableLocationsModal";
 import EnhancedTilesScene, { TilesSceneRef } from "./BasicTileScene";
 import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedMemoryMonitor";
 
-// Data
-import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
-
 // Types
 import { Pub } from "../../../../_shared/types";
 
@@ -42,10 +39,6 @@ export default function SimplePhotorealisticTilesMap() {
 
       // View - only for copyright info
       copyrightInfo,
-    },
-    operations: {
-      // Location
-      onSetCurrentLocation,
     },
   } = useMapSettings();
 
@@ -94,24 +87,6 @@ export default function SimplePhotorealisticTilesMap() {
     // Store the selected pub for later use
     onSetSelectedPub(pub);
 
-    // Create a temporary location key
-    const tempKey = `temp_pub_${pub.id}`;
-
-    // Create a basic location object with just lat/lng
-    const tempLocation = {
-      lat: pub.latitude,
-      lng: pub.longitude,
-      altitude: 250, // Default viewing height
-      heading: 0, // Default heading
-      description: pub.name,
-    };
-
-    // Add to PRESET_LOCATIONS temporarily
-    PRESET_LOCATIONS[tempKey] = tempLocation;
-
-    // Set as current location
-    onSetCurrentLocation(tempKey);
-
     // Show camera panel after a short delay
     setTimeout(() => {
       setShowCameraPanel(true);
@@ -146,10 +121,7 @@ export default function SimplePhotorealisticTilesMap() {
         </Canvas>
 
         {/* Simplified location modal with pub jumping capability */}
-        <DraggableLocationsModal
-          onJumpToPub={handleJumpToPub}
-          title="Locations & Pubs"
-        />
+        <DraggableLocationsModal onJumpToPub={handleJumpToPub} />
 
         {/* Camera Details Button - always visible */}
         <button
