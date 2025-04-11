@@ -1,15 +1,22 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+
+// Hooks
 import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
+
+// Providers
 import {
   PubAreasState,
   usePubAreasContext,
 } from "../providers/PubAreasProvider";
+
+// TYpes
 import { Pub, PubArea, SimpleCameraPosition } from "../../../../_shared/types";
 
 interface PubAreasData extends PubAreasState {
   // Loading
   isSavingNewPubArea: boolean;
   isLoadingAreasForPub: boolean;
+  isSavingFloorArea: boolean;
 
   // Areas
   areasForPub: PubArea[];
@@ -33,6 +40,11 @@ interface CreateNewPubAreaProps {
   };
 }
 
+interface SaveFloorAreaPayload {
+  pub_area_id: number;
+  floor_area: number;
+}
+
 interface PubAreasOperations {
   // Select pub
   onSetSelectedPub: (pub: Pub) => void;
@@ -42,6 +54,7 @@ interface PubAreasOperations {
 
   // Save to DB
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
+  onSaveFloorArea: (payload: SaveFloorAreaPayload) => void;
 }
 
 interface PubAreasResponse {
@@ -95,7 +108,6 @@ const usePubAreas = (): PubAreasResponse => {
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
     {
       mutationFn: async ({ draftPubArea }: CreateNewPubAreaProps) => {
-        // Create a unique ID from the timestamp
         const id = Date.now();
 
         const { data, error } = await supabaseClient.from("pub_area").insert([
@@ -111,6 +123,23 @@ const usePubAreas = (): PubAreasResponse => {
       },
     }
   );
+
+  const { mutate: saveFloorArea, isPending: isSavingFloorArea } = useMutation({
+    mutationFn: async ({ pub_area_id, floor_area }: SaveFloorAreaPayload) => {
+      console.log("Saving floor area:", {
+        pub_area_id,
+        floor_area,
+      });
+
+      // Update floor aera for the pub area
+      const { data, error } = await supabaseClient
+        .from("pub_area")
+        .update({ floor_area })
+        .eq("id", pub_area_id);
+      if (error) throw error;
+      return data;
+    },
+  });
 
   //
 
@@ -149,6 +178,23 @@ const usePubAreas = (): PubAreasResponse => {
     );
   };
 
+  const onSaveFloorArea = (payload: SaveFloorAreaPayload) => {
+    saveFloorArea(
+      {
+        ...payload,
+      },
+      {
+        onSuccess: () => {
+          // Reset the selected area
+          onRefetchAreasForPub();
+        },
+        onError: (error) => {
+          console.error("Error saving floor area:", error);
+        },
+      }
+    );
+  };
+
   const onSetSelectedPub = (pub: Pub) => {
     updatePubAreasState({
       selectedPub: pub,
@@ -165,6 +211,7 @@ const usePubAreas = (): PubAreasResponse => {
       // Loading
       isSavingNewPubArea,
       isLoadingAreasForPub,
+      isSavingFloorArea,
 
       // Areas
       areasForPub,
@@ -178,6 +225,7 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Save
       onSavePubAreaDetails,
+      onSaveFloorArea,
     },
   };
 };

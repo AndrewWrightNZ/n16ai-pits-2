@@ -10,17 +10,9 @@ import PubList from "./_shared/components/SelectPubFromList";
 // Hooks
 import usePubs from "../finder/_shared/hooks/usePubs";
 import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
-import { Pub } from "../../_shared/types";
 
-interface AreaData {
-  id: string;
-  pubId: number;
-  pubName: string;
-  area: number;
-  areaFt: number;
-  coordinates: { lat: number; lng: number }[];
-  createdAt: string;
-}
+// Types
+import { Pub } from "../../_shared/types";
 
 const PubAreaSizer: React.FC = () => {
   // State
@@ -34,7 +26,7 @@ const PubAreaSizer: React.FC = () => {
   // Hooks
   const {
     data: { areasForPub = [], selectedPub },
-    operations: { onSetSelectedPub },
+    operations: { onSetSelectedPub, onSaveFloorArea },
   } = usePubAreas();
   const { data: pubsData } = usePubs();
 
@@ -103,34 +95,6 @@ const PubAreaSizer: React.FC = () => {
     }
   }, [selectedPub, isMapReady]);
 
-  // Save the current area
-  const saveArea = (): void => {
-    if (!selectedPub || area === 0) {
-      return;
-    }
-
-    const coordinates = mapRef.current?.getShapeCoordinates();
-
-    if (!coordinates || coordinates.length < 3) {
-      return;
-    }
-
-    const newAreaData: AreaData = {
-      id: Date.now().toString(),
-      pubId: selectedPub.id,
-      pubName: selectedPub.name,
-      area: area,
-      areaFt: area * 10.7639, // Convert to square feet
-      coordinates: coordinates,
-      createdAt: new Date().toISOString(),
-    };
-
-    console.log("Save area data to DB:", newAreaData);
-
-    // In a real implementation, you would save this to your backend
-    // and then refresh areasForPub with the updated data
-  };
-
   // Clear the current area
   const clearArea = (): void => {
     if (mapRef.current) {
@@ -139,6 +103,13 @@ const PubAreaSizer: React.FC = () => {
     setArea(0);
     // Also clear the selected area
     setSelectedAreaId(null);
+  };
+
+  const handleSaveFloorArea = () => {
+    onSaveFloorArea({
+      pub_area_id: selectedAreaId as number,
+      floor_area: area,
+    });
   };
 
   return (
@@ -165,7 +136,7 @@ const PubAreaSizer: React.FC = () => {
                 Clear
               </button>
               <button
-                onClick={saveArea}
+                onClick={handleSaveFloorArea}
                 disabled={!selectedPub || area === 0}
                 className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex-1 ${
                   !selectedPub || area === 0
