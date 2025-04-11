@@ -8,6 +8,20 @@ import DraggableLocationsModal from "./DraggableLocationsModal";
 import { PRESET_LOCATIONS } from "../../../../maps/_shared/hooks/locationsData";
 import { Pub } from "../../../../_shared/types";
 
+// Define an interface for camera view data
+interface CameraViewData {
+  position: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  target: {
+    x: number;
+    y: number;
+    z: number;
+  };
+}
+
 export default function SimplePhotorealisticTilesMap() {
   // Ref to access TilesRendererService and camera functions
   const tilesSceneRef = useRef<TilesSceneRef>(null);
@@ -17,6 +31,9 @@ export default function SimplePhotorealisticTilesMap() {
     position: { x: 0, y: 0, z: 0 },
     target: { x: 0, y: 0, z: 0 },
   });
+
+  // State to track the currently selected pub
+  const [selectedPub, setSelectedPub] = useState<Pub | null>(null);
 
   // State to control camera panel visibility
   const [showCameraPanel, setShowCameraPanel] = useState(false);
@@ -73,9 +90,12 @@ export default function SimplePhotorealisticTilesMap() {
     }
   }, [isLoading]);
 
-  // Simple function to jump to pub location using lat/lng
+  // Function to jump to pub location using lat/lng
   const handleJumpToPub = (pub: Pub) => {
     if (!pub.latitude || !pub.longitude) return;
+
+    // Store the selected pub for later use
+    setSelectedPub(pub);
 
     // Create a temporary location key
     const tempKey = `temp_pub_${pub.id}`;
@@ -110,14 +130,22 @@ export default function SimplePhotorealisticTilesMap() {
 
     if (!position || !target) return;
 
-    // Create a simple preset template with current position
+    // Get lat/lng from the selected pub if available
+    const lat = selectedPub?.latitude || 51.5074;
+    const lng = selectedPub?.longitude || -0.1278;
+    const pubName = selectedPub?.name || "My Custom Location";
+    const locationKey = selectedPub
+      ? selectedPub.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
+      : "my_location";
+
+    // Create a complete preset template with current position and pub's lat/lng
     const presetCode = `
-  my_location: {
-    lat: 51.5074, // Update with correct latitude
-    lng: -0.1278, // Update with correct longitude
+  ${locationKey}: {
+    lat: ${lat}, // Geographic latitude
+    lng: ${lng}, // Geographic longitude
     altitude: ${parseFloat(Math.abs(position.y).toFixed(2))},
-    heading: 0,   // Update as needed
-    description: "My Custom Location",
+    heading: 0,
+    description: "${pubName}",
     // Camera position details
     position: {
       x: ${parseFloat(position.x.toFixed(2))},
@@ -133,7 +161,56 @@ export default function SimplePhotorealisticTilesMap() {
 
     // Copy to clipboard
     navigator.clipboard.writeText(presetCode);
-    alert("Position code copied! Update lat/lng values before using.");
+    alert("Complete position data copied to clipboard!");
+  };
+
+  // Function to save current view to pub data
+  const saveViewToPub = () => {
+    if (!selectedPub || !tilesSceneRef.current) return;
+
+    const position = tilesSceneRef.current.getCameraPosition();
+    const target = tilesSceneRef.current.getCameraTarget();
+
+    if (!position || !target) return;
+
+    // Create camera view data object
+    const cameraViewData: CameraViewData = {
+      position: {
+        x: parseFloat(position.x.toFixed(2)),
+        y: parseFloat(position.y.toFixed(2)),
+        z: parseFloat(position.z.toFixed(2)),
+      },
+      target: {
+        x: parseFloat(target.x.toFixed(2)),
+        y: parseFloat(target.y.toFixed(2)),
+        z: parseFloat(target.z.toFixed(2)),
+      },
+    };
+
+    // Create a complete data object to save to database
+    const pubViewData = {
+      pub_id: selectedPub.id,
+      latitude: selectedPub.latitude,
+      longitude: selectedPub.longitude,
+      name: selectedPub.name,
+      camera_view: cameraViewData,
+    };
+
+    // Convert to JSON for saving to database
+    const jsonData = JSON.stringify(pubViewData, null, 2);
+
+    // Copy to clipboard (you would normally send this to your backend)
+    navigator.clipboard.writeText(jsonData);
+
+    // Show confirmation
+    alert(
+      `View data for "${selectedPub.name}" copied to clipboard!\n\nIn a real implementation, this would be saved to your database.`
+    );
+
+    console.log("Pub view data to save:", pubViewData);
+
+    // Here you would typically make an API call to save this data
+    // Example: savePubView(pubViewData);
   };
 
   return (
@@ -179,8 +256,10 @@ export default function SimplePhotorealisticTilesMap() {
 
         {/* Camera Details Panel - conditionally rendered */}
         {showCameraPanel && !isLoading && (
-          <div className="absolute top-26 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
-            <h3 className="text-sm font-bold mb-2">Camera Details</h3>
+          <div className="absolute top-36 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
+            <h3 className="text-sm font-bold mb-2">
+              Camera Details {selectedPub && `- ${selectedPub.name}`}
+            </h3>
             <div className="text-xs space-y-1">
               <div>
                 <strong>Position: </strong>
@@ -192,16 +271,33 @@ export default function SimplePhotorealisticTilesMap() {
                 X: {cameraInfo.target.x}, Y: {cameraInfo.target.y}, Z:{" "}
                 {cameraInfo.target.z}
               </div>
+              {selectedPub && (
+                <div>
+                  <strong>Location: </strong>
+                  Lat: {selectedPub.latitude.toFixed(4)}, Lng:{" "}
+                  {selectedPub.longitude.toFixed(4)}
+                </div>
+              )}
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-col space-y-2">
               <button
                 className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded"
                 onClick={copyCurrentPositionAsPreset}
               >
-                Copy Current Position
+                Copy as PRESET_LOCATIONS Entry
               </button>
+
+              {selectedPub && (
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded"
+                  onClick={saveViewToPub}
+                >
+                  Save View to Pub Data
+                </button>
+              )}
+
               <p className="text-xs text-gray-400 mt-1">
-                Use orbit controls to adjust view before copying
+                Use orbit controls to adjust view before saving
               </p>
             </div>
           </div>

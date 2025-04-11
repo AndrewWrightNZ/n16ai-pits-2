@@ -63,6 +63,42 @@ export const PRESET_LOCATIONS: Record<string, PresetLocation> = {
     },
     description: "The Devonshire",
   },
+  lady_mildmay: {
+    lat: 51.5507, // Geographic latitude
+    lng: -0.0845763, // Geographic longitude
+    altitude: 179.57,
+    heading: 0,
+    description: "Lady Mildmay",
+    // Camera position details
+    position: {
+      x: 62.68,
+      y: 179.57,
+      z: -73.2,
+    },
+    target: {
+      x: -36.43,
+      y: 0,
+      z: 40.59,
+    },
+  },
+  canonbury_tavern: {
+    lat: 51.5447, // Geographic latitude
+    lng: -0.0975854, // Geographic longitude
+    altitude: 210.05,
+    heading: 0,
+    description: "Canonbury Tavern",
+    // Camera position details
+    position: {
+      x: -46.42,
+      y: 210.05,
+      z: 105.29,
+    },
+    target: {
+      x: 40.83,
+      y: 0,
+      z: -71.33,
+    },
+  },
   sanFrancisco: {
     lat: 37.7749,
     lng: -122.4194,
