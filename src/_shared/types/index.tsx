@@ -9,6 +9,10 @@ export interface Pub {
   longitude: number;
   camera_details: CameraPosition;
   vision_mask_points: number[];
+
+  // Areas
+  has_areas_added: boolean;
+  has_areas_measured: boolean;
 }
 
 export interface SimpleCameraPosition {
