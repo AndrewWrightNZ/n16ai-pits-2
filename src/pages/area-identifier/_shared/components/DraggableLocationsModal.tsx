@@ -24,6 +24,7 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPub, setSelectedPub] = useState<Pub | null>(null);
+  const [showNeedsWork, setShowNeedsWork] = useState(true); // New state for toggling filter
 
   // Simple drag state to store starting positions
   const dragRef = useRef({
@@ -78,13 +79,25 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
     };
   }, [isDragging]);
 
-  // Filter pubs based on search term
-  const filteredPubs = pubs.filter(
-    (pub) =>
+  // Filter pubs based on search term and filter toggle
+  const filteredPubs = pubs.filter((pub) => {
+    // First, apply the needs work filter if enabled
+    if (showNeedsWork && pub.has_areas_added === true) {
+      return false;
+    }
+
+    // Then apply the search term filter
+    return (
       pub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (pub.address_text &&
         pub.address_text.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    );
+  });
+
+  // Count pubs that need work
+  const pubsNeedingWork = pubs.filter(
+    (pub) => pub.has_areas_added !== true
+  ).length;
 
   // Function to jump to a pub location
   const handleJumpToPub = (pub: Pub) => {
@@ -154,6 +167,31 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
             />
           </div>
 
+          {/* Filter toggle */}
+          <div className="mb-3 flex items-center">
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showNeedsWork}
+                onChange={() => setShowNeedsWork(!showNeedsWork)}
+                className="sr-only peer"
+              />
+              <div className="relative w-9 h-5 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className="ml-2 text-xs text-gray-300">
+                Only show pubs needing work
+              </span>
+            </label>
+          </div>
+
+          {/* Stats */}
+          <div className="mb-2 text-xs text-gray-400">
+            <p>
+              {showNeedsWork
+                ? `Showing ${filteredPubs.length} of ${pubsNeedingWork} pubs needing areas`
+                : `Showing ${filteredPubs.length} of ${pubs.length} pubs`}
+            </p>
+          </div>
+
           {/* Locations or Pubs list */}
           <div className="max-h-64 overflow-y-auto pr-1 space-y-2">
             {filteredPubs.length > 0 ? (
@@ -167,7 +205,7 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
                   } hover:bg-gray-600 rounded-md p-2 cursor-pointer transition-colors`}
                   onClick={() => handleJumpToPub(pub)}
                 >
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-medium group-hover:text-white">
                         {pub.name}
@@ -180,12 +218,21 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
                         <span>Lng: {pub.longitude.toFixed(4)}</span>
                       </div>
                     </div>
+                    {pub.has_areas_added ? (
+                      <span className="text-xs px-1.5 py-0.5 bg-green-800 text-green-200 rounded">
+                        Areas Added
+                      </span>
+                    ) : (
+                      <span className="text-xs px-1.5 py-0.5 bg-amber-800 text-amber-200 rounded">
+                        0 areas
+                      </span>
+                    )}
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-2 text-gray-400 text-sm">
-                No pubs found
+                {searchTerm ? "No matching pubs found" : "No pubs available"}
               </div>
             )}
           </div>

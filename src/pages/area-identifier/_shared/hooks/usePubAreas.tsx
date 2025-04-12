@@ -304,6 +304,11 @@ const usePubAreas = (): PubAreasResponse => {
               return { ...oldData, has_areas_measured: true };
             }
           );
+
+          // Refetch the 'pubs' query
+          queryClient.refetchQueries({
+            queryKey: ["pubs"],
+          });
         },
         onError: (error) => {
           console.error("Error saving floor area:", error);
