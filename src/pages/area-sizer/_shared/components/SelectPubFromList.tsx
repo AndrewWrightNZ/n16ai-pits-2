@@ -13,22 +13,31 @@ const PubList: React.FC<PubListProps> = ({
   onSelectPub,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredPubs, setFilteredPubs] = useState<Pub[]>(pubs);
+  const [filteredPubs, setFilteredPubs] = useState<Pub[]>([]);
+  const [showOnlyUnmeasuredPubs, setShowOnlyUnmeasuredPubs] = useState(true);
 
-  // Update filtered pubs when search term or pubs list changes
+  // Apply filters when search term, pubs list, or filter settings change
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredPubs(pubs);
-    } else {
+    // First filter: Only show pubs with has_areas_added set to true (always applied)
+    let filtered = pubs.filter((pub) => pub.has_areas_added === true);
+
+    // Second filter: Only show pubs that need measurement (optional)
+    if (showOnlyUnmeasuredPubs) {
+      filtered = filtered.filter((pub) => pub.has_areas_measured !== true);
+    }
+
+    // Third filter: Apply search term filtering
+    if (searchTerm.trim()) {
       const normalizedSearchTerm = searchTerm.toLowerCase().trim();
-      const filtered = pubs.filter(
+      filtered = filtered.filter(
         (pub) =>
           pub.name.toLowerCase().includes(normalizedSearchTerm) ||
           pub.address_text.toLowerCase().includes(normalizedSearchTerm)
       );
-      setFilteredPubs(filtered);
     }
-  }, [searchTerm, pubs]);
+
+    setFilteredPubs(filtered);
+  }, [searchTerm, pubs, showOnlyUnmeasuredPubs]);
 
   if (!pubs || pubs.length === 0) {
     return (
@@ -36,13 +45,23 @@ const PubList: React.FC<PubListProps> = ({
     );
   }
 
+  // Count pubs that require measurement
+  const pubsRequiringMeasurement = pubs.filter(
+    (pub) => pub.has_areas_added === true && pub.has_areas_measured !== true
+  ).length;
+
+  // Count pubs with areas but already measured
+  const pubsWithMeasuredAreas = pubs.filter(
+    (pub) => pub.has_areas_added === true && pub.has_areas_measured === true
+  ).length;
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <div className="p-3 bg-gray-50 border-b border-gray-200">
         <h3 className="text-sm font-medium text-gray-700 mb-2">
           Select a pub to measure its outside area
         </h3>
-        <div className="relative">
+        <div className="relative mb-3">
           <input
             type="text"
             placeholder="Search pubs by name or address..."
@@ -73,12 +92,50 @@ const PubList: React.FC<PubListProps> = ({
             </button>
           )}
         </div>
+
+        {/* Filter toggle */}
+        <div className="flex items-center space-x-2">
+          <label className="inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showOnlyUnmeasuredPubs}
+              onChange={() =>
+                setShowOnlyUnmeasuredPubs(!showOnlyUnmeasuredPubs)
+              }
+              className="sr-only peer"
+            />
+            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <span className="ml-2 text-sm text-gray-700">
+              Only show pubs needing measurement
+            </span>
+          </label>
+        </div>
+
+        {/* Filter stats */}
+        <div className="mt-2 flex flex-wrap text-xs text-gray-500">
+          <span className="mr-3">
+            <span className="font-medium text-blue-600">
+              {pubsRequiringMeasurement}
+            </span>{" "}
+            pubs need measurement
+          </span>
+          <span>
+            <span className="font-medium text-green-600">
+              {pubsWithMeasuredAreas}
+            </span>{" "}
+            pubs already measured
+          </span>
+        </div>
       </div>
 
       <div className="max-h-[500px] overflow-y-auto">
         {filteredPubs.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
-            No pubs match your search criteria
+            {searchTerm
+              ? "No pubs match your search criteria"
+              : showOnlyUnmeasuredPubs
+                ? "All pubs have been measured!"
+                : "No pubs with added areas found"}
           </div>
         ) : (
           filteredPubs.map((pub) => (
@@ -93,9 +150,16 @@ const PubList: React.FC<PubListProps> = ({
             >
               <div className="flex items-start">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">
-                    {pub.name}
-                  </p>
+                  <div className="flex items-center">
+                    <p className="font-medium text-gray-900 truncate mr-2">
+                      {pub.name}
+                    </p>
+                    {pub.has_areas_measured && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        Measured
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 truncate">
                     {pub.address_text}
                   </p>
@@ -127,11 +191,11 @@ const PubList: React.FC<PubListProps> = ({
       </div>
 
       {/* Show count of results when filtering */}
-      {searchTerm && (
-        <div className="p-2 text-xs text-gray-500 border-t border-gray-100 bg-gray-50">
-          Showing {filteredPubs.length} of {pubs.length} pubs
-        </div>
-      )}
+      <div className="p-2 text-xs text-gray-500 border-t border-gray-100 bg-gray-50">
+        Showing {filteredPubs.length} of{" "}
+        {pubs.filter((pub) => pub.has_areas_added === true).length} pubs with
+        areas
+      </div>
     </div>
   );
 };

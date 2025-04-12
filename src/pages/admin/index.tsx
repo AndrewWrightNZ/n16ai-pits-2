@@ -41,8 +41,6 @@ const AdminOverview = () => {
     ? Math.round((pubsWithAreasMeasured.length / pubs.length) * 100)
     : 0;
 
-  console.log("AdminOverview - pubsWithAreasAdded:", { pubsWithAreasAdded });
-
   return (
     <div className="flex flex-col gap-6 p-4 max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold">Admin Overview</h1>
