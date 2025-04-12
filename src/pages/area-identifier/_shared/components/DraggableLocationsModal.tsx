@@ -7,10 +7,12 @@ import usePubs from "../../../finder/_shared/hooks/usePubs";
 import { Pub } from "../../../../_shared/types";
 
 interface DraggableLocationsModalProps {
+  filterType: string;
   onJumpToPub?: (pub: any) => void;
 }
 
 const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
+  filterType,
   onJumpToPub,
 }) => {
   // Hooks
@@ -81,11 +83,17 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
 
   // Filter pubs based on search term and filter toggle
   const filteredPubs = pubs.filter((pub) => {
-    // First, apply the needs work filter if enabled
-    if (showNeedsWork && pub.has_areas_added === true) {
-      return false;
+    if (filterType === "areas") {
+      // First, apply the needs work filter if enabled
+      if (showNeedsWork && pub.has_areas_added === true) {
+        return false;
+      }
+    } else {
+      // First, apply the needs work filter if enabled
+      if (showNeedsWork && pub.has_labels_added === true) {
+        return false;
+      }
     }
-
     // Then apply the search term filter
     return (
       pub.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -178,7 +186,7 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
               />
               <div className="relative w-9 h-5 bg-gray-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
               <span className="ml-2 text-xs text-gray-300">
-                Only show pubs needing work
+                Only show pubs needing {filterType}
               </span>
             </label>
           </div>
@@ -218,14 +226,31 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
                         <span>Lng: {pub.longitude.toFixed(4)}</span>
                       </div>
                     </div>
-                    {pub.has_areas_added ? (
-                      <span className="text-xs px-1.5 py-0.5 bg-green-800 text-green-200 rounded">
-                        Areas Added
-                      </span>
+
+                    {filterType === "areas" ? (
+                      <>
+                        {pub.has_areas_added ? (
+                          <span className="text-xs px-1.5 py-0.5 bg-green-800 text-green-200 rounded">
+                            Areas Added
+                          </span>
+                        ) : (
+                          <span className="text-xs px-1.5 py-0.5 bg-amber-800 text-amber-200 rounded">
+                            0 areas
+                          </span>
+                        )}
+                      </>
                     ) : (
-                      <span className="text-xs px-1.5 py-0.5 bg-amber-800 text-amber-200 rounded">
-                        0 areas
-                      </span>
+                      <>
+                        {pub.has_labels_added ? (
+                          <span className="text-xs px-1.5 py-0.5 bg-green-800 text-green-200 rounded">
+                            Labels Added
+                          </span>
+                        ) : (
+                          <span className="text-xs px-1.5 py-0.5 bg-amber-800 text-amber-200 rounded">
+                            0 labels
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
