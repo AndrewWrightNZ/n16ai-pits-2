@@ -1,5 +1,8 @@
-import { PubArea } from "../../../../_shared/types";
+// Hooks
 import usePubAreas from "../hooks/usePubAreas";
+
+// Types
+import { PubArea } from "../../../../_shared/types";
 
 interface CreatePubAreaProps {
   cameraInfo: {
@@ -10,12 +13,15 @@ interface CreatePubAreaProps {
 }
 
 const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
+  //
+
   // Hooks
   const {
     data: {
       // Loading
       isSavingNewPubArea,
       isLoadingAreasForPub,
+      isSettingPubAreasPresent,
 
       // Pub
       selectedPub,
@@ -28,10 +34,21 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
       // Areas
       areasForPub = [],
     },
-    operations: { onUpdatePubAreaDetails, onSavePubAreaDetails },
+    operations: {
+      onUpdatePubAreaDetails,
+      onSavePubAreaDetails,
+      onSetPubAreasPresentForPub,
+    },
   } = usePubAreas();
 
-  // Function to copy the current camera position for adding to presets
+  //
+
+  // Variables
+  const { has_areas_added = false } = selectedPub || {};
+
+  //
+
+  // Handlers
   const copyCurrentPositionAsPreset = () => {
     if (!tilesSceneRef.current) return;
 
@@ -44,31 +61,6 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
     const lat = selectedPub?.latitude || 51.5074;
     const lng = selectedPub?.longitude || -0.1278;
     const pubId = selectedPub?.id || 0;
-    const pubName = selectedPub?.name || "My Custom Location";
-    const locationKey = selectedPub
-      ? selectedPub.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
-      : "my_location";
-
-    // Create a complete preset template with current position and pub's lat/lng
-    const presetCode = `
-  ${locationKey}: {
-    lat: ${lat}, // Geographic latitude
-    lng: ${lng}, // Geographic longitude
-    altitude: ${parseFloat(Math.abs(position.y).toFixed(2))},
-    heading: 0,
-    description: "${pubName}",
-    // Camera position details
-    position: {
-      x: ${parseFloat(position.x.toFixed(2))},
-      y: ${parseFloat(position.y.toFixed(2))},
-      z: ${parseFloat(position.z.toFixed(2))}
-    },
-    target: {
-      x: ${parseFloat(target.x.toFixed(2))},
-      y: ${parseFloat(target.y.toFixed(2))},
-      z: ${parseFloat(target.z.toFixed(2))}
-    }
-  },`;
 
     onSavePubAreaDetails({
       pub_id: pubId,
@@ -87,9 +79,6 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
         },
       },
     });
-
-    // Copy to clipboard
-    navigator.clipboard.writeText(presetCode);
   };
 
   // Function to handle clicking on a pub area to view it
@@ -182,19 +171,33 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
         ) : areasForPub.length === 0 ? (
           <div className="text-xs text-gray-400">No pub areas found</div>
         ) : (
-          <ul className="space-y-2">
-            {areasForPub.map((area) => (
-              <li
-                key={area.id}
-                className="bg-gray-800 rounded p-2 text-xs cursor-pointer hover:bg-gray-700 transition-colors"
-                onClick={() => handleViewPubArea(area)}
+          <>
+            <ul className="space-y-2">
+              {areasForPub.map((area) => (
+                <li
+                  key={area.id}
+                  className="bg-gray-800 rounded p-2 text-xs cursor-pointer hover:bg-gray-700 transition-colors"
+                  onClick={() => handleViewPubArea(area)}
+                >
+                  <div className="font-bold">{area.name}</div>
+                  <div className="text-gray-300">{area.description}</div>
+                  <div className="text-gray-400 mt-1">Type: {area.type}</div>
+                </li>
+              ))}
+            </ul>
+
+            {!has_areas_added && (
+              <button
+                className="bg-green-600 w-full mt-4 hover:bg-green-700 text-white text-xs px-2 py-1 rounded disabled:opacity-50"
+                onClick={onSetPubAreasPresentForPub}
+                disabled={isSettingPubAreasPresent}
               >
-                <div className="font-bold">{area.name}</div>
-                <div className="text-gray-300">{area.description}</div>
-                <div className="text-gray-400 mt-1">Type: {area.type}</div>
-              </li>
-            ))}
-          </ul>
+                {isSettingPubAreasPresent
+                  ? "Updating... "
+                  : "Set PubAreas present"}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

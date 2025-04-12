@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Hooks
 import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
@@ -9,14 +9,19 @@ import {
   usePubAreasContext,
 } from "../providers/PubAreasProvider";
 
-// TYpes
+// Types
 import { Pub, PubArea, SimpleCameraPosition } from "../../../../_shared/types";
 
 interface PubAreasData extends PubAreasState {
   // Loading
   isSavingNewPubArea: boolean;
   isLoadingAreasForPub: boolean;
+  isLoadingSelectedPub: boolean;
   isSavingFloorArea: boolean;
+  isSettingPubAreasPresent: boolean;
+
+  // Selected pub
+  selectedPub: Pub | null;
 
   // Areas
   areasForPub: PubArea[];
@@ -51,6 +56,10 @@ interface SaveFloorAreaPayload {
   coordinates: PolygonCoordinate[];
 }
 
+interface SetPubAreasPresentPayload {
+  pub_id: number;
+}
+
 interface PubAreasOperations {
   // Select pub
   onSetSelectedPub: (pub: Pub) => void;
@@ -58,9 +67,10 @@ interface PubAreasOperations {
   // Add properties relevant to PubAreasOperations
   onUpdatePubAreaDetails: (newDetails: Partial<PubAreasState>) => void;
 
-  // Save to DB
+  // Database updates
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
   onSaveFloorArea: (payload: SaveFloorAreaPayload) => void;
+  onSetPubAreasPresentForPub: () => void;
 }
 
 interface PubAreasResponse {
@@ -71,13 +81,18 @@ interface PubAreasResponse {
 const usePubAreas = (): PubAreasResponse => {
   //
 
+  // Hooks
+  const queryClient = useQueryClient();
+
+  //
+
   // Context
   const { pubAreasState, updatePubAreasState } = usePubAreasContext();
 
   //
 
   // Variables
-  const { name, description, type, selectedPub } = pubAreasState;
+  const { name, description, type, selectedPubId } = pubAreasState;
 
   //
 
@@ -87,7 +102,7 @@ const usePubAreas = (): PubAreasResponse => {
     const { data, error } = await supabaseClient
       .from("pub_area")
       .select()
-      .eq("pub_id", selectedPub?.id);
+      .eq("pub_id", selectedPubId);
 
     if (error) throw error;
     return data;
@@ -95,17 +110,41 @@ const usePubAreas = (): PubAreasResponse => {
 
   //
 
+  // Query functions
+  const fetchPubById = async () => {
+    const { data, error } = await supabaseClient
+      .from("pub")
+      .select("*")
+      .eq("id", selectedPubId);
+
+    if (error) throw new Error(error.message);
+    return data?.[0] as Pub;
+  };
+
+  //
+
   // Queries
 
-  const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPub?.id];
+  const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPubId];
+  const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
+
   const {
     data: areasForPub = [],
     isLoading: isLoadingAreasForPub,
     refetch: onRefetchAreasForPub,
   } = useQuery({
     queryKey: GET_PUB_AREAS_QUERY_KEY,
-    queryFn: () => fetchAreasForPub(),
-    enabled: !!selectedPub,
+    queryFn: fetchAreasForPub,
+    enabled: !!selectedPubId,
+  });
+
+  const {
+    data: selectedPub = null,
+    isLoading: isLoadingSelectedPub,
+    // refetch: onRefetchSelectedPub,
+  } = useQuery({
+    queryKey: GET_PUB_BY_ID_QUERY_KEY,
+    queryFn: fetchPubById,
   });
 
   //
@@ -136,12 +175,6 @@ const usePubAreas = (): PubAreasResponse => {
       floor_area,
       coordinates,
     }: SaveFloorAreaPayload) => {
-      console.log("Saving floor area:", {
-        pub_area_id,
-        floor_area,
-        coordinates,
-      });
-
       // Update floor aera for the pub area
       const { data, error } = await supabaseClient
         .from("pub_area")
@@ -151,6 +184,19 @@ const usePubAreas = (): PubAreasResponse => {
       return data;
     },
   });
+
+  const { mutate: setPubAreasPresent, isPending: isSettingPubAreasPresent } =
+    useMutation({
+      mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
+        // Update floor area for the pub area
+        const { data, error } = await supabaseClient
+          .from("pub")
+          .update({ has_areas_added: true })
+          .eq("id", pub_id);
+        if (error) throw error;
+        return data;
+      },
+    });
 
   //
 
@@ -206,9 +252,32 @@ const usePubAreas = (): PubAreasResponse => {
     );
   };
 
+  const onSetPubAreasPresentForPub = () => {
+    setPubAreasPresent(
+      {
+        pub_id: selectedPubId || 0,
+      },
+      {
+        onSuccess: () => {
+          // Manually update the query
+          queryClient.setQueryData(
+            GET_PUB_BY_ID_QUERY_KEY,
+            (oldData: Pub | undefined) => {
+              if (!oldData) return null;
+              return { ...oldData, has_areas_added: true };
+            }
+          );
+        },
+        onError: (error) => {
+          console.error("Error saving floor area:", error);
+        },
+      }
+    );
+  };
+
   const onSetSelectedPub = (pub: Pub) => {
     updatePubAreasState({
-      selectedPub: pub,
+      selectedPubId: pub.id,
       name: "",
       description: "",
       type: "",
@@ -222,7 +291,12 @@ const usePubAreas = (): PubAreasResponse => {
       // Loading
       isSavingNewPubArea,
       isLoadingAreasForPub,
+      isLoadingSelectedPub,
       isSavingFloorArea,
+      isSettingPubAreasPresent,
+
+      // Pub
+      selectedPub,
 
       // Areas
       areasForPub,
@@ -234,9 +308,10 @@ const usePubAreas = (): PubAreasResponse => {
       // Update details
       onUpdatePubAreaDetails,
 
-      // Save
+      // Update DB
       onSavePubAreaDetails,
       onSaveFloorArea,
+      onSetPubAreasPresentForPub,
     },
   };
 };
