@@ -56,6 +56,9 @@ interface HookShape {
 
     // Map Bounds
     onSetMapBounds: (bounds: any) => void;
+
+    // Queries
+    onRefetchPubs: () => void;
   };
 }
 
@@ -93,7 +96,11 @@ const usePubs = (): HookShape => {
   // Queries
   const GET_PUBS_QUERY_KEY = ["pubs"];
 
-  const { data: pubs = [], isLoading } = useQuery({
+  const {
+    data: pubs = [],
+    isLoading,
+    refetch: onRefetchPubs,
+  } = useQuery({
     queryKey: GET_PUBS_QUERY_KEY,
     queryFn: fetchPubs,
   });
@@ -254,6 +261,9 @@ const usePubs = (): HookShape => {
 
       // Map Bounds
       onSetMapBounds,
+
+      // Queries
+      onRefetchPubs,
     },
   };
 };

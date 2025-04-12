@@ -11,7 +11,6 @@ const AdminOverview = () => {
   //
 
   // Variables
-
   const pubsWithAreasAdded = pubs.filter(({ has_areas_added }) => {
     return has_areas_added;
   });
