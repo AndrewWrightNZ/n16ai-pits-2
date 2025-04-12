@@ -15,6 +15,7 @@ import { Route as SceneImport } from './routes/scene'
 import { Route as FinderImport } from './routes/finder'
 import { Route as AreaSizerImport } from './routes/area-sizer'
 import { Route as AreaIdentifierImport } from './routes/area-identifier'
+import { Route as AdminImport } from './routes/admin'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 
@@ -41,6 +42,12 @@ const AreaSizerRoute = AreaSizerImport.update({
 const AreaIdentifierRoute = AreaIdentifierImport.update({
   id: '/area-identifier',
   path: '/area-identifier',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AdminRoute = AdminImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -72,6 +79,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutImport
+      parentRoute: typeof rootRoute
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminImport
       parentRoute: typeof rootRoute
     }
     '/area-identifier': {
@@ -110,6 +124,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/area-identifier': typeof AreaIdentifierRoute
   '/area-sizer': typeof AreaSizerRoute
   '/finder': typeof FinderRoute
@@ -119,6 +134,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/area-identifier': typeof AreaIdentifierRoute
   '/area-sizer': typeof AreaSizerRoute
   '/finder': typeof FinderRoute
@@ -129,6 +145,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin': typeof AdminRoute
   '/area-identifier': typeof AreaIdentifierRoute
   '/area-sizer': typeof AreaSizerRoute
   '/finder': typeof FinderRoute
@@ -140,16 +157,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/admin'
     | '/area-identifier'
     | '/area-sizer'
     | '/finder'
     | '/scene'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/area-identifier' | '/area-sizer' | '/finder' | '/scene'
+  to:
+    | '/'
+    | '/about'
+    | '/admin'
+    | '/area-identifier'
+    | '/area-sizer'
+    | '/finder'
+    | '/scene'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/admin'
     | '/area-identifier'
     | '/area-sizer'
     | '/finder'
@@ -160,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminRoute: typeof AdminRoute
   AreaIdentifierRoute: typeof AreaIdentifierRoute
   AreaSizerRoute: typeof AreaSizerRoute
   FinderRoute: typeof FinderRoute
@@ -169,6 +196,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminRoute: AdminRoute,
   AreaIdentifierRoute: AreaIdentifierRoute,
   AreaSizerRoute: AreaSizerRoute,
   FinderRoute: FinderRoute,
@@ -187,6 +215,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/about",
+        "/admin",
         "/area-identifier",
         "/area-sizer",
         "/finder",
@@ -198,6 +227,9 @@ export const routeTree = rootRoute
     },
     "/about": {
       "filePath": "about.tsx"
+    },
+    "/admin": {
+      "filePath": "admin.tsx"
     },
     "/area-identifier": {
       "filePath": "area-identifier.tsx"
