@@ -2,15 +2,9 @@ interface ProgressBarProps {
   value: number;
   max: number;
   label: string;
-  percentage?: boolean;
 }
 
-const ProgressBar = ({
-  value,
-  max,
-  label,
-  percentage = false,
-}: ProgressBarProps) => {
+const ProgressBar = ({ value, max, label }: ProgressBarProps) => {
   const percent = Math.min(100, Math.round((value / max) * 100));
 
   return (
@@ -18,7 +12,7 @@ const ProgressBar = ({
       <div className="flex justify-between mb-1">
         <span className="text-base font-medium">{label}</span>
         <span className="text-sm font-medium">
-          {value} / {percentage ? `${max}%` : max} ({percent}%)
+          {value} / {max} ({percent}%)
         </span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-4">

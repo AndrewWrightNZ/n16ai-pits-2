@@ -3,6 +3,7 @@ import usePubAreas from "../hooks/usePubAreas";
 
 // Types
 import { PubArea } from "../../../../_shared/types";
+import { useEffect } from "react";
 
 interface CreatePubAreaProps {
   cameraInfo: {
@@ -93,6 +94,36 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
     tilesSceneRef.current.setCameraTarget(target);
   };
 
+  //
+
+  // Effects
+  useEffect(() => {
+    // Only proceed if:
+    // 1. We have a selected pub
+    // 2. The pub doesn't already have areas_added flag set
+    // 3. There's at least one area for this pub
+    // 4. We're not currently in the process of setting areas as present
+    if (
+      selectedPub &&
+      !has_areas_added &&
+      areasForPub.length > 0 &&
+      !isSettingPubAreasPresent
+    ) {
+      console.log(
+        "Auto-triggering set pub areas present for pub:",
+        selectedPub.id
+      );
+
+      onSetPubAreasPresentForPub();
+    }
+  }, [
+    selectedPub,
+    has_areas_added,
+    areasForPub.length,
+    isSettingPubAreasPresent,
+    onSetPubAreasPresentForPub,
+  ]);
+
   return (
     <div className="absolute top-36 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
       <h3 className="text-sm font-bold mb-2">
@@ -124,6 +155,8 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
           onChange={(e) => onUpdatePubAreaDetails({ name: e.target.value })}
           placeholder="Enter Pub Area Name"
           className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
+          tabIndex={1}
+          autoFocus
         />
         <input
           type="text"
@@ -133,17 +166,20 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
           }
           placeholder="Enter Pub Area Description"
           className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
+          tabIndex={2}
         />
 
         <select
           className="bg-gray-800 text-white px-2 py-1 rounded text-xs"
           value={type}
           onChange={(e) => onUpdatePubAreaDetails({ type: e.target.value })}
+          tabIndex={3}
         >
           <option value="">Select Pub Area</option>
           <option value="pavement">Pavement</option>
           <option value="frontage-seating">Frontage seating</option>
           <option value="terrace">Terrace</option>
+          <option value="terrace-waterfront">Waterfront Terrace</option>
           <option value="beer-garden">Beer garden</option>
           <option value="courtyard">Courtyard</option>
           {/* Add more options as needed */}
@@ -152,9 +188,8 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
         <button
           className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 rounded disabled:opacity-50"
           onClick={copyCurrentPositionAsPreset}
-          disabled={
-            !name || !description || !type || !selectedPub || isSavingNewPubArea
-          }
+          disabled={!name || !type || !selectedPub || isSavingNewPubArea}
+          tabIndex={4}
         >
           {isSavingNewPubArea ? "Saving... " : "Save PubArea view"}
         </button>

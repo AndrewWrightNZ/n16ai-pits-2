@@ -30,8 +30,6 @@ const AdminOverview = () => {
 
   // Targets
   const pubsTarget = 1000;
-  const areasAddedPercentTarget = 100;
-  const areasMeasuredPercentTarget = 100;
 
   // Calculate percentages
   const areasAddedPercent = pubs.length
@@ -62,16 +60,14 @@ const AdminOverview = () => {
           <div className="space-y-4">
             <ProgressBar
               value={pubsWithAreasAdded.length}
-              max={areasAddedPercentTarget}
+              max={pubs.length}
               label="Pubs with Areas Added"
-              percentage={true}
             />
 
             <ProgressBar
               value={pubsWithAreasMeasured.length}
-              max={areasMeasuredPercentTarget}
+              max={pubs.length}
               label="Pubs with Areas Measured"
-              percentage={true}
             />
           </div>
 
