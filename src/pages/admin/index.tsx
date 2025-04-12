@@ -28,6 +28,10 @@ const AdminOverview = () => {
     return has_areas_measured;
   });
 
+  const pubsWithLabelsAdded = pubs.filter(({ has_labels_added }) => {
+    return has_labels_added;
+  });
+
   // Targets
   const pubsTarget = 1000;
 
@@ -37,6 +41,9 @@ const AdminOverview = () => {
     : 0;
   const areasMeasuredPercent = pubs.length
     ? Math.round((pubsWithAreasMeasured.length / pubs.length) * 100)
+    : 0;
+  const labelsAddedPercent = pubs.length
+    ? Math.round((pubsWithLabelsAdded.length / pubs.length) * 100)
     : 0;
 
   return (
@@ -69,6 +76,12 @@ const AdminOverview = () => {
               max={pubs.length}
               label="Pubs with Areas Measured"
             />
+
+            <ProgressBar
+              value={pubsWithLabelsAdded.length}
+              max={pubs.length}
+              label="Pubs with Labels added"
+            />
           </div>
 
           <div className="mt-4 text-sm text-gray-600">
@@ -79,6 +92,11 @@ const AdminOverview = () => {
             <p>
               Pubs with areas measured: {pubsWithAreasMeasured.length} of{" "}
               {pubs.length} ({areasMeasuredPercent}%)
+            </p>
+
+            <p>
+              Pubs with labels added: {pubsWithLabelsAdded.length} of{" "}
+              {pubs.length} ({labelsAddedPercent}%)
             </p>
           </div>
         </div>

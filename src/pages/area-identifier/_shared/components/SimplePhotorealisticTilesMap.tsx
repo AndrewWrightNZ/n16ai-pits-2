@@ -14,8 +14,15 @@ import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedM
 
 // Types
 import { Pub } from "../../../../_shared/types";
+import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
 
-export default function SimplePhotorealisticTilesMap() {
+interface SimplePhotorealisticTilesMapProps {
+  pageName: string;
+}
+
+export default function SimplePhotorealisticTilesMap({
+  pageName,
+}: SimplePhotorealisticTilesMapProps) {
   // Ref to access TilesRendererService and camera functions
   const tilesSceneRef = useRef<TilesSceneRef>(null);
 
@@ -121,21 +128,20 @@ export default function SimplePhotorealisticTilesMap() {
         </Canvas>
 
         {/* Simplified location modal with pub jumping capability */}
-        <DraggableLocationsModal onJumpToPub={handleJumpToPub} />
+        <DraggableLocationsModal
+          onJumpToPub={handleJumpToPub}
+          filterType={pageName}
+        />
 
-        {/* Camera Details Button - always visible */}
-        <button
-          className="absolute top-22 right-4 bg-black/70 text-white px-3 py-1.5 rounded z-20 text-sm flex items-center"
-          onClick={() => setShowCameraPanel(!showCameraPanel)}
-        >
-          {showCameraPanel ? "Hide Camera Details" : "Show Camera Details"}
-        </button>
-
-        {!isLoading && showCameraPanel && (
+        {!isLoading && showCameraPanel && pageName === "areas" && (
           <CreatePubArea
             cameraInfo={cameraInfo}
             tilesSceneRef={tilesSceneRef}
           />
+        )}
+
+        {!isLoading && showCameraPanel && pageName === "labels" && (
+          <CreatePubLabels tilesSceneRef={tilesSceneRef} />
         )}
 
         {/* Loading overlay */}

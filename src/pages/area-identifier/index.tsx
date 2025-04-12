@@ -2,11 +2,7 @@
 import SimplePhotorealisticTilesMap from "./_shared/components/SimplePhotorealisticTilesMap";
 
 const AreaIdentifier = () => {
-  return (
-    <>
-      <SimplePhotorealisticTilesMap />
-    </>
-  );
+  return <SimplePhotorealisticTilesMap pageName="areas" />;
 };
 
 export default AreaIdentifier;

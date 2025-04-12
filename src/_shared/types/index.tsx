@@ -13,6 +13,7 @@ export interface Pub {
   // Areas
   has_areas_added: boolean;
   has_areas_measured: boolean;
+  has_labels_added: boolean;
 }
 
 export interface SimpleCameraPosition {
@@ -40,6 +41,14 @@ export interface PubArea {
   created_at: string;
   floor_area: number;
   coordinates: PolygonCoordinate[];
+}
+
+export interface PubLabel {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  created_at: string;
 }
 
 export interface CameraPosition {

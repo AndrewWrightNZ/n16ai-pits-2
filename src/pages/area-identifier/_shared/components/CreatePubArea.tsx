@@ -125,7 +125,7 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
   ]);
 
   return (
-    <div className="absolute top-36 right-4 bg-black/70 text-white p-3 rounded z-20 w-64">
+    <div className="absolute top-24 right-2 bg-black/70 text-white p-3 rounded z-20 w-64">
       <h3 className="text-sm font-bold mb-2">
         Pub Areas {selectedPub && `- ${selectedPub.name}`}
       </h3>
