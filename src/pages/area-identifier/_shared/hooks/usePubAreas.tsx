@@ -175,12 +175,6 @@ const usePubAreas = (): PubAreasResponse => {
       floor_area,
       coordinates,
     }: SaveFloorAreaPayload) => {
-      console.log("Saving floor area:", {
-        pub_area_id,
-        floor_area,
-        coordinates,
-      });
-
       // Update floor aera for the pub area
       const { data, error } = await supabaseClient
         .from("pub_area")

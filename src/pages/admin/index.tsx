@@ -1,14 +1,22 @@
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
+// Hooks
 import usePubs from "../finder/_shared/hooks/usePubs";
 
 const AdminOverview = () => {
-  //
+  // Add query client
+  const queryClient = useQueryClient();
 
   // Hooks
   const {
     data: { pubs = [] },
   } = usePubs();
 
-  //
+  // Effect to refetch pubs when component mounts
+  useEffect(() => {
+    queryClient.refetchQueries({ queryKey: ["pubs"] });
+  }, [queryClient]);
 
   // Variables
   const pubsWithAreasAdded = pubs.filter(({ has_areas_added }) => {

@@ -61,31 +61,6 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
     const lat = selectedPub?.latitude || 51.5074;
     const lng = selectedPub?.longitude || -0.1278;
     const pubId = selectedPub?.id || 0;
-    const pubName = selectedPub?.name || "My Custom Location";
-    const locationKey = selectedPub
-      ? selectedPub.name.toLowerCase().replace(/[^a-z0-9]/g, "_")
-      : "my_location";
-
-    // Create a complete preset template with current position and pub's lat/lng
-    const presetCode = `
-  ${locationKey}: {
-    lat: ${lat}, // Geographic latitude
-    lng: ${lng}, // Geographic longitude
-    altitude: ${parseFloat(Math.abs(position.y).toFixed(2))},
-    heading: 0,
-    description: "${pubName}",
-    // Camera position details
-    position: {
-      x: ${parseFloat(position.x.toFixed(2))},
-      y: ${parseFloat(position.y.toFixed(2))},
-      z: ${parseFloat(position.z.toFixed(2))}
-    },
-    target: {
-      x: ${parseFloat(target.x.toFixed(2))},
-      y: ${parseFloat(target.y.toFixed(2))},
-      z: ${parseFloat(target.z.toFixed(2))}
-    }
-  },`;
 
     onSavePubAreaDetails({
       pub_id: pubId,
@@ -104,9 +79,6 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
         },
       },
     });
-
-    // Copy to clipboard
-    navigator.clipboard.writeText(presetCode);
   };
 
   // Function to handle clicking on a pub area to view it

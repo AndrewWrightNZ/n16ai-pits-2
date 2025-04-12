@@ -30,19 +30,9 @@ function Finder() {
 
   // Hooks from your existing code
   const {
-    data: {
-      pubs = [],
-      pubsInTheSun = [],
-      selectedPub = null,
-      selectedFilters = [],
-    },
+    data: { pubs = [], pubsInTheSun = [], selectedPub = null },
     operations: { onSetMapBounds, onSetSelectedPubId },
   } = usePubs();
-
-  console.log("Pubs in the Sun - Finder");
-  console.log("Pubs:", pubs);
-  console.log("Selected Pub:", selectedPub);
-  console.log("Selected Filters:", selectedFilters);
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
