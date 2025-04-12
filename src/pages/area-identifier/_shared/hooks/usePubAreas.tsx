@@ -19,6 +19,7 @@ interface PubAreasData extends PubAreasState {
   isLoadingSelectedPub: boolean;
   isSavingFloorArea: boolean;
   isSettingPubAreasPresent: boolean;
+  isSettingPubAreasMeasured: boolean;
 
   // Selected pub
   selectedPub: Pub | null;
@@ -71,6 +72,7 @@ interface PubAreasOperations {
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
   onSaveFloorArea: (payload: SaveFloorAreaPayload) => void;
   onSetPubAreasPresentForPub: () => void;
+  onSetPubAreasMeasuredForPub: () => void;
 }
 
 interface PubAreasResponse {
@@ -141,7 +143,7 @@ const usePubAreas = (): PubAreasResponse => {
   const {
     data: selectedPub = null,
     isLoading: isLoadingSelectedPub,
-    // refetch: onRefetchSelectedPub,
+    refetch: onRefetchSelectedPub,
   } = useQuery({
     queryKey: GET_PUB_BY_ID_QUERY_KEY,
     queryFn: fetchPubById,
@@ -192,6 +194,19 @@ const usePubAreas = (): PubAreasResponse => {
         const { data, error } = await supabaseClient
           .from("pub")
           .update({ has_areas_added: true })
+          .eq("id", pub_id);
+        if (error) throw error;
+        return data;
+      },
+    });
+
+  const { mutate: setPubAreasMeasured, isPending: isSettingPubAreasMeasured } =
+    useMutation({
+      mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
+        // Update floor area for the pub area
+        const { data, error } = await supabaseClient
+          .from("pub")
+          .update({ has_areas_measured: true })
           .eq("id", pub_id);
         if (error) throw error;
         return data;
@@ -260,11 +275,33 @@ const usePubAreas = (): PubAreasResponse => {
       {
         onSuccess: () => {
           // Manually update the query
+          onRefetchSelectedPub();
+
+          // Refetch the 'pubs' query
+          queryClient.refetchQueries({
+            queryKey: ["pubs"],
+          });
+        },
+        onError: (error) => {
+          console.error("Error saving floor area:", error);
+        },
+      }
+    );
+  };
+
+  const onSetPubAreasMeasuredForPub = () => {
+    setPubAreasMeasured(
+      {
+        pub_id: selectedPubId || 0,
+      },
+      {
+        onSuccess: () => {
+          // Manually update the query
           queryClient.setQueryData(
             GET_PUB_BY_ID_QUERY_KEY,
             (oldData: Pub | undefined) => {
               if (!oldData) return null;
-              return { ...oldData, has_areas_added: true };
+              return { ...oldData, has_areas_measured: true };
             }
           );
         },
@@ -294,6 +331,7 @@ const usePubAreas = (): PubAreasResponse => {
       isLoadingSelectedPub,
       isSavingFloorArea,
       isSettingPubAreasPresent,
+      isSettingPubAreasMeasured,
 
       // Pub
       selectedPub,
@@ -312,6 +350,7 @@ const usePubAreas = (): PubAreasResponse => {
       onSavePubAreaDetails,
       onSaveFloorArea,
       onSetPubAreasPresentForPub,
+      onSetPubAreasMeasuredForPub,
     },
   };
 };
