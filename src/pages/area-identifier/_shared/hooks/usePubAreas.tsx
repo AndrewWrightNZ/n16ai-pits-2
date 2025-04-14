@@ -20,12 +20,14 @@ interface PubAreasData extends PubAreasState {
   isSavingFloorArea: boolean;
   isSettingPubAreasPresent: boolean;
   isSettingPubAreasMeasured: boolean;
+  isLoadingAreasOfTypes: boolean;
 
   // Selected pub
   selectedPub: Pub | null;
 
   // Areas
   areasForPub: PubArea[];
+  areasOfTypes: PubArea[];
 }
 
 interface SavePubAreaDetailsPayload {
@@ -68,6 +70,9 @@ interface PubAreasOperations {
   // Add properties relevant to PubAreasOperations
   onUpdatePubAreaDetails: (newDetails: Partial<PubAreasState>) => void;
 
+  // Area type filtering
+  onToggleAreaTypeFilter: (type: string) => void;
+
   // Database updates
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
   onSaveFloorArea: (payload: SaveFloorAreaPayload) => void;
@@ -81,22 +86,20 @@ interface PubAreasResponse {
 }
 
 const usePubAreas = (): PubAreasResponse => {
-  //
-
   // Hooks
   const queryClient = useQueryClient();
-
-  //
 
   // Context
   const { pubAreasState, updatePubAreasState } = usePubAreasContext();
 
-  //
-
   // Variables
-  const { name, description, type, selectedPubId } = pubAreasState;
-
-  //
+  const {
+    name,
+    description,
+    type,
+    selectedPubId,
+    selectedAreaTypes = [],
+  } = pubAreasState;
 
   // Query functions
   const fetchAreasForPub = async (): Promise<PubArea[]> => {
@@ -110,7 +113,18 @@ const usePubAreas = (): PubAreasResponse => {
     return data;
   };
 
-  //
+  const fetchAreasOfType = async (): Promise<PubArea[]> => {
+    // Fetch pub areas where the type matches any of the selected area types
+    const { data, error } = await supabaseClient
+      .from("pub_area")
+      .select()
+      .in("type", selectedAreaTypes);
+
+    console.log("Selected area types:", { data, error, selectedAreaTypes });
+
+    if (error) throw error;
+    return data;
+  };
 
   // Query functions
   const fetchPubById = async () => {
@@ -123,12 +137,14 @@ const usePubAreas = (): PubAreasResponse => {
     return data?.[0] as Pub;
   };
 
-  //
-
   // Queries
-
   const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPubId];
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
+
+  const GET_PUB_AREAS_OF_TYPES_QUERY_KEY = [
+    "getPubAreasOfTypes",
+    ...selectedAreaTypes,
+  ];
 
   const {
     data: areasForPub = [],
@@ -140,6 +156,12 @@ const usePubAreas = (): PubAreasResponse => {
     enabled: !!selectedPubId,
   });
 
+  const { data: areasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
+    useQuery({
+      queryKey: GET_PUB_AREAS_OF_TYPES_QUERY_KEY,
+      queryFn: fetchAreasOfType,
+    });
+
   const {
     data: selectedPub = null,
     isLoading: isLoadingSelectedPub,
@@ -147,9 +169,8 @@ const usePubAreas = (): PubAreasResponse => {
   } = useQuery({
     queryKey: GET_PUB_BY_ID_QUERY_KEY,
     queryFn: fetchPubById,
+    enabled: !!selectedPubId,
   });
-
-  //
 
   // Mutations
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
@@ -177,7 +198,7 @@ const usePubAreas = (): PubAreasResponse => {
       floor_area,
       coordinates,
     }: SaveFloorAreaPayload) => {
-      // Update floor aera for the pub area
+      // Update floor area for the pub area
       const { data, error } = await supabaseClient
         .from("pub_area")
         .update({ floor_area, coordinates })
@@ -212,8 +233,6 @@ const usePubAreas = (): PubAreasResponse => {
         return data;
       },
     });
-
-  //
 
   // Handlers
   const onUpdatePubAreaDetails = (newDetails: Partial<PubAreasState>) => {
@@ -326,6 +345,15 @@ const usePubAreas = (): PubAreasResponse => {
     });
   };
 
+  const onToggleAreaTypeFilter = (type: string) => {
+    const currentSelectedTypes = selectedAreaTypes || [];
+    const newSelectedTypes = currentSelectedTypes.includes(type)
+      ? currentSelectedTypes.filter((t) => t !== type)
+      : [...currentSelectedTypes, type];
+
+    updatePubAreasState({ selectedAreaTypes: newSelectedTypes });
+  };
+
   return {
     data: {
       ...pubAreasState,
@@ -337,12 +365,14 @@ const usePubAreas = (): PubAreasResponse => {
       isSavingFloorArea,
       isSettingPubAreasPresent,
       isSettingPubAreasMeasured,
+      isLoadingAreasOfTypes,
 
       // Pub
       selectedPub,
 
       // Areas
       areasForPub,
+      areasOfTypes,
     },
     operations: {
       // Select pub
@@ -350,6 +380,9 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Update details
       onUpdatePubAreaDetails,
+
+      // Area type filtering
+      onToggleAreaTypeFilter,
 
       // Update DB
       onSavePubAreaDetails,

@@ -7,6 +7,9 @@ export interface PubAreasState {
   type: string;
   selectedPubId: number | null;
 
+  // Area types filters
+  selectedAreaTypes: string[];
+
   // Timestamp for localStorage
   timestamp: number;
 }
@@ -28,6 +31,9 @@ const defaultState: PubAreasState = {
   description: "",
   type: "",
   selectedPubId: null,
+
+  // Area types filters
+  selectedAreaTypes: ["pavement", "beer-garden"],
 
   // Timestamp for localStorage
   timestamp: Date.now(),
