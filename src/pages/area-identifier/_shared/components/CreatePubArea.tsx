@@ -4,6 +4,7 @@ import usePubAreas from "../hooks/usePubAreas";
 // Types
 import { PubArea } from "../../../../_shared/types";
 import { useEffect } from "react";
+import { AREA_TYPES } from "../../../lists/areas";
 
 interface CreatePubAreaProps {
   cameraInfo: {
@@ -176,13 +177,11 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
           tabIndex={3}
         >
           <option value="">Select Pub Area</option>
-          <option value="pavement">Pavement</option>
-          <option value="frontage-seating">Frontage seating</option>
-          <option value="terrace">Terrace</option>
-          <option value="terrace-waterfront">Waterfront Terrace</option>
-          <option value="beer-garden">Beer garden</option>
-          <option value="courtyard">Courtyard</option>
-          {/* Add more options as needed */}
+          {AREA_TYPES.map(({ key, label }) => (
+            <option key={key} value={key}>
+              {label}
+            </option>
+          ))}
         </select>
 
         <button

@@ -14,7 +14,10 @@ export const Route = createRootRoute({
         <Link to="/scene" className="[&.active]:font-bold">
           3D Scene
         </Link>
-        <Link to="/area-identifier" className="[&.active]:font-bold">
+        <Link to="/areas-list" className="[&.active]:font-bold">
+          Areas List
+        </Link>
+        <Link to="/area-identifier" className="[&.active]:font-bold ml-4">
           Area identifier
         </Link>
         <Link to="/area-sizer" className="[&.active]:font-bold">
