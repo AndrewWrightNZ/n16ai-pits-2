@@ -53,11 +53,6 @@ const SavedAreas: React.FC<SavedAreaProps> = ({
       !has_areas_measured &&
       !isSettingPubAreasMeasured
     ) {
-      console.log(
-        "Auto-triggering set areas measured for pub:",
-        selectedPub?.id
-      );
-
       onSetPubAreasMeasuredForPub();
     }
   }, [
