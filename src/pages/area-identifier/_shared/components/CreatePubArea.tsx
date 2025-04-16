@@ -110,11 +110,6 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
       areasForPub.length > 0 &&
       !isSettingPubAreasPresent
     ) {
-      console.log(
-        "Auto-triggering set pub areas present for pub:",
-        selectedPub.id
-      );
-
       onSetPubAreasPresentForPub();
     }
   }, [

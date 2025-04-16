@@ -155,11 +155,6 @@ const PubAreaSizer: React.FC = () => {
       !currentPolygon ||
       currentPolygon.length < 3
     ) {
-      console.log("Cannot save: missing data", {
-        selectedAreaId,
-        area,
-        polygonPoints: currentPolygon?.length,
-      });
       return;
     }
 

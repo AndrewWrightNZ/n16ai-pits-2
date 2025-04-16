@@ -8,13 +8,9 @@ import { Pub } from "../../_shared/types";
 
 // Components for custom markers
 import RenderPubsOfType from "./_shared/components/renderPubsOfType";
-
-// Map container style
-const mapContainerStyle = {
-  width: "100%",
-  height: "80%",
-  borderRadius: "12px",
-};
+import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
+import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
+import { Filter } from "lucide-react";
 
 // Default center (London)
 const defaultCenter = {
@@ -27,12 +23,17 @@ function Finder() {
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [center, setCenter] = useState(defaultCenter);
   const [activeInfoWindow, setActiveInfoWindow] = useState<Pub | null>(null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
 
   // Hooks from your existing code
   const {
-    data: { pubs = [], pubsInTheSun = [], selectedPub = null },
+    data: { uiReadyPubs = [], pubsInTheSun = [], selectedPub = null },
     operations: { onSetMapBounds, onSetSelectedPubId },
   } = usePubs();
+
+  const {
+    data: { selectedAreaTypes = [] },
+  } = usePubAreas();
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -118,26 +119,33 @@ function Finder() {
         />
       </Helmet>
 
-      <div className="bg-[#F3F1E5] min-h-screen flex flex-col items-center">
+      <div className="flex flex-col items-center">
         <header className="w-full mb-6">
           <h1 className="sr-only">Pubs in the Sun</h1>
         </header>
 
         <main className="w-full flex flex-col items-center">
           <div className="w-full mb-8">
-            <h2 className="text-2xl font-medium font-poppins mb-2 text-center">
-              Use the Pubs in the Sun map to find the best sunny beer gardens
-              near you.
-            </h2>
             <p className="text-sm font-normal font-poppins text-center mb-4">
-              Search from over {pubs.length} pubs we track in London (showing{" "}
-              {pubsInTheSun.length})
+              Search from over {uiReadyPubs.length} pubs we track in London
+              (showing {pubsInTheSun.length})
             </p>
 
+            {/* Filter Controls */}
             <div className="w-full flex justify-center mb-4">
               <button
+                onClick={() => setShowFilterModal(!showFilterModal)}
+                className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full flex items-center mr-4"
+              >
+                <Filter className="mr-2" size={18} />
+                {selectedAreaTypes.length > 0
+                  ? `Filters (${selectedAreaTypes.length})`
+                  : "Filter Areas"}
+              </button>
+
+              <button
                 onClick={handleFindMyLocation}
-                className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-full flex items-center"
+                className="bg-black hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full flex items-center"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -155,15 +163,21 @@ function Finder() {
               </button>
             </div>
 
-            {/* Filter controls could go here */}
+            {/* Area Type Filter Modal */}
+            {showFilterModal && (
+              <AreaTypeFilter onClose={() => setShowFilterModal(false)} />
+            )}
 
             {/* Google Maps Component */}
-            <div className="w-full h-[90vh] rounded-lg overflow-hidden shadow-lg">
+            <div className="w-full h-[70vh] rounded-lg overflow-hidden shadow-lg relative">
               <LoadScript
                 googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
               >
                 <GoogleMap
-                  mapContainerStyle={mapContainerStyle}
+                  mapContainerStyle={{
+                    width: "100%",
+                    height: "100%",
+                  }}
                   center={center}
                   zoom={13}
                   onLoad={onMapLoad}
@@ -179,8 +193,8 @@ function Finder() {
                 >
                   {/* Render pubs by sun category */}
                   <RenderPubsOfType filterName="full_sun" />
-                  {/* <RenderPubsOfType filterName="partial_sun" />
-                  <RenderPubsOfType filterName="no_sun" /> */}
+                  {/* <RenderPubsOfType filterName="partial_sun" areaTypeFilters={selectedAreaTypes} />
+                  <RenderPubsOfType filterName="no_sun" areaTypeFilters={selectedAreaTypes} /> */}
 
                   {/* Show info window for active pub */}
                   {activeInfoWindow && (
@@ -195,16 +209,6 @@ function Finder() {
                         <h3 className="text-lg font-bold mb-1">
                           {activeInfoWindow.name}
                         </h3>
-                        <p className="text-sm mb-2">
-                          {activeInfoWindow.address_text}
-                        </p>
-                        {!!activeInfoWindow.id && (
-                          <p className="text-sm mb-2">
-                            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                              Outdoor Seating
-                            </span>
-                          </p>
-                        )}
                         <div className="flex justify-between mt-2">
                           <a
                             href={`https://maps.google.com/maps?daddr=${activeInfoWindow.latitude},${activeInfoWindow.longitude}`}
@@ -216,7 +220,7 @@ function Finder() {
                           </a>
                           <a
                             href={`/pub/${activeInfoWindow.id}`}
-                            className="text-amber-600 hover:text-amber-800 text-sm"
+                            className="text-gray-600 hover:text-gray-800 text-sm"
                           >
                             View Details
                           </a>

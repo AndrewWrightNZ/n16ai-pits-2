@@ -11,7 +11,6 @@ import { Pub } from "../../../../_shared/types";
 //
 
 // Constants
-
 const AVAILABLE_FILTERS = ["full_sun", "partial_sun", "no_sun"];
 
 //
@@ -21,9 +20,11 @@ const AVAILABLE_FILTERS = ["full_sun", "partial_sun", "no_sun"];
 interface PubsData extends PubState {
   // Loading
   isLoading: boolean;
+  isLoadingUIReadyPubs: boolean;
 
   // Pubs
   pubs: Pub[];
+  uiReadyPubs: Pub[];
   selectedPub: Pub | null;
   pubsInTheSun: Pub[];
   pubsPartiallyInTheSun: Pub[];
@@ -91,10 +92,21 @@ const usePubs = (): HookShape => {
     return data;
   };
 
+  const fetchUIReadyPubs = async () => {
+    // Get pubs where the has_areas_measured is true
+    const { data, error } = await supabaseClient
+      .from("pub")
+      .select()
+      .eq("has_areas_measured", true);
+    if (error) throw error;
+    return data;
+  };
+
   //
 
   // Queries
   const GET_PUBS_QUERY_KEY = ["pubs"];
+  const GET_UI_READY_PUBS_QUERY_KEY = ["pubs", "ui-ready"];
 
   const {
     data: pubs = [],
@@ -104,8 +116,12 @@ const usePubs = (): HookShape => {
     queryKey: GET_PUBS_QUERY_KEY,
     queryFn: fetchPubs,
   });
+  const { data: uiReadyPubs = [], isLoading: isLoadingUIReadyPubs } = useQuery({
+    queryKey: GET_UI_READY_PUBS_QUERY_KEY,
+    queryFn: fetchUIReadyPubs,
+  });
 
-  const selectedPub = pubs.find((pub: Pub) => pub.id === selectedPubId);
+  const selectedPub = uiReadyPubs.find((pub: Pub) => pub.id === selectedPubId);
 
   //
 
@@ -117,27 +133,26 @@ const usePubs = (): HookShape => {
   // Get Counts of Pubs in the Sun
   const pubsInTheSunCount = useMemo(() => {
     if (!isAllDataLoaded) return 0;
-    return pubs.length;
-  }, [pubs, selectedFilters, isAllDataLoaded]);
+    return uiReadyPubs.length;
+  }, [uiReadyPubs, selectedFilters, isAllDataLoaded]);
 
   const pubsPartiallyInTheSunCount = useMemo(() => {
     if (!isAllDataLoaded) return 0;
-    return pubs.length;
-  }, [pubs, isAllDataLoaded]);
+    return uiReadyPubs.length;
+  }, [uiReadyPubs, isAllDataLoaded]);
 
   const pubsNotInTheSunCount = useMemo(() => {
     if (!isAllDataLoaded) return 0;
-    return pubs.length;
-  }, [pubs, isAllDataLoaded]);
+    return uiReadyPubs.length;
+  }, [uiReadyPubs, isAllDataLoaded]);
 
   //
 
   // Filter by which pubs are in view
-
   const pubsInMapBounds = useMemo(() => {
     if (!isAllDataLoaded) return [];
 
-    return pubs.filter((pub: Pub) => {
+    return uiReadyPubs.filter((pub: Pub) => {
       const { latitude, longitude } = pub;
       const { north, south, east, west } = mapBounds;
 
@@ -148,7 +163,7 @@ const usePubs = (): HookShape => {
         longitude < east
       );
     });
-  }, [pubs, mapBounds, isAllDataLoaded]);
+  }, [uiReadyPubs, mapBounds, isAllDataLoaded]);
 
   const pubsInTheSun = useMemo(() => {
     if (!isAllDataLoaded) return [];
@@ -229,9 +244,11 @@ const usePubs = (): HookShape => {
 
       // Loading
       isLoading,
+      isLoadingUIReadyPubs,
 
       // Pubs
       pubs,
+      uiReadyPubs,
       selectedPub,
       selectedPubId,
       hoveredPubId,

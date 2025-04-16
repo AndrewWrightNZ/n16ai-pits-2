@@ -234,7 +234,7 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
                             Areas Added
                           </span>
                         ) : (
-                          <span className="text-xs px-1.5 py-0.5 bg-amber-800 text-amber-200 rounded">
+                          <span className="text-xs px-1.5 py-0.5 bg-gray-800 text-gray-200 rounded">
                             0 areas
                           </span>
                         )}
@@ -246,7 +246,7 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
                             Labels Added
                           </span>
                         ) : (
-                          <span className="text-xs px-1.5 py-0.5 bg-amber-800 text-amber-200 rounded">
+                          <span className="text-xs px-1.5 py-0.5 bg-gray-800 text-gray-200 rounded">
                             0 labels
                           </span>
                         )}

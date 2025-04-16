@@ -40,8 +40,6 @@ const RenderPubsOfType = ({ filterName }: RenderPubsOfTypeProps) => {
       pubsToRender = [];
   }
 
-  console.log("RenderPubsOfType - pubsToRender:", pubsToRender);
-
   return (
     <>
       {pubsToRender?.map((pub) => (

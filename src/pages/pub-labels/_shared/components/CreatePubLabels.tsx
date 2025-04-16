@@ -180,11 +180,6 @@ const CreatePubLabels = ({ tilesSceneRef }: CreatePubLabelsProps) => {
       pubLabels.length > 0 &&
       !isSettingPubLabelsAdded
     ) {
-      console.log(
-        "Auto-triggering set pub labels added for pub:",
-        selectedPub.id
-      );
-
       onSetPubLabelsAdded();
     }
   }, [
