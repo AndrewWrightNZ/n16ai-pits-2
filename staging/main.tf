@@ -226,8 +226,8 @@ resource "aws_security_group" "n16-pits-azul-staging-lb_security_group" {
 }
 
 # Creating a target group for the load balancer
-resource "aws_lb_target_group" "n16-pits-azul-staging-target-group" {
-  name        = "n16-pits-azul-staging-target-group"
+resource "aws_lb_target_group" "n16-pits-azul-staging-tg" {
+  name        = "n16-pits-azul-staging-tg"
   port        = 80
   protocol    = "HTTP"
   target_type = "ip"
@@ -247,7 +247,7 @@ resource "aws_lb_target_group" "n16-pits-azul-staging-target-group" {
   }
 
   tags = {
-    Name = "n16-pits-azul-staging-target-group"
+    Name = "n16-pits-azul-staging-tg"
   }
 
   lifecycle {
@@ -262,7 +262,7 @@ resource "aws_lb_listener_rule" "n16_pits_staging" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.n16-pits-azul-staging-target-group.arn
+    target_group_arn = aws_lb_target_group.n16-pits-azul-staging-tg.arn
   }
 
   condition {
@@ -281,7 +281,7 @@ resource "aws_ecs_service" "n16-pits-azul-staging-service" {
   desired_count   = 1
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.n16-pits-azul-staging-target-group.arn
+    target_group_arn = aws_lb_target_group.n16-pits-azul-staging-tg.arn
     container_name   = "n16-pits-azul-staging-container"
     container_port   = 3000
   }
