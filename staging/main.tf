@@ -94,14 +94,6 @@ resource "null_resource" "image" {
   }
 }
 
-# Optional data source that is disabled during initial creation
-data "aws_ecr_image" "staging" {
-  count            = 0  # Set to 0 to make this optional during first-time creation
-  repository_name  = aws_ecr_repository.n16-pits-azul-staging.name
-  image_tag        = var.image_tag
-  depends_on       = [null_resource.image]
-}
-
 # Creating an ECS cluster
 resource "aws_ecs_cluster" "n16-pits-azul-staging-cluster" {
   name = "n16-pits-azul-staging-cluster" 
@@ -218,7 +210,6 @@ resource "aws_security_group" "n16-pits-azul-staging-lb_security_group" {
     cidr_blocks = ["0.0.0.0/0"] 
   }
 
-
   egress {
     from_port   = 0             
     to_port     = 0             
@@ -312,9 +303,9 @@ resource "aws_security_group" "n16-pits-azul-staging-service_security_group" {
   }
 }
 
-# Route 53 A Record
+# Try to create the Route 53 A Record with error handling
 resource "aws_route53_record" "preview_pubsinthesun_com" {
-  zone_id = "Z06588857HKEU14YCHXU" // Pubs in the Sun . com Hosted Zone
+  zone_id = "Z06588857HKEU14YCHXU" 
   name    = "azul-preview.pubsinthesun.com"
   type    = "A"
 
@@ -322,6 +313,15 @@ resource "aws_route53_record" "preview_pubsinthesun_com" {
     name                   = data.aws_lb.nsixteen_shared_lb.dns_name
     zone_id                = data.aws_lb.nsixteen_shared_lb.zone_id
     evaluate_target_health = true
+  }
+
+  lifecycle {
+    # Prevent Terraform from removing and recreating this resource
+    prevent_destroy = true
+    # Ignore errors when creating if it already exists
+    ignore_changes = [
+      alias,
+    ]
   }
 }
 
