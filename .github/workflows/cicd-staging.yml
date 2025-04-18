@@ -45,6 +45,10 @@ jobs:
           echo "Applying terraform changes..."
           terraform apply -auto-approve "tfplan"
 
+          # Store the CloudFront Distribution ID as an output for later use
+          CLOUDFRONT_ID=$(terraform output -raw cloudfront_distribution_id)
+          echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> $GITHUB_ENV
+
   build:
     needs: infra
     runs-on: ubuntu-latest
@@ -101,3 +105,50 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: aws ecs update-service --cluster n16-pits-azul-staging-cluster --service n16-pits-azul-staging-service --force-new-deployment
+
+      # Wait for deployment to complete before invalidating cache
+      - name: Wait for service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster n16-pits-azul-staging-cluster \
+            --services n16-pits-azul-staging-service
+
+  invalidate-cache:
+    needs: deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Checkout code for Terraform
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+
+      - name: Setup Terraform to get outputs
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.2.0
+
+      - name: Get CloudFront Distribution ID
+        run: |
+          cd staging
+          terraform init -backend=false
+          CLOUDFRONT_ID=$(terraform output -raw cloudfront_distribution_id || echo "")
+          echo "CLOUDFRONT_ID=$CLOUDFRONT_ID" >> $GITHUB_ENV
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          if [ -n "$CLOUDFRONT_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id $CLOUDFRONT_ID \
+              --paths "/*"
+            echo "CloudFront cache invalidation initiated"
+          else
+            echo "CloudFront Distribution ID not found, skipping invalidation"
+          fi

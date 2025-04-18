@@ -58,6 +58,26 @@ variable "image_tag" {
   default     = "latest"
 }
 
+variable "AWS_ACCESS_KEY_ID" {
+  description = "AWS Access Key ID"
+  sensitive   = true
+}
+
+variable "AWS_SECRET_ACCESS_KEY" {
+  description = "AWS Secret Access Key"
+  sensitive   = true
+}
+
+variable "VITE_SUPABASE_URL" {
+  description = "Supabase URL"
+  sensitive   = true
+}
+
+variable "VITE_SUPABASE_ANON_KEY" {
+  description = "Supabase Anonymous Key"
+  sensitive   = true
+}
+
 resource "null_resource" "image" {
   # Only run this when not in CI/CD (when var.image_tag is "latest")
   count = var.image_tag == "latest" ? 1 : 0
@@ -194,6 +214,19 @@ resource "aws_default_subnet" "default_subnet_c" {
   availability_zone = "us-east-1c"
 }
 
+# Reference to the existing certificate
+# data "aws_acm_certificate" "pubsinthesun" {
+#   domain = "*.pubsinthesun.com"
+#   statuses = ["ISSUED"]
+#   most_recent = true
+# }
+
+# # Add certificate to the existing listener via SNI
+# resource "aws_lb_listener_certificate" "azul_preview" {
+#   listener_arn    = data.aws_lb_listener.shared_https_listener.arn
+#   certificate_arn = data.aws_acm_certificate.pubsinthesun.arn
+# }
+
 # Creating a security group for the load balancer:
 resource "aws_security_group" "n16-pits-azul-staging-lb_security_group" {
   ingress {
@@ -303,29 +336,247 @@ resource "aws_security_group" "n16-pits-azul-staging-service_security_group" {
   }
 }
 
-# Try to create the Route 53 A Record with error handling
+# CloudFront Origin Request Policy for maintaining host headers
+resource "aws_cloudfront_origin_request_policy" "maintain_host_header" {
+  name    = "n16-azul-preview-maintain-host-header"
+  comment = "Policy to maintain host headers for Azul Preview"
+  
+  cookies_config {
+    cookie_behavior = "all"
+  }
+  
+  headers_config {
+    header_behavior = "whitelist"
+    headers {
+      items = ["Host", "Origin", "Referer", "Authorization"]
+    }
+  }
+  
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+}
+
+# CloudFront Cache Policy for dynamic content (API routes, etc)
+resource "aws_cloudfront_cache_policy" "dynamic_content" {
+  name        = "n16-azul-preview-dynamic-content"
+  comment     = "Cache policy for dynamic content"
+  default_ttl = 0
+  max_ttl     = 0
+  min_ttl     = 0
+  
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "all"
+    }
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = ["Authorization", "Host", "Origin"]
+      }
+    }
+    query_strings_config {
+      query_string_behavior = "all"
+    }
+    enable_accept_encoding_gzip   = true
+    enable_accept_encoding_brotli = true
+  }
+}
+
+# CloudFront Cache Policy for static assets
+resource "aws_cloudfront_cache_policy" "static_assets" {
+  name        = "n16-azul-preview-static-assets"
+  comment     = "Cache policy for static assets"
+  default_ttl = 86400     # 1 day
+  max_ttl     = 31536000  # 1 year
+  min_ttl     = 3600      # 1 hour
+  
+  parameters_in_cache_key_and_forwarded_to_origin {
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    headers_config {
+      header_behavior = "whitelist"
+      headers {
+        items = ["Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"]
+      }
+    }
+    query_strings_config {
+      query_string_behavior = "none"
+    }
+    enable_accept_encoding_gzip   = true
+    enable_accept_encoding_brotli = true
+  }
+}
+
+# CloudFront distribution for the React app
+resource "aws_cloudfront_distribution" "azul_preview_cdn" {
+  origin {
+    domain_name = data.aws_lb.nsixteen_shared_lb.dns_name
+    origin_id   = "ALBOrigin"
+    
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+    
+    custom_header {
+      name  = "X-Forwarded-Host"
+      value = "azul-preview.pubsinthesun.com"
+    }
+  }
+
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "/"
+  aliases             = ["azul-preview.pubsinthesun.com"]
+  price_class         = "PriceClass_100" # Use only North America and Europe edge locations (cheaper)
+  
+  # Default cache behavior for HTML and API routes
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+    
+    cache_policy_id          = aws_cloudfront_cache_policy.dynamic_content.id
+    origin_request_policy_id = aws_cloudfront_origin_request_policy.maintain_host_header.id
+    
+    viewer_protocol_policy = "redirect-to-https"
+    compress               = true
+  }
+  
+  # Cache configuration for static assets (JS, CSS, images)
+  ordered_cache_behavior {
+    path_pattern     = "/assets/*"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+
+    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
+    
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  
+  # Cache configuration for static images
+  ordered_cache_behavior {
+    path_pattern     = "*.png"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+
+    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
+    
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  
+  ordered_cache_behavior {
+    path_pattern     = "*.jpg"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+
+    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
+    
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  
+  ordered_cache_behavior {
+    path_pattern     = "*.svg"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+
+    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
+    
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  
+  ordered_cache_behavior {
+    path_pattern     = "*.ico"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+
+    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
+    
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  
+  # Additional font file caching
+  ordered_cache_behavior {
+    path_pattern     = "*.woff2"
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD", "OPTIONS"]
+    target_origin_id = "ALBOrigin"
+
+    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
+    
+    compress               = true
+    viewer_protocol_policy = "redirect-to-https"
+  }
+  
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+  
+  viewer_certificate {
+    acm_certificate_arn      = data.aws_acm_certificate.pubsinthesun.arn
+    ssl_support_method       = "sni-only"
+    minimum_protocol_version = "TLSv1.2_2021"
+  }
+
+  # Add custom error response to handle SPA routing
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 10
+  }
+
+  tags = {
+    Name        = "azul-preview-cdn"
+    Environment = "staging"
+  }
+}
+
+# Update Route 53 record to point to CloudFront instead of the load balancer
 resource "aws_route53_record" "preview_pubsinthesun_com" {
   zone_id = "Z06588857HKEU14YCHXU" 
   name    = "azul-preview.pubsinthesun.com"
   type    = "A"
 
   alias {
-    name                   = data.aws_lb.nsixteen_shared_lb.dns_name
-    zone_id                = data.aws_lb.nsixteen_shared_lb.zone_id
-    evaluate_target_health = true
+    name                   = aws_cloudfront_distribution.azul_preview_cdn.domain_name
+    zone_id                = aws_cloudfront_distribution.azul_preview_cdn.hosted_zone_id
+    evaluate_target_health = false
   }
 
   lifecycle {
-    # Prevent Terraform from removing and recreating this resource
     prevent_destroy = true
-    # Ignore errors when creating if it already exists
-    ignore_changes = [
-      alias,
-    ]
   }
+}
+
+# Output the CloudFront distribution domain and ID
+output "cloudfront_domain" {
+  value       = aws_cloudfront_distribution.azul_preview_cdn.domain_name
+  description = "CloudFront distribution domain"
+}
+
+output "cloudfront_distribution_id" {
+  value       = aws_cloudfront_distribution.azul_preview_cdn.id
+  description = "ID of the CloudFront distribution for cache invalidation"
 }
 
 output "preview_url" {
   value       = "https://azul-preview.pubsinthesun.com"
-  description = "URL for the preview environment"
+  description = "URL for the preview environment (now served via CloudFront)"
 }
