@@ -91,11 +91,10 @@ resource "null_resource" "image" {
   }
 }
 
-
 data "aws_ecr_image" "staging" {
   count            = fileexists("${path.module}/../Dockerfile") ? 1 : 0
   repository_name  = aws_ecr_repository.n16-pits-azul-staging.name
-  image_tag        = "staging"
+  image_tag        = var.image_tag  # This will use the SHA passed from GitHub Actions
   depends_on       = [null_resource.image]
 }
 
