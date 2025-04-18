@@ -215,17 +215,17 @@ resource "aws_default_subnet" "default_subnet_c" {
 }
 
 # Reference to the existing certificate
-# data "aws_acm_certificate" "pubsinthesun" {
-#   domain = "*.pubsinthesun.com"
-#   statuses = ["ISSUED"]
-#   most_recent = true
-# }
+data "aws_acm_certificate" "pubsinthesun" {
+  domain = "*.pubsinthesun.com"
+  statuses = ["ISSUED"]
+  most_recent = true
+}
 
-# # Add certificate to the existing listener via SNI
-# resource "aws_lb_listener_certificate" "azul_preview" {
-#   listener_arn    = data.aws_lb_listener.shared_https_listener.arn
-#   certificate_arn = data.aws_acm_certificate.pubsinthesun.arn
-# }
+# Add certificate to the existing listener via SNI
+resource "aws_lb_listener_certificate" "azul_preview" {
+  listener_arn    = data.aws_lb_listener.shared_https_listener.arn
+  certificate_arn = data.aws_acm_certificate.pubsinthesun.arn
+}
 
 # Creating a security group for the load balancer:
 resource "aws_security_group" "n16-pits-azul-staging-lb_security_group" {
