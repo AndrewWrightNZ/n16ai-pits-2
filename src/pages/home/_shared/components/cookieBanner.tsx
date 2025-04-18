@@ -17,6 +17,7 @@ const CookieBanner = () => {
   const acceptCookies = () => {
     localStorage.setItem("cookiesAccepted", "true");
     onAcceptCookies();
+    setShowBanner(false);
   };
 
   // Effects, show banner after 2 seconds
@@ -33,16 +34,42 @@ const CookieBanner = () => {
   return (
     <div
       className={`
-        flex flex-row justify-between items-center w-[80vw] absolute left-[10vw] transition-all duration-500 ease-in-out rounded-full p-2.5 pl-5 shadow-md bg-secondary-light bg-white z-50 ${showBanner && !userHasAcceptedCookies ? "bottom-2.5" : "-bottom-full"}
+        fixed bottom-2.5 left-0 right-0 mx-auto
+        w-[90vw] md:w-[80vw]
+        flex flex-row items-center justify-between
+        gap-2 sm:gap-4
+        p-3 sm:p-2.5 sm:pl-5
+        rounded-t-lg sm:rounded-full
+        shadow-md bg-white
+        transition-transform duration-500 ease-in-out z-50
+        white-shadow
+        ${showBanner && !userHasAcceptedCookies ? "translate-y-0" : "translate-y-[200%]"}
       `}
+      style={{
+        visibility:
+          showBanner && !userHasAcceptedCookies ? "visible" : "hidden",
+      }}
     >
-      <p className="font-poppins font-bold text-xs sm:max-w-[60vw]">
+      <p className="font-poppins font-bold text-xs text-center sm:text-left w-full text-[#2962FF]">
         This website uses cookies to ensure you get the best experience on our
         website.
       </p>
       <button
         onClick={acceptCookies}
-        className="py-2.5 px-5 rounded-full bg-secondary-light border-2 border-primary cursor-pointer shadow-none font-poppins font-bold min-w-[100px] sm:min-w-[30px] hover:bg-secondary-light hover:border-2 hover:border-primary hover:opacity-100 hover:shadow-lg"
+        className="
+          py-2 px-5
+          rounded-full
+          bg-white
+          border-2 border-[#2962FF]
+          text-[#2962FF]
+          cursor-pointer
+          shadow-none
+          font-poppins font-bold
+          text-sm
+          min-w-[100px]
+          hover:shadow-lg
+          transition-shadow duration-300
+        "
       >
         Got it!
       </button>
