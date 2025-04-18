@@ -1,13 +1,134 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pubs in the Sun</title>
+    <title>Pubs in the Sun | Find Sunny Beer Gardens Near You</title>
+    <meta
+      name="description"
+      content="Discover the best pubs with sunny beer gardens and outdoor seating near you. Perfect for summer days and warm evenings."
+    />
+    <meta
+      name="keywords"
+      content="pubs, beer gardens, sunny pubs, outdoor seating, pub finder, UK pubs, summer pubs"
+    />
+    <meta name="author" content="Pubs in the Sun" />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Social Media Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.pubsinthesun.com" />
+    <meta
+      property="og:title"
+      content="Pubs in the Sun | Find Sunny Beer Gardens, Terraces and Pavements"
+    />
+    <meta
+      property="og:description"
+      content="Discover the best pubs with sunny beer gardens and outdoor seating near you."
+    />
+    <meta
+      property="og:image"
+      content="https://n16ai-public.s3.amazonaws.com/social/pits_social_card.png"
+    />
+    <meta property="og:image:alt" content="Pubs in the Sun logo and branding" />
+    <meta property="og:locale" content="en_GB" />
+    <meta property="og:site_name" content="Pubs in the Sun" />
+
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Pubs in the Sun | Find Sunny Beer Gardens"
+    />
+    <meta
+      name="twitter:description"
+      content="Discover the best pubs with sunny beer gardens and outdoor seating near you."
+    />
+    <meta
+      name="twitter:image"
+      content="https://n16ai-public.s3.amazonaws.com/social/pits_social_card.png"
+    />
+    <meta
+      name="twitter:image:alt"
+      content="Pubs in the Sun logo and branding"
+    />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://www.pubsinthesun.com" />
+
+    <!-- Favicon and App Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Pubs in the Sun",
+        "url": "https://www.pubsinthesun.com",
+        "description": "Find pubs with sunny beer gardens, terraces or pavements with outdoor seating near you.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://www.pubsinthesun.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Pubs in the Sun",
+        "url": "https://www.pubsinthesun.com",
+        "logo": "https://www.pubsinthesun.com/logo.png",
+        "sameAs": [
+          "https://twitter.com/pubsinthesun",
+          "https://www.instagram.com/pubsinthesun",
+          "https://www.facebook.com/pubsinthesun"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "email": "hello@pubsinthesun.com",
+          "contactType": "customer service"
+        }
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preload" href="/assets/bigBoldSun.svg" as="image" />
+
+    <!-- Google Analytics -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-2HP5ZV8BW4"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-2HP5ZV8BW4");
+    </script>
   </head>
   <body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main" class="sr-only focus:not-sr-only">Skip to main content</a>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Preconnect to third-party domains -->
+    <link rel="dns-prefetch" href="https://n16ai-public.s3.amazonaws.com" />
   </body>
 </html>

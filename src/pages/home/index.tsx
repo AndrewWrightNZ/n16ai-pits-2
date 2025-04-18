@@ -1,9 +1,76 @@
-import sunLogo from "../../assets/bigBoldSun.svg";
 import { Helmet } from "react-helmet";
+import { useState, useEffect } from "react";
+
+// Icons
+import { ChevronRight } from "lucide-react";
+
+// Assets
+import sunLogo from "../../assets/bigBoldSun.svg";
+import usePubs from "../finder/_shared/hooks/usePubs";
+import CookieBanner from "./_shared/components/cookieBanner";
+
+// Components
 
 function App() {
+  const [showContent, setShowContent] = useState(false);
+
+  //
+
+  // Hooks
+  const {
+    data: { pubsInTheSunCount, pubsPartiallyInTheSunCount },
+  } = usePubs();
+
+  const totalInTheSun = pubsInTheSunCount + pubsPartiallyInTheSunCount;
+  const primaryActionButtonText = `${totalInTheSun} in the sun now`;
+  const secondaryActionButtonText = `Missed one? Contact us`;
+
+  useEffect(() => {
+    // Show the content after a delay (simulating your original timeout)
+    setTimeout(() => {
+      setShowContent(true);
+    }, 1000);
+  }, []);
+
+  const handleSeePubs = () => {
+    // Navigate to finder page
+    window.location.href = "/finder";
+  };
+
+  const handleContactUs = () => {
+    // Open a new email
+    window.open(
+      "mailto:hello@pubsinthesun.com?subject=I know a great pub in the sun",
+      "_blank"
+    );
+  };
+
   return (
     <>
+      {/* Define custom animation keyframes and styles */}
+      <style>
+        {`
+          @keyframes slow-spin {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+          }
+          
+          @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          
+          .white-shadow {
+            filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.3));
+            transition: filter 0.3s ease-in-out;
+          }
+          
+          .white-shadow:hover {
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.7));
+          }
+        `}
+      </style>
+
       <Helmet>
         <title>
           Pubs in the Sun | Find Sunny Beer Gardens/Terraces/Pavements Near You
@@ -14,30 +81,51 @@ function App() {
         />
       </Helmet>
 
-      <div className="bg-[#F3F1E5] min-h-screen flex flex-col items-center justify-center">
-        <header>
-          <h1 className="sr-only">Pubs in the Sun</h1>
-        </header>
+      {/* Main container matching the HomePageContainer */}
+      <div className="flex flex-col items-center justify-center h-screen bg-[#2962FF] font-poppins">
+        <div className="relative flex flex-col items-start justify-center h-1/2 w-[80vw] mx-auto mt-20">
+          {/* OpacityWrapper equivalent */}
+          <div
+            className={`relative z-50 ${showContent ? "opacity-100" : "opacity-0"} transition-opacity duration-500`}
+          >
+            {/* BigAndBoldHeading equivalent */}
+            <h1 className="text-[12.5rem] font-black text-white font-poppins mb-6 relative z-999 max-w-[700px] leading-[1.1]">
+              Pubs in the
+            </h1>
 
-        <main className="flex flex-col items-center justify-center">
-          <div className="flex justify-center mb-4">
-            <img
-              src={sunLogo}
-              className="w-20 h-20"
-              alt="Pubs in the Sun logo - a bright sun"
-            />
+            {/* HomePageCallToActionContainer equivalent */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8">
+              {/* PrimaryCallToActionButton with white-shadow class */}
+              <button
+                onClick={handleSeePubs}
+                className="white-shadow bg-[#2962FF] flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 text-white font-medium rounded-full transition-all duration-300 ease-in-out"
+              >
+                <span>{primaryActionButtonText}</span>
+                <ChevronRight className="h-6 w-6 ml-2" />
+              </button>
+
+              {/* SecondaryCallToActionButton */}
+              <button
+                onClick={handleContactUs}
+                className="px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
+              >
+                {secondaryActionButtonText}
+              </button>
+            </div>
+
+            {/* BigBoldSunImage equivalent */}
+            <div className="absolute w-[120vw] h-[120vw] left-[32.5vw] top-[-20vh] z-10 w-[calc(100vh-20vh)] h-[calc(100vh-20vh)] ">
+              <img
+                src={sunLogo}
+                className="w-full h-full [animation:slow-spin_20s_linear_infinite]"
+                alt="Sun"
+              />
+            </div>
           </div>
-          <h2 className="text-2xl font-medium font-poppins mb-2 text-center">
-            Summer is coming
-          </h2>
-          <p className="text-sm font-normal font-poppins text-center">
-            <time dateTime="2025-05">May 2025</time>
-          </p>
-        </main>
+        </div>
 
-        <footer className="absolute bottom-4 text-xs text-gray-500 font-poppins">
-          <p>© 2025 Pubs in the Sun. All rights reserved.</p>
-        </footer>
+        {/* Cookie Banner - positioned at the bottom of the screen */}
+        <CookieBanner />
       </div>
     </>
   );
