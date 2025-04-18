@@ -11,6 +11,7 @@ import RenderPubsOfType from "./_shared/components/renderPubsOfType";
 import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
 import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
 import { Filter } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 // Default center (London)
 const defaultCenter = {
@@ -118,6 +119,33 @@ function Finder() {
           content="Discover the best pubs with sunny beer gardens, terraces, pavements and outdoor seating near you. Perfect for summer days and warm evenings."
         />
       </Helmet>
+
+      <div className="p-2 flex gap-2">
+        <Link to="/" className="[&.active]:font-bold">
+          Home
+        </Link>{" "}
+        <Link to="/finder" className="[&.active]:font-bold">
+          Finder
+        </Link>
+        <Link to="/scene" className="[&.active]:font-bold">
+          3D Scene
+        </Link>
+        <Link to="/areas-list" className="[&.active]:font-bold">
+          Areas List
+        </Link>
+        <Link to="/area-identifier" className="[&.active]:font-bold ml-4">
+          Area identifier
+        </Link>
+        <Link to="/area-sizer" className="[&.active]:font-bold">
+          Area sizer
+        </Link>
+        <Link to="/pub-labels" className="[&.active]:font-bold">
+          Pub Labels
+        </Link>
+        <Link to="/admin" className="[&.active]:font-bold ml-8">
+          Admin
+        </Link>
+      </div>
 
       <div className="flex flex-col items-center">
         <header className="w-full mb-6">
