@@ -59,6 +59,9 @@ variable "image_tag" {
 }
 
 resource "null_resource" "image" {
+  # Only run this when not in CI/CD (when var.image_tag is "latest")
+  count = var.image_tag == "latest" ? 1 : 0
+  
   triggers = {
     hash = md5(join("-", [for x in fileset("${path.module}/..", "{*.py,*.tsx,Dockerfile}") : filemd5("${path.module}/../${x}")]))
   }
@@ -91,13 +94,13 @@ resource "null_resource" "image" {
   }
 }
 
+# Optional data source that is disabled during initial creation
 data "aws_ecr_image" "staging" {
-  count            = fileexists("${path.module}/../Dockerfile") ? 1 : 0
+  count            = 0  # Set to 0 to make this optional during first-time creation
   repository_name  = aws_ecr_repository.n16-pits-azul-staging.name
-  image_tag        = var.image_tag  # This will use the SHA passed from GitHub Actions
+  image_tag        = var.image_tag
   depends_on       = [null_resource.image]
 }
-
 
 # Creating an ECS cluster
 resource "aws_ecs_cluster" "n16-pits-azul-staging-cluster" {
@@ -310,7 +313,7 @@ resource "aws_security_group" "n16-pits-azul-staging-service_security_group" {
 }
 
 # Route 53 A Record
-resource "aws_route53_record" "preview_pubsinthesun_co_uk" {
+resource "aws_route53_record" "preview_pubsinthesun_com" {
   zone_id = "Z06588857HKEU14YCHXU" // Pubs in the Sun . com Hosted Zone
   name    = "azul-preview.pubsinthesun.com"
   type    = "A"
