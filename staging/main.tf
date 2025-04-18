@@ -54,7 +54,7 @@ locals {
 }
 
 variable "image_tag" {
-  description = "Docker image tag to deploy"
+  description = "Specific Docker image tag to deploy"
   default     = "latest"
 }
 
