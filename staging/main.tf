@@ -348,7 +348,7 @@ resource "aws_cloudfront_origin_request_policy" "maintain_host_header" {
   headers_config {
     header_behavior = "whitelist"
     headers {
-      items = ["Host", "Origin", "Referer", "Authorization"]
+      items = ["Host", "Origin", "Referer"]
     }
   }
   
@@ -370,10 +370,7 @@ resource "aws_cloudfront_cache_policy" "dynamic_content" {
       cookie_behavior = "all"
     }
     headers_config {
-      header_behavior = "whitelist"
-      headers {
-        items = ["Authorization", "Host", "Origin"]
-      }
+      header_behavior = "none" # Changed from "whitelist" to "none"
     }
     query_strings_config {
       query_string_behavior = "all"
