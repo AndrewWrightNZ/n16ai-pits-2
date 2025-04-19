@@ -338,18 +338,15 @@ resource "aws_security_group" "n16-pits-azul-staging-service_security_group" {
 
 # CloudFront Origin Request Policy for maintaining host headers
 resource "aws_cloudfront_origin_request_policy" "maintain_host_header" {
-  name    = "n16-azul-preview-maintain-host-header"
-  comment = "Policy to maintain host headers for Azul Preview"
+  name    = "n16-azul-preview-maintain-all-headers"
+  comment = "Policy to maintain all headers for Azul Preview"
   
   cookies_config {
     cookie_behavior = "all"
   }
   
   headers_config {
-    header_behavior = "whitelist"
-    headers {
-      items = ["Host", "Origin", "Referer"] # Removed "Authorization" as it's not allowed
-    }
+    header_behavior = "allViewer" # Forward all viewer headers to origin
   }
   
   query_strings_config {
@@ -395,108 +392,36 @@ resource "aws_cloudfront_distribution" "azul_preview_cdn" {
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
     }
-    
-    custom_header {
-      name  = "X-Forwarded-Host"
-      value = "azul-preview.pubsinthesun.com"
-    }
   }
 
   enabled             = true
   is_ipv6_enabled     = true
-  default_root_object = "/"
+  default_root_object = "index.html"
   aliases             = ["azul-preview.pubsinthesun.com"]
-  price_class         = "PriceClass_100" # Use only North America and Europe edge locations (cheaper)
+  price_class         = "PriceClass_100"
   
-  # Default cache behavior for HTML and API routes - Using AWS managed policy
+  # Simplified cache behavior that just passes everything through
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods   = ["GET", "HEAD", "OPTIONS"]
     target_origin_id = "ALBOrigin"
     
-    # Use AWS managed CachingDisabled policy instead of custom one
-    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS managed policy ID for CachingDisabled
+    # Use AWS managed CachingDisabled policy and your origin request policy
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # CachingDisabled
     origin_request_policy_id = aws_cloudfront_origin_request_policy.maintain_host_header.id
     
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
   }
   
-  # Cache configuration for static assets (JS, CSS, images)
-  ordered_cache_behavior {
-    path_pattern     = "/assets/*"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
-
-    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
-    
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
+  # SPA routing handling
+  custom_error_response {
+    error_code            = 404
+    response_code         = 200
+    response_page_path    = "/index.html"
+    error_caching_min_ttl = 10
   }
-  
-  # Cache configuration for static images
-  ordered_cache_behavior {
-    path_pattern     = "*.png"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
 
-    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
-    
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-  }
-  
-  ordered_cache_behavior {
-    path_pattern     = "*.jpg"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
-
-    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
-    
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-  }
-  
-  ordered_cache_behavior {
-    path_pattern     = "*.svg"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
-
-    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
-    
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-  }
-  
-  ordered_cache_behavior {
-    path_pattern     = "*.ico"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
-
-    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
-    
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-  }
-  
-  # Additional font file caching
-  ordered_cache_behavior {
-    path_pattern     = "*.woff2"
-    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
-
-    cache_policy_id = aws_cloudfront_cache_policy.static_assets.id
-    
-    compress               = true
-    viewer_protocol_policy = "redirect-to-https"
-  }
-  
   restrictions {
     geo_restriction {
       restriction_type = "none"
@@ -507,19 +432,6 @@ resource "aws_cloudfront_distribution" "azul_preview_cdn" {
     acm_certificate_arn      = data.aws_acm_certificate.pubsinthesun.arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
-  }
-
-  # Add custom error response to handle SPA routing
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/index.html"
-    error_caching_min_ttl = 10
-  }
-
-  tags = {
-    Name        = "azul-preview-cdn"
-    Environment = "staging"
   }
 }
 
