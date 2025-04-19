@@ -348,7 +348,7 @@ resource "aws_cloudfront_origin_request_policy" "maintain_host_header" {
   headers_config {
     header_behavior = "whitelist"
     headers {
-      items = ["Host", "Origin", "Referer"]
+      items = ["Host", "Origin", "Referer"] # Removed "Authorization" as it's not allowed
     }
   }
   
@@ -357,30 +357,7 @@ resource "aws_cloudfront_origin_request_policy" "maintain_host_header" {
   }
 }
 
-# CloudFront Cache Policy for dynamic content (API routes, etc)
-resource "aws_cloudfront_cache_policy" "dynamic_content" {
-  name        = "n16-azul-preview-dynamic-content"
-  comment     = "Cache policy for dynamic content"
-  default_ttl = 0
-  max_ttl     = 0
-  min_ttl     = 0
-  
-  parameters_in_cache_key_and_forwarded_to_origin {
-    cookies_config {
-      cookie_behavior = "all"
-    }
-    headers_config {
-      header_behavior = "none" # Changed from "whitelist" to "none"
-    }
-    query_strings_config {
-      query_string_behavior = "all"
-    }
-    enable_accept_encoding_gzip   = true
-    enable_accept_encoding_brotli = true
-  }
-}
-
-# CloudFront Cache Policy for static assets
+# CloudFront Cache Policy for static assets (still valid and unchanged)
 resource "aws_cloudfront_cache_policy" "static_assets" {
   name        = "n16-azul-preview-static-assets"
   comment     = "Cache policy for static assets"
@@ -431,13 +408,14 @@ resource "aws_cloudfront_distribution" "azul_preview_cdn" {
   aliases             = ["azul-preview.pubsinthesun.com"]
   price_class         = "PriceClass_100" # Use only North America and Europe edge locations (cheaper)
   
-  # Default cache behavior for HTML and API routes
+  # Default cache behavior for HTML and API routes - Using AWS managed policy
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods   = ["GET", "HEAD", "OPTIONS"]
     target_origin_id = "ALBOrigin"
     
-    cache_policy_id          = aws_cloudfront_cache_policy.dynamic_content.id
+    # Use AWS managed CachingDisabled policy instead of custom one
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # AWS managed policy ID for CachingDisabled
     origin_request_policy_id = aws_cloudfront_origin_request_policy.maintain_host_header.id
     
     viewer_protocol_policy = "redirect-to-https"
