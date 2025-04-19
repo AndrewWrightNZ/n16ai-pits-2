@@ -8,8 +8,6 @@ on:
 jobs:
   infra:
     runs-on: ubuntu-latest
-    outputs:
-      cloudfront_id: ${{ steps.terraform_output.outputs.cloudfront_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,13 +44,6 @@ jobs:
           # Apply Terraform changes
           echo "Applying terraform changes..."
           terraform apply -auto-approve "tfplan"
-
-      - name: Extract CloudFront Distribution ID
-        id: terraform_output
-        run: |
-          cd staging
-          CLOUDFRONT_ID=$(terraform output -raw cloudfront_distribution_id || echo "")
-          echo "cloudfront_id=$CLOUDFRONT_ID" >> $GITHUB_OUTPUT
 
   build:
     needs: infra
@@ -119,14 +110,10 @@ jobs:
             --services n16-pits-azul-staging-service
 
   invalidate-cache:
-    needs: [infra, deploy]
+    needs: deploy
     runs-on: ubuntu-latest
 
     steps:
-      - name: Debug CloudFront ID
-        run: |
-          echo "CloudFront ID from infra job: ${{ needs.infra.outputs.cloudfront_id }}"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -136,17 +123,10 @@ jobs:
 
       - name: Invalidate CloudFront Cache
         run: |
-          # Check if CloudFront ID is available
-          if [ -n "${{ needs.infra.outputs.cloudfront_id }}" ]; then
-            aws cloudfront create-invalidation \
-              --distribution-id ${{ needs.infra.outputs.cloudfront_id }} \
-              --paths "/*"
-            echo "CloudFront cache invalidation initiated for distribution ${{ needs.infra.outputs.cloudfront_id }}"
-          else
-            # Fallback to using a hardcoded distribution ID
-            DISTRIBUTION_ID="EYXMGCVUQ798X"
-            echo "Using fallback CloudFront distribution ID: $DISTRIBUTION_ID"
-            aws cloudfront create-invalidation \
-              --distribution-id $DISTRIBUTION_ID \
-              --paths "/*"
-          fi
+          # Use the known CloudFront Distribution ID directly
+          DISTRIBUTION_ID="EYXMGCVUQ798X"
+          echo "Using CloudFront distribution ID: $DISTRIBUTION_ID"
+          aws cloudfront create-invalidation \
+            --distribution-id $DISTRIBUTION_ID \
+            --paths "/*"
+          echo "CloudFront cache invalidation initiated"
