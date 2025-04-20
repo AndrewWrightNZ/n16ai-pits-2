@@ -336,114 +336,15 @@ resource "aws_security_group" "n16-pits-azul-staging-service_security_group" {
   }
 }
 
-# CloudFront Origin Request Policy for maintaining host headers
-resource "aws_cloudfront_origin_request_policy" "maintain_host_header" {
-  name    = "n16-azul-preview-maintain-all-headers"
-  comment = "Policy to maintain all headers for Azul Preview"
-  
-  cookies_config {
-    cookie_behavior = "all"
-  }
-  
-  headers_config {
-    header_behavior = "allViewer" # Forward all viewer headers to origin
-  }
-  
-  query_strings_config {
-    query_string_behavior = "all"
-  }
-}
-
-# CloudFront Cache Policy for static assets (still valid and unchanged)
-resource "aws_cloudfront_cache_policy" "static_assets" {
-  name        = "n16-azul-preview-static-assets"
-  comment     = "Cache policy for static assets"
-  default_ttl = 86400     # 1 day
-  max_ttl     = 31536000  # 1 year
-  min_ttl     = 3600      # 1 hour
-  
-  parameters_in_cache_key_and_forwarded_to_origin {
-    cookies_config {
-      cookie_behavior = "none"
-    }
-    headers_config {
-      header_behavior = "whitelist"
-      headers {
-        items = ["Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"]
-      }
-    }
-    query_strings_config {
-      query_string_behavior = "none"
-    }
-    enable_accept_encoding_gzip   = true
-    enable_accept_encoding_brotli = true
-  }
-}
-
-# CloudFront distribution for the React app
-resource "aws_cloudfront_distribution" "azul_preview_cdn" {
-  origin {
-    domain_name = data.aws_lb.nsixteen_shared_lb.dns_name
-    origin_id   = "ALBOrigin"
-    
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "https-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "index.html"
-  aliases             = ["azul-preview.pubsinthesun.com"]
-  price_class         = "PriceClass_100"
-  
-  # Simplified cache behavior that just passes everything through
-  default_cache_behavior {
-    allowed_methods  = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods   = ["GET", "HEAD", "OPTIONS"]
-    target_origin_id = "ALBOrigin"
-    
-    # Use AWS managed CachingDisabled policy and your origin request policy
-    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # CachingDisabled
-    origin_request_policy_id = aws_cloudfront_origin_request_policy.maintain_host_header.id
-    
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
-  }
-  
-  # SPA routing handling
-  custom_error_response {
-    error_code            = 404
-    response_code         = 200
-    response_page_path    = "/"
-    error_caching_min_ttl = 10
-  }
-
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-  
-  viewer_certificate {
-    acm_certificate_arn      = data.aws_acm_certificate.pubsinthesun.arn
-    ssl_support_method       = "sni-only"
-    minimum_protocol_version = "TLSv1.2_2021"
-  }
-}
-
-# Update Route 53 record to point to CloudFront instead of the load balancer
+# Update Route 53 record to point directly to the ALB
 resource "aws_route53_record" "preview_pubsinthesun_com" {
   zone_id = "Z06588857HKEU14YCHXU" 
   name    = "azul-preview.pubsinthesun.com"
   type    = "A"
 
   alias {
-    name                   = aws_cloudfront_distribution.azul_preview_cdn.domain_name
-    zone_id                = aws_cloudfront_distribution.azul_preview_cdn.hosted_zone_id
+    name                   = data.aws_lb.nsixteen_shared_lb.dns_name
+    zone_id                = data.aws_lb.nsixteen_shared_lb.zone_id
     evaluate_target_health = false
   }
 
@@ -452,18 +353,8 @@ resource "aws_route53_record" "preview_pubsinthesun_com" {
   }
 }
 
-# Output the CloudFront distribution domain and ID
-output "cloudfront_domain" {
-  value       = aws_cloudfront_distribution.azul_preview_cdn.domain_name
-  description = "CloudFront distribution domain"
-}
-
-output "cloudfront_distribution_id" {
-  value       = aws_cloudfront_distribution.azul_preview_cdn.id
-  description = "ID of the CloudFront distribution for cache invalidation"
-}
-
+# Update the output to only include the preview URL
 output "preview_url" {
   value       = "https://azul-preview.pubsinthesun.com"
-  description = "URL for the preview environment (now served via CloudFront)"
+  description = "URL for the preview environment (served directly via ALB)"
 }
