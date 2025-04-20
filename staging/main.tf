@@ -78,6 +78,11 @@ variable "VITE_SUPABASE_ANON_KEY" {
   sensitive   = true
 }
 
+variable "VITE_GOOGLE_MAPS_API_KEY" {
+  description = "Google Maps API Key"
+  sensitive   = true
+}
+
 resource "null_resource" "image" {
   # Only run this when not in CI/CD (when var.image_tag is "latest")
   count = var.image_tag == "latest" ? 1 : 0
@@ -162,6 +167,7 @@ resource "aws_ecs_task_definition" "n16-pits-azul-staging-task" {
       environment : [
         { name : "VITE_SUPABASE_URL", value : var.VITE_SUPABASE_URL },
         { name : "VITE_SUPABASE_ANON_KEY", value : var.VITE_SUPABASE_ANON_KEY },
+        { name : "VITE_GOOGLE_MAPS_API_KEY", value : var.VITE_GOOGLE_MAPS_API_KEY }
       ]
     }
   ])
