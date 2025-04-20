@@ -26,11 +26,6 @@ function Finder() {
   const [activeInfoWindow, setActiveInfoWindow] = useState<Pub | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
-  console.log(
-    "Finder component rendered - using key: ",
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  );
-
   // Hooks from your existing code
   const {
     data: { uiReadyPubs = [], pubsInTheSun = [], selectedPub = null },
