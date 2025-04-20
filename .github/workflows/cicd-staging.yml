@@ -33,6 +33,7 @@ jobs:
           TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           TF_VAR_VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           TF_VAR_VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          TF_VAR_VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
           TF_VAR_image_tag: ${{ github.sha }}
         run: |
           cd staging
@@ -82,6 +83,7 @@ jobs:
           docker build --platform linux/amd64 \
           --build-arg VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }} \
           --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }} \
+          --build-arg VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }} \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
