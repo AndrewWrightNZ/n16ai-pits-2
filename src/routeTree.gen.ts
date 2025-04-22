@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as SceneImport } from './routes/scene'
 import { Route as PubLabelsImport } from './routes/pub-labels'
+import { Route as OneHundredImport } from './routes/one-hundred'
 import { Route as FinderImport } from './routes/finder'
 import { Route as AreasListImport } from './routes/areas-list'
 import { Route as AreaSizerImport } from './routes/area-sizer'
@@ -32,6 +33,12 @@ const SceneRoute = SceneImport.update({
 const PubLabelsRoute = PubLabelsImport.update({
   id: '/pub-labels',
   path: '/pub-labels',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const OneHundredRoute = OneHundredImport.update({
+  id: '/one-hundred',
+  path: '/one-hundred',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -130,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinderImport
       parentRoute: typeof rootRoute
     }
+    '/one-hundred': {
+      id: '/one-hundred'
+      path: '/one-hundred'
+      fullPath: '/one-hundred'
+      preLoaderRoute: typeof OneHundredImport
+      parentRoute: typeof rootRoute
+    }
     '/pub-labels': {
       id: '/pub-labels'
       path: '/pub-labels'
@@ -157,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/area-sizer': typeof AreaSizerRoute
   '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
+  '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
 }
@@ -169,6 +184,7 @@ export interface FileRoutesByTo {
   '/area-sizer': typeof AreaSizerRoute
   '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
+  '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
 }
@@ -182,6 +198,7 @@ export interface FileRoutesById {
   '/area-sizer': typeof AreaSizerRoute
   '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
+  '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
 }
@@ -196,6 +213,7 @@ export interface FileRouteTypes {
     | '/area-sizer'
     | '/areas-list'
     | '/finder'
+    | '/one-hundred'
     | '/pub-labels'
     | '/scene'
   fileRoutesByTo: FileRoutesByTo
@@ -207,6 +225,7 @@ export interface FileRouteTypes {
     | '/area-sizer'
     | '/areas-list'
     | '/finder'
+    | '/one-hundred'
     | '/pub-labels'
     | '/scene'
   id:
@@ -218,6 +237,7 @@ export interface FileRouteTypes {
     | '/area-sizer'
     | '/areas-list'
     | '/finder'
+    | '/one-hundred'
     | '/pub-labels'
     | '/scene'
   fileRoutesById: FileRoutesById
@@ -231,6 +251,7 @@ export interface RootRouteChildren {
   AreaSizerRoute: typeof AreaSizerRoute
   AreasListRoute: typeof AreasListRoute
   FinderRoute: typeof FinderRoute
+  OneHundredRoute: typeof OneHundredRoute
   PubLabelsRoute: typeof PubLabelsRoute
   SceneRoute: typeof SceneRoute
 }
@@ -243,6 +264,7 @@ const rootRouteChildren: RootRouteChildren = {
   AreaSizerRoute: AreaSizerRoute,
   AreasListRoute: AreasListRoute,
   FinderRoute: FinderRoute,
+  OneHundredRoute: OneHundredRoute,
   PubLabelsRoute: PubLabelsRoute,
   SceneRoute: SceneRoute,
 }
@@ -264,6 +286,7 @@ export const routeTree = rootRoute
         "/area-sizer",
         "/areas-list",
         "/finder",
+        "/one-hundred",
         "/pub-labels",
         "/scene"
       ]
@@ -288,6 +311,9 @@ export const routeTree = rootRoute
     },
     "/finder": {
       "filePath": "finder.tsx"
+    },
+    "/one-hundred": {
+      "filePath": "one-hundred.tsx"
     },
     "/pub-labels": {
       "filePath": "pub-labels.tsx"
