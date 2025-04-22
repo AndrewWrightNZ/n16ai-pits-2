@@ -1,16 +1,17 @@
 import { Vector3, Matrix4 } from "three";
 
-// Reusable objects for calculations
+// Reusable objects for calculations - shared across all instances
 const inverseProjectionMatrix = new Matrix4();
+// Use a single array for clip points to minimize object creation
 const _clipPoints = [
-  new Vector3(1, 1, -1), // near top right
-  new Vector3(1, -1, -1), // near bottom right
-  new Vector3(-1, -1, -1), // near bottom left
-  new Vector3(-1, 1, -1), // near top left
-  new Vector3(1, 1, 1), // far top right
-  new Vector3(1, -1, 1), // far bottom right
-  new Vector3(-1, -1, 1), // far bottom left
-  new Vector3(-1, 1, 1), // far top left
+  new Vector3(1, 1, -1), // near top right - 0
+  new Vector3(1, -1, -1), // near bottom right - 1
+  new Vector3(-1, -1, -1), // near bottom left - 2
+  new Vector3(-1, 1, -1), // near top left - 3
+  new Vector3(1, 1, 1), // far top right - 4
+  new Vector3(1, -1, 1), // far bottom right - 5
+  new Vector3(-1, -1, 1), // far bottom left - 6
+  new Vector3(-1, 1, 1), // far top left - 7
 ];
 
 interface CSMFrustumData {
@@ -25,6 +26,7 @@ interface FrustumVertices {
 
 export class CSMFrustum {
   vertices: FrustumVertices;
+  private _isDisposed: boolean = false;
 
   constructor(data?: CSMFrustumData) {
     // Pre-allocate all vertices
@@ -42,6 +44,8 @@ export class CSMFrustum {
     projectionMatrix: Matrix4,
     maxFar: number
   ): FrustumVertices {
+    if (this._isDisposed) return this.vertices;
+
     // Check if orthographic by examining the specific matrix element
     const isOrthographic = projectionMatrix.elements[2 * 4 + 3] === 0;
 
@@ -68,7 +72,8 @@ export class CSMFrustum {
       // Apply far clipping
       const farVertex = this.vertices.far[i];
       const absZ = Math.abs(farVertex.z);
-      const factor = Math.min(maxFar / absZ, 1.0);
+      // Use max to avoid division by zero
+      const factor = Math.min(maxFar / Math.max(absZ, 0.0001), 1.0);
 
       if (isOrthographic) {
         farVertex.z *= factor;
@@ -81,6 +86,8 @@ export class CSMFrustum {
   }
 
   split(breaks: number[], target: CSMFrustum[]): void {
+    if (this._isDisposed) return;
+
     // Ensure target array has correct size
     while (breaks.length > target.length) {
       target.push(new CSMFrustum());
@@ -93,6 +100,8 @@ export class CSMFrustum {
 
     for (let i = 0; i < breaks.length; i++) {
       const cascade = target[i];
+      if (cascade._isDisposed) continue;
+
       const cascadeNear = cascade.vertices.near;
       const cascadeFar = cascade.vertices.far;
 
@@ -133,6 +142,8 @@ export class CSMFrustum {
   }
 
   toSpace(cameraMatrix: Matrix4, target: CSMFrustum): void {
+    if (this._isDisposed || target._isDisposed) return;
+
     // Manual unrolling for better performance - this function is called frequently in render loop
     // Near vertices
     target.vertices.near[0]
@@ -161,5 +172,27 @@ export class CSMFrustum {
     target.vertices.far[3]
       .copy(this.vertices.far[3])
       .applyMatrix4(cameraMatrix);
+  }
+
+  /**
+   * Dispose method to clean up resources
+   * and mark the frustum as disposed
+   */
+  dispose(): void {
+    if (this._isDisposed) return;
+    this._isDisposed = true;
+
+    // Clear references in vectors to help GC
+    for (let i = 0; i < 4; i++) {
+      this.vertices.near[i].set(0, 0, 0);
+      this.vertices.far[i].set(0, 0, 0);
+    }
+  }
+
+  /**
+   * Check if this frustum has been disposed
+   */
+  isDisposed(): boolean {
+    return this._isDisposed;
   }
 }

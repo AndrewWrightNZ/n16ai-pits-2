@@ -7,7 +7,7 @@ import { SunPositionCalculator } from "../helpers/sunPositionCalculator";
  */
 export class ShadowsManager {
   private renderer: WebGLRenderer;
-  private shadowOpacity: number = 0.6;
+  private shadowOpacity: number = 0.9;
 
   /**
    * Create a new ShadowsManager
@@ -44,29 +44,6 @@ export class ShadowsManager {
    */
   getShadowOpacity(): number {
     return this.shadowOpacity;
-  }
-
-  /**
-   * Create a shadow-receiving ground plane
-   * @param width Width of the plane
-   * @param height Height of the plane
-   * @param y Y position of the plane
-   * @returns THREE.Mesh
-   */
-  createShadowReceivingPlane(width = 500, height = 500, y = 60): THREE.Mesh {
-    const geometry = new THREE.PlaneGeometry(width, height);
-    const material = new THREE.ShadowMaterial({
-      transparent: true,
-      opacity: 0.8,
-      color: 0x000000,
-    });
-
-    const plane = new THREE.Mesh(geometry, material);
-    plane.receiveShadow = true;
-    plane.rotation.x = -Math.PI / 2;
-    plane.position.y = y;
-
-    return plane;
   }
 }
 

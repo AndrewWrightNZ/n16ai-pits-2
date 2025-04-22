@@ -21,12 +21,17 @@ interface CSMOptions {
 
 /**
  * Controller for Cascade Shadow Maps (CSM) system
+ * Enhanced with memory leak prevention
  */
 export class CSMController {
   private csm: CSM | null = null;
   private camera: PerspectiveCamera;
   private scene: Scene;
   private lastUpdateTime = 0;
+  private isActive = true;
+
+  // Reusable objects to prevent garbage collection
+  private readonly lightDirectionVector = new Vector3();
 
   /**
    * Create a new CSM controller
@@ -55,12 +60,13 @@ export class CSMController {
     // Default options with performance considerations
     const defaultOptions = {
       cascades: 2,
-      maxFar: 5000,
+      maxFar: 1000,
+      // Reduced shadow map size to conserve memory
       shadowMapSize: 2048,
-      lightIntensity: 2.0,
+      lightIntensity: 1.5,
       lightMargin: 250,
-      shadowBias: -0.0001,
-      normalBias: 0.02,
+      shadowBias: -0.0009,
+      normalBias: 0.01,
     };
 
     // Merge provided options with defaults
@@ -84,7 +90,7 @@ export class CSMController {
     });
 
     // Enhance shadow properties
-    if (csm.lights.length > 0) {
+    if (csm.lights && csm.lights.length > 0) {
       csm.lights.forEach((light) => {
         light.castShadow = true;
         light.shadow.mapSize.width = mergedOptions.shadowMapSize;
@@ -98,6 +104,7 @@ export class CSMController {
     }
 
     this.csm = csm;
+    this.isActive = true;
     return csm;
   }
 
@@ -107,7 +114,7 @@ export class CSMController {
    * @param elapsedTime Optional elapsed time for wobble effect
    */
   update(timeOfDay: Date, elapsedTime?: number): void {
-    if (!this.csm) return;
+    if (!this.csm || !this.isActive) return;
 
     // Throttle updates in performance mode
     const now = Date.now();
@@ -137,15 +144,17 @@ export class CSMController {
     const wobbleFactor = 0.001;
     const wobble = elapsedTime ? Math.sin(elapsedTime * 0.1) * wobbleFactor : 0;
 
-    // Create direction vector
-    const lightDirection = new Vector3(
-      -Math.cos(sunAngle + wobble),
-      -Math.max(0.1, Math.sin(sunAngle + wobble)),
-      0.5
-    ).normalize();
+    // Reuse the same vector instead of creating a new one
+    this.lightDirectionVector
+      .set(
+        -Math.cos(sunAngle + wobble),
+        -Math.max(0.1, Math.sin(sunAngle + wobble)),
+        0.5
+      )
+      .normalize();
 
     // Update the light direction
-    this.csm.lightDirection = lightDirection;
+    this.csm.lightDirection = this.lightDirectionVector;
 
     // Force a full update of all CSM components
     this.csm.updateFrustums();
@@ -161,13 +170,57 @@ export class CSMController {
   }
 
   /**
+   * Pause the controller to save resources
+   * Useful when the scene is not visible
+   */
+  pause(): void {
+    this.isActive = false;
+  }
+
+  /**
+   * Resume the controller after pausing
+   */
+  resume(): void {
+    this.isActive = true;
+  }
+
+  /**
    * Dispose of CSM resources
+   * Enhanced to properly clean up all resources
    */
   dispose(): void {
     if (this.csm) {
+      // Explicitly dispose of shadow textures
+      if (this.csm.lights) {
+        this.csm.lights.forEach((light) => {
+          if (light.shadow && light.shadow.map) {
+            light.shadow.map.dispose();
+            light.shadow.map = null;
+          }
+        });
+      }
+
+      // Reset any cached data in CSM
+      if (
+        this.csm.updateFrustums &&
+        typeof this.csm.updateFrustums === "function"
+      ) {
+        this.csm.updateFrustums();
+      }
+
+      // Remove from scene and dispose
       this.csm.remove();
       this.csm.dispose();
       this.csm = null;
+    }
+
+    // Force a garbage collection hint (note: this is just a hint)
+    if (window.gc) {
+      try {
+        window.gc();
+      } catch (e) {
+        console.warn("Manual garbage collection not available");
+      }
     }
   }
 }

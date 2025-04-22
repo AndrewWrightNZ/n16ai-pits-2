@@ -1,6 +1,18 @@
 import { ShaderChunk } from "three";
 
-const CSMShader = {
+/**
+ * Cascade Shadow Mapping shader chunks for Three.js
+ * Optimized for performance and memory efficiency
+ */
+export const CSMShader = {
+  // Cache original shader chunks to avoid repeated string operations
+  _originalLightsFragmentBegin: ShaderChunk.lights_fragment_begin,
+  _originalLightsParsBegin: ShaderChunk.lights_pars_begin,
+  _originalShadowmapParsFragment: ShaderChunk.shadowmap_pars_fragment,
+
+  /**
+   * Extended lights_fragment_begin with CSM uniforms
+   */
   lights_fragment_begin: /* glsl */ `
 #if defined( USE_CSM ) && defined( CSM_CASCADES )
 uniform vec2 CSM_cascades[CSM_CASCADES];
@@ -11,6 +23,9 @@ uniform float shadowFar;
 ${ShaderChunk.lights_fragment_begin}
 `,
 
+  /**
+   * Extended lights_pars_begin with CSM uniforms
+   */
   lights_pars_begin: /* glsl */ `
 #if defined( USE_CSM ) && defined( CSM_CASCADES )
 uniform vec2 CSM_cascades[CSM_CASCADES];
@@ -21,10 +36,15 @@ uniform float shadowFar;
 ${ShaderChunk.lights_pars_begin}
 `,
 
-  // Add shadowmap_pars_fragment to ensure getShadow is defined
+  /**
+   * Original shadowmap_pars_fragment to ensure getShadow is defined
+   * No modification needed here - just using the original
+   */
   shadowmap_pars_fragment: ShaderChunk.shadowmap_pars_fragment,
 
-  // Optimized CSM fragment shader with improved branching and efficiency
+  /**
+   * Optimized CSM fragment shader with improved branching and efficiency
+   */
   csm_fragment: /* glsl */ `
 #if defined( USE_CSM ) && defined( CSM_CASCADES )
   #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
@@ -67,6 +87,15 @@ ${ShaderChunk.lights_pars_begin}
   #endif
 #endif
 `,
-};
 
-export { CSMShader };
+  /**
+   * Restore original shader chunks
+   * Call this method when removing CSM from the scene
+   */
+  restoreOriginalShaders: function () {
+    // Restore original shader chunks
+    ShaderChunk.lights_fragment_begin = this._originalLightsFragmentBegin;
+    ShaderChunk.lights_pars_begin = this._originalLightsParsBegin;
+    ShaderChunk.shadowmap_pars_fragment = this._originalShadowmapParsFragment;
+  },
+};
