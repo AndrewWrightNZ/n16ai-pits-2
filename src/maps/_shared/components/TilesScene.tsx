@@ -24,8 +24,6 @@ import { PRESET_LOCATIONS } from "../hooks/locationsData";
 
 // Hooks
 import useMapSettings from "../hooks/useMapSettings";
-import ShadowsManager from "../services/shadowManager";
-import CSMController from "../controllers/csmController";
 import CameraPositioner from "../services/cameraPositionerService";
 import { memoryManager } from "../services/MemoryManagementService";
 
@@ -44,13 +42,9 @@ interface TilesSceneProps {
 // Main scene component
 const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
   function TilesScene({ suppressWhiteOverlay = false }, ref) {
-    //
-
     // Refs for service instances
     const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
-    const csmControllerRef = useRef<CSMController | null>(null);
     const cameraPositionerRef = useRef<CameraPositioner | null>(null);
-    const shadowsManagerRef = useRef<ShadowsManager | null>(null);
     const orbitControlsRef = useRef<any>(null);
     const shadowWrapperAppliedRef = useRef<boolean>(false);
     const tileLoadRetryCountRef = useRef<number>(0);
@@ -65,8 +59,10 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
     // State
     const [tilesLoaded, setTilesLoaded] = useState(false);
     const [shadowOpacity, setShadowOpacity] = useState(0.9);
-    // const [useWhiteMaterial, setUseWhiteMaterial] = useState(true);
     const [missingTilesDetected, setMissingTilesDetected] = useState(false);
+    const [sunPosition, setSunPosition] = useState<[number, number, number]>([
+      100, 100, 50,
+    ]);
 
     // Hooks
     const {
@@ -87,76 +83,11 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
         // View
         onSetCopyrightInfo,
-        onSetLightRef,
       },
     } = useMapSettings();
 
     // R3F hooks
     const { scene, camera, gl: renderer } = useThree();
-
-    // Initialize shadow manager
-    useEffect(() => {
-      if (!renderer) return;
-
-      // Configure renderer shadow settings
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = true
-        ? THREE.BasicShadowMap // Faster but lower quality
-        : THREE.PCFSoftShadowMap; // Higher quality but slower
-
-      const shadowsManager = new ShadowsManager(renderer);
-      shadowsManager.initializeShadowRenderer();
-      shadowsManagerRef.current = shadowsManager;
-
-      return () => {
-        shadowsManagerRef.current = null;
-      };
-    }, [renderer]);
-
-    // Initialize CSM controller when time of day changes
-    useEffect(() => {
-      if (!camera || !scene) return;
-
-      // Create CSM controller
-      const csmController = new CSMController(
-        camera as THREE.PerspectiveCamera,
-        scene
-      );
-
-      // Configure CSM based on performance mode
-      const shadowMapSize = 2048;
-      const cascades = 3;
-
-      // Initialize CSM with configuration
-      const timeOfDay = new Date(rawTimeOfDay);
-      csmController.initialize(timeOfDay, {
-        shadowMapSize,
-        cascades,
-        maxFar: 500,
-      });
-
-      // Provide the light reference
-      const csm = csmController.getCSM();
-      if (csm && csm.lights.length > 0) {
-        onSetLightRef(csm.lights[0] as any);
-      }
-
-      csmControllerRef.current = csmController;
-
-      // Update shadow opacity
-      if (shadowsManagerRef.current) {
-        const opacity =
-          shadowsManagerRef.current.updateShadowOpacity(timeOfDay);
-        setShadowOpacity(opacity);
-      }
-
-      return () => {
-        if (csmControllerRef.current) {
-          csmControllerRef.current.dispose();
-          csmControllerRef.current = null;
-        }
-      };
-    }, [camera, scene, rawTimeOfDay, onSetLightRef]);
 
     // Initialize 3D Tiles
     useEffect(() => {
@@ -206,19 +137,19 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
             // Apply optimization settings after loading is complete
             if (tilesRenderer.errorTarget) {
-              tilesRenderer.errorTarget = 0.1; // Lower error target for more detail
+              tilesRenderer.errorTarget = 0.05; // Even lower error target for maximum detail
             }
             if ("maxDepth" in tilesRenderer) {
-              tilesRenderer.maxDepth = 500; // Higher max depth for detailed tiles
+              tilesRenderer.maxDepth = 1000; // Maximum depth for most detailed tiles
             }
             if ("maximumMemoryUsage" in tilesRenderer) {
-              tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // Increase memory limit to 4GB
+              tilesRenderer.maximumMemoryUsage = 8000 * 1024 * 1024; // 8GB
             }
 
             // Force aggressive tile loading to ensure completeness
             setTimeout(() => {
               if (tilesRenderer) {
-                for (let i = 0; i < 3; i++) {
+                for (let i = 0; i < 5; i++) {
                   tilesRendererService.update();
                 }
               }
@@ -227,12 +158,12 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
             // And again after a longer delay to catch any stragglers
             setTimeout(() => {
               if (tilesRenderer) {
-                tilesRenderer.errorTarget = 0.1;
-                for (let i = 0; i < 2; i++) {
+                tilesRenderer.errorTarget = 0.05;
+                for (let i = 0; i < 3; i++) {
                   tilesRendererService.update();
                 }
                 // Return to normal error level
-                tilesRenderer.errorTarget = 0.5;
+                tilesRenderer.errorTarget = 0.1;
               }
             }, 3000);
           }
@@ -271,12 +202,12 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
       // Initialize with advanced config for better tile loading
       tilesRendererService.initializeWithConfig({
-        errorTarget: 0.5,
-        maxDepth: 100,
-        maximumMemoryUsage: 6000 * 1024 * 1024, // 4GB
+        errorTarget: 0.1, // Lower error target for more detail
+        maxDepth: 500, // Higher max depth for more detailed tiles
+        maximumMemoryUsage: 8000 * 1024 * 1024, // 8GB
         loadSiblings: true, // Load neighboring tiles to reduce popping
         skipLevelOfDetail: false, // Don't skip LODs for more complete loading
-        maxConcurrentRequests: 32, // Increase concurrent tile requests
+        maxConcurrentRequests: 64, // Increase concurrent tile requests
       });
 
       tilesRendererServiceRef.current = tilesRendererService;
@@ -289,9 +220,6 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
       cameraPositioner.setTilesRenderer(
         tilesRendererService.getTilesRenderer()
       );
-      if (csmControllerRef.current) {
-        cameraPositioner.setCSM(csmControllerRef.current.getCSM());
-      }
       cameraPositionerRef.current = cameraPositioner;
 
       // Position camera at current location or restore previous position
@@ -335,21 +263,40 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
       }
     }, [isOrbiting]);
 
-    // Time-of-day updates
-    useEffect(() => {
-      // Update CSM with new time
-      if (csmControllerRef.current) {
-        const timeOfDay = new Date(rawTimeOfDay);
-        csmControllerRef.current.update(timeOfDay);
-      }
+    // Calculate sun position based on time of day
+    const calculateSunPosition = (timeOfDay: Date) => {
+      const hours = timeOfDay.getHours();
+      const minutes = timeOfDay.getMinutes();
+      const timeInHours = hours + minutes / 60;
 
-      // Update shadow opacity
-      if (shadowsManagerRef.current) {
-        const timeOfDay = new Date(rawTimeOfDay);
-        const opacity =
-          shadowsManagerRef.current.updateShadowOpacity(timeOfDay);
-        setShadowOpacity(opacity);
-      }
+      // Convert time to angle (0-360 degrees)
+      // 6am = 0 degrees, 12pm = 90 degrees, 6pm = 180 degrees
+      const angle = ((timeInHours - 6) / 12) * Math.PI;
+
+      // Calculate sun position in a circular path
+      const radius = 200; // Distance from center
+      const height = 100; // Height of sun path
+
+      // Calculate x and z based on angle
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+
+      // Calculate y based on time (higher at noon)
+      const y = Math.sin(angle) * height + height;
+
+      return [x, y, z] as [number, number, number];
+    };
+
+    // Update sun position when time changes
+    useEffect(() => {
+      const timeOfDay = new Date(rawTimeOfDay);
+      const newPosition = calculateSunPosition(timeOfDay);
+      setSunPosition(newPosition);
+
+      // Update shadow opacity based on time of day
+      const hours = timeOfDay.getHours();
+      const opacity = hours >= 6 && hours <= 18 ? 0.9 : 0.7;
+      setShadowOpacity(opacity);
     }, [rawTimeOfDay]);
 
     // Missing tiles detection mechanism
@@ -454,12 +401,6 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
         tilesRendererServiceRef.current.update();
       }
 
-      // Update CSM with time and wobble - keep in frame loop for smooth shadows
-      if (csmControllerRef.current) {
-        const timeOfDay = new Date(rawTimeOfDay);
-        csmControllerRef.current.update(timeOfDay, clock.getElapsedTime());
-      }
-
       // Memory management - check periodically
       if (currentTime - lastMemoryCheckRef.current > memoryCheckInterval) {
         if (tilesRendererServiceRef.current) {
@@ -501,8 +442,22 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
     return (
       <>
-        {/* Ambient light - adjusted intensity based on performance mode */}
-        <ambientLight intensity={0} color={new THREE.Color(0xffffff)} />
+        {/* Ambient light - minimal constant illumination */}
+        <ambientLight intensity={0.4} color={new THREE.Color(0xffffff)} />
+
+        {/* Directional light for shadows */}
+        <directionalLight
+          position={sunPosition}
+          intensity={2.0}
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+          shadow-camera-far={500}
+          shadow-camera-left={-100}
+          shadow-camera-right={100}
+          shadow-camera-top={100}
+          shadow-camera-bottom={-100}
+        />
 
         {/* Add our shadow wrapper to make tiles receive shadows */}
         {tilesLoaded && !suppressWhiteOverlay && getCurrentTilesRenderer() && (

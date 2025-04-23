@@ -144,7 +144,6 @@ export class CameraPositioner {
 
     // Update CSM after camera position changes
     if (this.csm) {
-      this.csm.updateFrustums();
       this.csm.update();
     }
   }
@@ -177,7 +176,6 @@ export class CameraPositioner {
 
     // Update CSM after camera position changes
     if (this.csm) {
-      this.csm.updateFrustums();
       this.csm.update();
     }
   }
