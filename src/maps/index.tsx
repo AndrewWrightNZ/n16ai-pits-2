@@ -39,12 +39,6 @@ export default function PhotorealisticTilesMap() {
     operations: { onSetTimeOfDay },
   } = useMapSettings();
 
-  const setSpecificTime = (hours: number, minutes: number = 0) => {
-    const d = new Date();
-    d.setHours(hours, minutes, 0);
-    onSetTimeOfDay(d);
-  };
-
   // Animate time
   useEffect(() => {
     if (timeSpeed === 0) return;
@@ -53,10 +47,13 @@ export default function PhotorealisticTilesMap() {
 
       next.setMinutes(next.getMinutes() + timeSpeed * 5);
 
-      onSetTimeOfDay(next);
+      // Only set the time if it's not already set in the context
+      if (!timeOfDay) {
+        onSetTimeOfDay(next);
+      }
     }, 1000);
     return () => clearInterval(handle);
-  }, [timeSpeed]);
+  }, [timeSpeed, timeOfDay]);
 
   // Use the custom lighting hook
   const { brightnessValue, vignetteDarkness, skyColor } = useDaylightLighting();
@@ -95,7 +92,7 @@ export default function PhotorealisticTilesMap() {
         </Canvas>
 
         {/* Controls panel (pick times, location, etc.) */}
-        <ControlsPanel onSetSpecificTime={setSpecificTime} />
+        <ControlsPanel />
 
         {/* Loading overlay */}
         {isLoading && (

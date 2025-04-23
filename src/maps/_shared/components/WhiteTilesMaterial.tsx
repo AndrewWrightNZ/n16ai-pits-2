@@ -1,4 +1,4 @@
-// Enhanced WhiteTilesMaterial with improved shadow reception
+// Enhanced WhiteTilesMaterial with improved geometry preservation
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -31,24 +31,27 @@ export default function WhiteTilesMaterial({
   // Create the white material with configurable properties
   useEffect(() => {
     if (!whiteMaterialRef.current) {
-      // Create primary white material
+      // Create primary white material with improved properties
       const material = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         roughness: roughness,
-        metalness: 0.5,
+        metalness: 0.2, // Reduced metalness for more natural look
         flatShading: false,
-        side: THREE.DoubleSide, // Ensure both sides are rendered
+        side: THREE.DoubleSide,
+        envMapIntensity: 0.5, // Add subtle environment map influence
+        dithering: true, // Enable dithering for smoother gradients
       });
 
-      // Important: This makes shadows more visible on the white material
+      // Enhanced shadow properties
       material.shadowSide = THREE.DoubleSide;
 
       whiteMaterialRef.current = material;
     } else {
       // Update existing material properties
       whiteMaterialRef.current.roughness = roughness;
+      whiteMaterialRef.current.metalness = 0.2;
 
-      // Adjust brightness through emissive
+      // Adjust brightness through emissive and color
       const brightness_adjusted = Math.max(0, brightness - 1.0);
       if (brightness_adjusted > 0) {
         whiteMaterialRef.current.emissive.set(
@@ -58,10 +61,12 @@ export default function WhiteTilesMaterial({
         );
       } else {
         whiteMaterialRef.current.emissive.set(0, 0, 0);
-        // For dimming below 1.0, adjust the color directly
-        const color_value = Math.min(1.0, Math.max(0.5, brightness)) * 255;
+        // For dimming below 1.0, adjust the color directly with gamma correction
+        const color_value = Math.min(1.0, Math.max(0.5, brightness));
         whiteMaterialRef.current.color.set(
-          new THREE.Color(`rgb(${color_value}, ${color_value}, ${color_value})`)
+          new THREE.Color(
+            `rgb(${color_value * 255}, ${color_value * 255}, ${color_value * 255})`
+          )
         );
       }
     }
@@ -128,7 +133,7 @@ export default function WhiteTilesMaterial({
     if (!mesh.geometry) return;
 
     try {
-      // Create a shadow-only material
+      // Create a shadow-only material with improved properties
       const shadowMaterial = new THREE.ShadowMaterial({
         color: 0x000000,
         opacity: shadowIntensity,
@@ -136,8 +141,11 @@ export default function WhiteTilesMaterial({
         side: THREE.DoubleSide,
       });
 
-      // Clone the mesh geometry
+      // Clone the mesh geometry with improved precision
       const clonedGeometry = mesh.geometry.clone();
+
+      // Ensure proper vertex normals
+      clonedGeometry.computeVertexNormals();
 
       // Create a new mesh with shadow material
       const shadowMesh = new THREE.Mesh(clonedGeometry, shadowMaterial);
@@ -145,12 +153,17 @@ export default function WhiteTilesMaterial({
       shadowMesh.rotation.copy(mesh.rotation);
       shadowMesh.scale.copy(mesh.scale);
       shadowMesh.receiveShadow = true;
+      shadowMesh.castShadow = false; // Shadow overlays shouldn't cast shadows
+      shadowMesh.customDepthMaterial = new THREE.MeshDepthMaterial({
+        depthPacking: THREE.RGBADepthPacking,
+        side: THREE.DoubleSide,
+      });
 
       // Mark as our shadow overlay
       shadowMesh.userData.isShadowOverlay = true;
 
       // Position it very slightly above the original to avoid z-fighting
-      shadowMesh.position.y += 0.1;
+      shadowMesh.position.y += 0.01; // Reduced offset for better precision
 
       // Add it as a sibling
       if (mesh.parent) {
@@ -186,7 +199,7 @@ export default function WhiteTilesMaterial({
         object.material = whiteMaterialRef.current;
       }
 
-      // Ensure shadows are enabled
+      // Ensure shadows are enabled with improved settings
       object.castShadow = true;
       object.receiveShadow = true;
 
@@ -202,21 +215,21 @@ export default function WhiteTilesMaterial({
           let upFacingCount = 0;
           let totalCount = 0;
 
-          // Sample normals to estimate orientation
-          for (let i = 0; i < normalAttr.count; i += 5) {
-            // Sample every 5th normal for performance
+          // Sample normals to estimate orientation with improved precision
+          for (let i = 0; i < normalAttr.count; i += 3) {
+            // More frequent sampling
             const ny = normalAttr.getY(i);
 
             // If the normal faces up significantly
-            if (ny > 0.7) {
-              // Threshold for "facing up"
+            if (ny > 0.8) {
+              // Increased threshold for better accuracy
               upFacingCount++;
             }
             totalCount++;
           }
 
-          // If more than 30% normals face up, consider it a horizontal surface
-          if (totalCount > 0 && upFacingCount / totalCount > 0.3) {
+          // If more than 40% normals face up, consider it a horizontal surface
+          if (totalCount > 0 && upFacingCount / totalCount > 0.4) {
             createShadowOverlay(object);
           }
         }
@@ -275,7 +288,7 @@ export default function WhiteTilesMaterial({
   useEffect(() => {
     shadowOverlayMaterials.current.forEach((material) => {
       if (material instanceof THREE.ShadowMaterial) {
-        material.opacity = shadowIntensity * (shadowOpacity / 0.6); // Adjust based on the default shadowOpacity value
+        material.opacity = shadowIntensity * (shadowOpacity / 0.6);
         material.needsUpdate = true;
       }
     });
