@@ -64,7 +64,7 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
     // State
     const [tilesLoaded, setTilesLoaded] = useState(false);
-    const [shadowOpacity, setShadowOpacity] = useState(0.6);
+    const [shadowOpacity, setShadowOpacity] = useState(0.9);
     // const [useWhiteMaterial, setUseWhiteMaterial] = useState(true);
     const [missingTilesDetected, setMissingTilesDetected] = useState(false);
 
@@ -206,10 +206,10 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
             // Apply optimization settings after loading is complete
             if (tilesRenderer.errorTarget) {
-              tilesRenderer.errorTarget = 0.5; // Lower error target for more detail
+              tilesRenderer.errorTarget = 0.1; // Lower error target for more detail
             }
             if ("maxDepth" in tilesRenderer) {
-              tilesRenderer.maxDepth = 200; // Higher max depth for detailed tiles
+              tilesRenderer.maxDepth = 500; // Higher max depth for detailed tiles
             }
             if ("maximumMemoryUsage" in tilesRenderer) {
               tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // Increase memory limit to 4GB
@@ -369,8 +369,36 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
     const cameraMovementDetectedRef = useRef<boolean>(false);
     const lastCameraPositionForMovementRef = useRef<THREE.Vector3 | null>(null);
     const stationaryTimerRef = useRef<number | null>(null);
+    const lastMemoryCheckRef = useRef<number>(0);
+    const memoryCheckInterval = 5000; // Check memory every 5 seconds
 
-    // The render loop - with improved tile loading optimization
+    // Separate effect for tile loading optimization
+    useEffect(() => {
+      const interval = setInterval(() => {
+        if (!tilesRendererServiceRef.current) return;
+
+        const tilesRenderer =
+          tilesRendererServiceRef.current.getTilesRenderer();
+        if (!tilesRenderer) return;
+
+        // Tile loading optimization
+        if (tilesRenderer.errorTarget !== undefined) {
+          const isMoving =
+            orbitControlsRef.current && orbitControlsRef.current.isDragging;
+          if (isMoving) {
+            tilesRenderer.errorTarget = 6;
+          } else if (Date.now() - lastCameraUpdateTimeRef.current > 3000) {
+            tilesRenderer.errorTarget = 0.5;
+          } else {
+            tilesRenderer.errorTarget = 2;
+          }
+        }
+      }, 1000); // Run every second
+
+      return () => clearInterval(interval);
+    }, []);
+
+    // The render loop - optimized for smooth rendering
     useFrame(({ clock }) => {
       const currentTime = clock.getElapsedTime();
 
@@ -380,17 +408,14 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
           lastCameraPositionForMovementRef.current = camera.position.clone();
           cameraMovementDetectedRef.current = false;
         } else {
-          // Check if camera has moved significantly
           const distance = camera.position.distanceTo(
             lastCameraPositionForMovementRef.current
           );
           if (distance > 0.1) {
-            // Threshold for movement detection
             lastCameraPositionForMovementRef.current = camera.position.clone();
             lastCameraUpdateTimeRef.current = currentTime;
             cameraMovementDetectedRef.current = true;
 
-            // Clear any pending stationary timer
             if (stationaryTimerRef.current !== null) {
               clearTimeout(stationaryTimerRef.current);
               stationaryTimerRef.current = null;
@@ -399,22 +424,16 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
             cameraMovementDetectedRef.current &&
             stationaryTimerRef.current === null
           ) {
-            // Camera has stopped moving, schedule detail increase after a delay
             stationaryTimerRef.current = setTimeout(() => {
               if (tilesRendererServiceRef.current) {
                 const tilesRenderer =
                   tilesRendererServiceRef.current.getTilesRenderer();
                 if (tilesRenderer && tilesRenderer.errorTarget !== undefined) {
-                  // Only update if not already at high detail
                   if (tilesRenderer.errorTarget > 0.4) {
                     tilesRenderer.errorTarget = 0.2;
-
-                    // Force updates in succession
                     for (let i = 0; i < 3; i++) {
                       tilesRendererServiceRef.current.update();
                     }
-
-                    // Return to normal error after initial high-detail load
                     setTimeout(() => {
                       if (tilesRenderer) {
                         tilesRenderer.errorTarget = 0.5;
@@ -425,75 +444,53 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
               }
               cameraMovementDetectedRef.current = false;
               stationaryTimerRef.current = null;
-            }, 2000) as unknown as number; // 2 seconds of no movement
+            }, 2000) as unknown as number;
           }
         }
       }
 
       // Update tiles renderer
       if (tilesRendererServiceRef.current) {
-        // Check if camera is moving or rotating
-        const isMoving =
-          orbitControlsRef.current && orbitControlsRef.current.isDragging;
-
-        // Get the tiles renderer
-        const tilesRenderer =
-          tilesRendererServiceRef.current.getTilesRenderer();
-        if (tilesRenderer && tilesRenderer.errorTarget !== undefined) {
-          // During movement, use higher error target for smoother navigation
-          // When stationary, use lower error target for higher detail
-          if (isMoving) {
-            // Only update if different from current value
-            if (tilesRenderer.errorTarget < 4) {
-              tilesRenderer.errorTarget = 6;
-            }
-          } else if (currentTime - lastCameraUpdateTimeRef.current > 3) {
-            // If camera hasn't moved for 3 seconds, increase detail
-            // Only update if different from current value
-            if (tilesRenderer.errorTarget > 1) {
-              tilesRenderer.errorTarget = 0.5;
-            }
-          } else {
-            // Intermediate state - some movement but not actively dragging
-            if (
-              tilesRenderer.errorTarget > 4 ||
-              tilesRenderer.errorTarget < 0.4
-            ) {
-              tilesRenderer.errorTarget = 2;
-            }
-          }
-        }
-
-        // Update the renderer with dynamic memory management based on visible tiles
-        if (tilesRenderer && "maximumMemoryUsage" in tilesRenderer) {
-          // Count visible tiles to dynamically adjust memory limits
-          let visibleTilesCount = 0;
-          tilesRenderer.group.traverse((object) => {
-            if (object.visible) visibleTilesCount++;
-          });
-
-          // If we have many visible tiles, increase memory limits
-          if (visibleTilesCount > 100) {
-            tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 5GB for many tiles
-          } else if (visibleTilesCount > 50) {
-            tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 4GB for moderate tiles
-          } else {
-            tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 3GB for fewer tiles
-          }
-        }
-
-        // Update the renderer
         tilesRendererServiceRef.current.update();
       }
 
-      // Update CSM with time and wobble
+      // Update CSM with time and wobble - keep in frame loop for smooth shadows
       if (csmControllerRef.current) {
         const timeOfDay = new Date(rawTimeOfDay);
+        csmControllerRef.current.update(timeOfDay, clock.getElapsedTime());
+      }
 
-        // Only update with wobble effect every few frames in performance mode
-        if (true || Math.floor(clock.getElapsedTime() * 2) % 2 === 0) {
-          csmControllerRef.current.update(timeOfDay, clock.getElapsedTime());
+      // Memory management - check periodically
+      if (currentTime - lastMemoryCheckRef.current > memoryCheckInterval) {
+        if (tilesRendererServiceRef.current) {
+          const tilesRenderer =
+            tilesRendererServiceRef.current.getTilesRenderer();
+          if (tilesRenderer && "maximumMemoryUsage" in tilesRenderer) {
+            let visibleTilesCount = 0;
+            tilesRenderer.group.traverse((object) => {
+              if (object.visible) visibleTilesCount++;
+            });
+
+            // More aggressive memory management
+            if (visibleTilesCount > 100) {
+              tilesRenderer.maximumMemoryUsage = 4000 * 1024 * 1024; // 4GB
+              tilesRenderer.errorTarget = 1.0; // Lower quality when many tiles
+            } else if (visibleTilesCount > 50) {
+              tilesRenderer.maximumMemoryUsage = 3000 * 1024 * 1024; // 3GB
+              tilesRenderer.errorTarget = 0.7;
+            } else {
+              tilesRenderer.maximumMemoryUsage = 2000 * 1024 * 1024; // 2GB
+              tilesRenderer.errorTarget = 0.5;
+            }
+
+            // Force garbage collection if memory usage is high
+            if (visibleTilesCount > 150) {
+              tilesRenderer.dispose();
+              tilesRendererServiceRef.current.update();
+            }
+          }
         }
+        lastMemoryCheckRef.current = currentTime;
       }
     });
 
@@ -505,7 +502,7 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
     return (
       <>
         {/* Ambient light - adjusted intensity based on performance mode */}
-        <ambientLight intensity={0.2} color={new THREE.Color(0xffffff)} />
+        <ambientLight intensity={0} color={new THREE.Color(0xffffff)} />
 
         {/* Add our shadow wrapper to make tiles receive shadows */}
         {tilesLoaded && !suppressWhiteOverlay && getCurrentTilesRenderer() && (

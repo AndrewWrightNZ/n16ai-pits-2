@@ -88,7 +88,7 @@ export default function PhotorealisticTilesMap() {
           <TilesScene ref={tilesSceneRef} />
 
           <EffectComposer>
-            <BrightnessContrast brightness={brightnessValue} contrast={0.15} />
+            <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
             {/* Slight contrast increase */}
             <Vignette eskil={false} offset={0.15} darkness={vignetteDarkness} />
           </EffectComposer>

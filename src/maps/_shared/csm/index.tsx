@@ -3,17 +3,14 @@ import {
   Vector3,
   DirectionalLight,
   MathUtils,
-  ShaderChunk,
   Matrix4,
   Box3,
   Object3D,
   Material,
   PerspectiveCamera,
   OrthographicCamera,
-  ShaderMaterial,
 } from "three";
 import { CSMFrustum } from "./frustrum";
-import { CSMShader } from "./shader";
 
 // Reusable objects to reduce GC pressure - declare as constants
 const _cameraToLightMatrix = new Matrix4();
@@ -77,15 +74,6 @@ export class CSM {
   frustums: CSMFrustum[];
   breaks: number[];
   lights: DirectionalLight[];
-  // WeakMap to avoid holding strong references to materials
-  shaders: WeakMap<
-    Material,
-    {
-      uniforms: { [uniform: string]: { value: any } };
-      vertexShader: string;
-      fragmentShader: string;
-    } | null
-  >;
   // Cache for per-material break vectors to avoid constantly creating new ones
   private _breakVectorsCache: Map<Material, Vector2[]>;
   // Track last update time for throttling
@@ -114,12 +102,10 @@ export class CSM {
     this.breaks = [];
 
     this.lights = [];
-    this.shaders = new WeakMap();
     this._breakVectorsCache = new Map();
 
     this.createLights();
     this.updateFrustums();
-    this.injectInclude();
   }
 
   private createLights(): void {
@@ -383,66 +369,17 @@ export class CSM {
     }
   }
 
-  injectInclude(): void {
-    ShaderChunk.lights_fragment_begin = CSMShader.lights_fragment_begin;
-    ShaderChunk.lights_pars_begin = CSMShader.lights_pars_begin;
-
-    // Add this line to inject the custom shadowmap_pars_fragment
-    ShaderChunk.shadowmap_pars_fragment = CSMShader.shadowmap_pars_fragment;
-  }
-
   setupMaterial(material: Material): void {
     if (this._isDisposed) return;
 
-    if (material instanceof ShaderMaterial) {
-      material.defines = material.defines || {};
-      material.defines.USE_CSM = 1;
-      material.defines.CSM_CASCADES = this.cascades;
-
-      if (this.fade) {
-        material.defines.CSM_FADE = "";
+    // Create and cache break vectors for this material
+    let breaksVec2 = this._breakVectorsCache.get(material);
+    if (!breaksVec2) {
+      breaksVec2 = [];
+      for (let i = 0; i < this.cascades; i++) {
+        breaksVec2.push(new Vector2());
       }
-
-      // Create and cache break vectors for this material
-      let breaksVec2 = this._breakVectorsCache.get(material);
-      if (!breaksVec2) {
-        breaksVec2 = [];
-        for (let i = 0; i < this.cascades; i++) {
-          breaksVec2.push(new Vector2());
-        }
-        this._breakVectorsCache.set(material, breaksVec2);
-      }
-
-      const scope = this;
-      const shaders = this.shaders;
-
-      material.onBeforeCompile = function (shader: {
-        uniforms: { [uniform: string]: { value: any } };
-        vertexShader: string;
-        fragmentShader: string;
-      }) {
-        const far = Math.min(scope.camera.far, scope.maxFar);
-
-        // Use the cached break vectors
-        scope.getExtendedBreaks(breaksVec2);
-
-        shader.uniforms.CSM_cascades = { value: breaksVec2 };
-        shader.uniforms.cameraNear = { value: scope.camera.near };
-        shader.uniforms.shadowFar = { value: far };
-
-        shader.fragmentShader = shader.fragmentShader.replace(
-          "#include <lights_fragment_end>",
-          CSMShader.csm_fragment + "\n#include <lights_fragment_end>"
-        );
-
-        shaders.set(material, shader);
-      };
-
-      shaders.set(material, null);
-    } else {
-      console.warn(
-        "CSM: Material is not a ShaderMaterial. CSM may not work correctly."
-      );
+      this._breakVectorsCache.set(material, breaksVec2);
     }
   }
 
@@ -453,25 +390,8 @@ export class CSM {
 
     const far = Math.min(camera.far, this.maxFar);
 
-    // Cannot use forEach on WeakMap, so track materials in a separate Set
     // Use _breakVectorsCache keys which contains all materials we've set up
     this._breakVectorsCache.forEach((_, material) => {
-      const shader = this.shaders.get(material);
-
-      if (shader !== null) {
-        const uniforms = shader?.uniforms;
-        if (uniforms) {
-          if (
-            uniforms.CSM_cascades &&
-            Array.isArray(uniforms.CSM_cascades.value)
-          ) {
-            this.getExtendedBreaks(uniforms.CSM_cascades.value);
-          }
-          if (uniforms.cameraNear) uniforms.cameraNear.value = camera.near;
-          if (uniforms.shadowFar) uniforms.shadowFar.value = far;
-        }
-      }
-
       // Ensure material.defines exists
       if (!material.defines) {
         material.defines = {};
@@ -556,24 +476,12 @@ export class CSM {
 
     // Clean up material references - use the break vectors cache to iterate
     this._breakVectorsCache.forEach((vectors, material) => {
-      // Get the shader from the WeakMap
-      const shader = this.shaders.get(material);
-
       // Reset material properties
       const mat = material as any;
-      mat.onBeforeCompile = undefined;
-
       if (mat.defines) {
         delete mat.defines.USE_CSM;
         delete mat.defines.CSM_CASCADES;
         delete mat.defines.CSM_FADE;
-      }
-
-      if (shader !== null && shader?.uniforms) {
-        // Remove CSM-specific uniforms
-        delete shader.uniforms.CSM_cascades;
-        delete shader.uniforms.cameraNear;
-        delete shader.uniforms.shadowFar;
       }
 
       material.needsUpdate = true;
