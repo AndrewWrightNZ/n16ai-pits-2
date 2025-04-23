@@ -1,4 +1,4 @@
-import ThreeDTilesMap from "../../maps/PhotorealisticTilesMap";
+import ThreeDTilesMap from "../../maps";
 
 const ScenePage = () => {
   return <ThreeDTilesMap />;

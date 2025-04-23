@@ -67,12 +67,9 @@ export class TilesRendererService {
   private renderer: WebGLRenderer;
   private scene: Scene;
   private apiKey: string;
-  private materialReplacementCount = 0;
   private materialOverrideInterval: any = null;
   private lastCopyrightUpdateTime = 0;
   private processedObjects = new Set<string>();
-  private centerRaycaster = new THREE.Raycaster();
-  private centerVector = new THREE.Vector2(0, 0); // Center of screen
   private lastCameraPosition = new THREE.Vector3();
   private lastCameraRotation = new THREE.Euler();
   private isMoving = false;
@@ -225,47 +222,47 @@ export class TilesRendererService {
   }
 
   /**
-   * Configure the tile loading strategy to prioritize visible tiles in center
+   * Configure the tile loading strategy for maximum quality
    */
   configureLoadingStrategy(): void {
     if (!this.tilesRenderer) return;
 
-    // CHANGE: Higher error target means less detail (more memory efficient)
-    // Changed from 0.5 to 2.0
-    this.tilesRenderer.errorTarget = 2.0;
+    // CHANGE: Lower error target means higher detail
+    // Changed from 2.0 to 0.1 for maximum detail
+    this.tilesRenderer.errorTarget = 0.1;
 
-    // CHANGE: Lower max depth to reduce the number of detailed tiles loaded
-    // Changed from 200 to 50
-    this.tilesRenderer.maxDepth = 50;
+    // CHANGE: Higher max depth to allow more detailed tiles
+    // Changed from 50 to 200
+    this.tilesRenderer.maxDepth = 200;
 
-    // CHANGE: Decrease memory limit for more aggressive memory management
-    // Changed from 6000MB to 2000MB (2GB)
+    // CHANGE: Increase memory limit for maximum quality
+    // Changed from 2000MB to 6000MB (6GB)
     if ("maximumMemoryUsage" in this.tilesRenderer) {
-      this.tilesRenderer.maximumMemoryUsage = 2000 * 1024 * 1024; // 2GB
+      this.tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 6GB
     }
 
-    // CHANGE: Decreased cache size to keep fewer tiles in memory
-    // Changed from 4000 to 1000
+    // CHANGE: Increased cache size to keep more tiles in memory
+    // Changed from 1000 to 4000
     if (this.tilesRenderer.lruCache) {
-      this.tilesRenderer.lruCache.minSize = 1000;
+      this.tilesRenderer.lruCache.minSize = 4000;
     }
 
-    // CHANGE: Disable loading of sibling tiles to reduce memory usage
-    // Changed from true to false
-    if ("loadSiblings" in this.tilesRenderer) {
-      this.tilesRenderer.loadSiblings = false;
-    }
-
-    // CHANGE: Skip levels of detail to reduce memory usage
+    // CHANGE: Enable loading of sibling tiles for better quality
     // Changed from false to true
-    if ("skipLevelOfDetail" in this.tilesRenderer) {
-      this.tilesRenderer.skipLevelOfDetail = true;
+    if ("loadSiblings" in this.tilesRenderer) {
+      this.tilesRenderer.loadSiblings = true;
     }
 
-    // CHANGE: Decrease concurrent requests to reduce memory spikes
-    // Changed from 32 to 16
+    // CHANGE: Enable level of detail for better quality
+    // Changed from true to false
+    if ("skipLevelOfDetail" in this.tilesRenderer) {
+      this.tilesRenderer.skipLevelOfDetail = false;
+    }
+
+    // CHANGE: Increase concurrent requests for faster loading
+    // Changed from 16 to 32
     if ("maxConcurrentRequests" in this.tilesRenderer) {
-      this.tilesRenderer.maxConcurrentRequests = 16;
+      this.tilesRenderer.maxConcurrentRequests = 32;
     }
 
     // Add traversal callback to modify error multipliers based on distance from center
@@ -318,29 +315,29 @@ export class TilesRendererService {
         // Tiles closer to center get lower error multiplier (higher priority)
         if (distFromCenter < 0.2) {
           // Very center - highest priority
-          errorMultiplier = 0.3;
+          errorMultiplier = 0.1; // Changed from 0.3 to 0.1 for maximum detail
         } else if (distFromCenter < 0.4) {
           // Near center - high priority
-          errorMultiplier = 0.5;
+          errorMultiplier = 0.2; // Changed from 0.5 to 0.2
         } else if (distFromCenter < 0.7) {
           // Within screen - normal priority
-          errorMultiplier = 0.8;
+          errorMultiplier = 0.3; // Changed from 0.8 to 0.3
         } else if (distFromCenter < 1.0) {
           // Edge of screen - slightly lower priority
-          errorMultiplier = 1.2;
+          errorMultiplier = 0.5; // Changed from 1.2 to 0.5
         } else {
           // Outside screen - lowest priority
-          errorMultiplier = 2.0;
+          errorMultiplier = 1.0; // Changed from 2.0 to 1.0
         }
 
         // If camera is moving, slightly reduce detail overall except for center
         if (this.isMoving && distFromCenter > 0.3) {
-          errorMultiplier *= 1.5;
+          errorMultiplier *= 1.2; // Changed from 1.5 to 1.2 for less aggressive reduction
         }
 
         // Adjust multiplier based on depth to prevent excessive detail at far distances
         if (depth > 30) {
-          errorMultiplier *= 1.2;
+          errorMultiplier *= 1.1; // Changed from 1.2 to 1.1 for more consistent detail
         }
       } catch (e) {
         // If anything fails, just return default multiplier
@@ -395,14 +392,7 @@ export class TilesRendererService {
   }
 
   /**
-   * Initialize the TilesRenderer with default configuration
-   */
-  initialize(): void {
-    this.initializeWithConfig({});
-  }
-
-  /**
-   * Initialize the TilesRenderer with custom configuration
+   * Initialize the TilesRenderer with maximum quality configuration
    * @param config Configuration options for the tiles renderer
    */
   initializeWithConfig(config: TilesRendererConfig): void {
@@ -419,35 +409,41 @@ export class TilesRendererService {
       })
     );
 
-    // Configure renderer with default settings
-    // CHANGE: Higher error target (2.0 instead of 0.5) for less detail
-    tilesRenderer.errorTarget = config.errorTarget || 2.0;
-    // CHANGE: Lower max depth (50 instead of 200) for fewer nested tiles
-    tilesRenderer.maxDepth = config.maxDepth || 50;
-    // CHANGE: Smaller cache size (1000 instead of 4000)
-    tilesRenderer.lruCache.minSize = 1000;
+    // Configure renderer with maximum quality settings
+    // CHANGE: Lower error target (0.1 instead of 2.0) for maximum detail
+    tilesRenderer.errorTarget = config.errorTarget || 0.1;
+    // CHANGE: Higher max depth (200 instead of 50) for more detailed tiles
+    tilesRenderer.maxDepth = config.maxDepth || 200;
+    // CHANGE: Larger cache size (4000 instead of 1000)
+    tilesRenderer.lruCache.minSize = 4000;
 
     // Apply advanced config options if provided
     if (config.maximumMemoryUsage !== undefined) {
       tilesRenderer.maximumMemoryUsage = config.maximumMemoryUsage;
     } else {
-      // CHANGE: Reduced memory limit from 6GB to 2GB
-      tilesRenderer.maximumMemoryUsage = 2000 * 1024 * 1024; // 2GB default
+      // CHANGE: Increased memory limit from 2GB to 6GB
+      tilesRenderer.maximumMemoryUsage = 6000 * 1024 * 1024; // 6GB default
     }
 
     if (config.loadSiblings !== undefined) {
       tilesRenderer.loadSiblings = config.loadSiblings;
+    } else {
+      // CHANGE: Enable sibling loading by default
+      tilesRenderer.loadSiblings = true;
     }
 
     if (config.skipLevelOfDetail !== undefined) {
       tilesRenderer.skipLevelOfDetail = config.skipLevelOfDetail;
+    } else {
+      // CHANGE: Enable level of detail by default
+      tilesRenderer.skipLevelOfDetail = false;
     }
 
     if (config.maxConcurrentRequests !== undefined) {
       tilesRenderer.maxConcurrentRequests = config.maxConcurrentRequests;
     } else {
-      // CHANGE: Reduced from 32 to 16 concurrent requests
-      tilesRenderer.maxConcurrentRequests = 16;
+      // CHANGE: Increased concurrent requests from 16 to 32
+      tilesRenderer.maxConcurrentRequests = 32;
     }
 
     // Set up the display callback to intercept tiles as they're created
@@ -684,24 +680,6 @@ export class TilesRendererService {
   }
 
   /**
-   * Identify tiles in the center of the screen
-   */
-  identifyCenterTiles(): THREE.Object3D[] {
-    if (!this.tilesRenderer || !this.camera) return [];
-
-    // Create a raycaster from the camera through the center of the screen
-    this.centerRaycaster.setFromCamera(this.centerVector, this.camera);
-
-    // Find tiles intersecting with the center ray
-    const intersects = this.centerRaycaster.intersectObjects(
-      this.tilesRenderer.group.children,
-      true
-    );
-
-    return intersects.map((intersect) => intersect.object);
-  }
-
-  /**
    * Start an interval that continually checks for and overrides materials
    */
   private startMaterialOverrideInterval() {
@@ -756,74 +734,101 @@ export class TilesRendererService {
   }
 
   /**
-   * Create a white standard material
+   * Create a white standard material that better preserves the original geometry's appearance
    * @returns A new white MeshStandardMaterial
    */
   private createWhiteMaterial(): THREE.MeshStandardMaterial {
     return new THREE.MeshStandardMaterial({
       color: 0xffffff,
-      roughness: 0.85,
-      metalness: 0.0,
+      roughness: 0.4, // Reduced from 0.85 to better show surface detail
+      metalness: 0.1, // Slight metalness to add subtle highlights
       flatShading: false,
       transparent: false,
       opacity: 1.0,
       side: THREE.DoubleSide,
-      shadowSide: THREE.DoubleSide, // Important for better shadow rendering
+      shadowSide: THREE.DoubleSide,
+      envMapIntensity: 0.2, // Add subtle environment map reflection
+      normalScale: new THREE.Vector2(1, 1), // Preserve normal maps if present
+      aoMapIntensity: 0.5, // Preserve ambient occlusion if present
     });
   }
 
   /**
-   * Replace materials in a tile with white material
+   * Preserve original material properties when replacing with white material
+   * @param originalMaterial The original material to copy properties from
+   * @param whiteMaterial The white material to apply properties to
+   */
+  private preserveMaterialProperties(
+    originalMaterial: THREE.Material,
+    whiteMaterial: THREE.MeshStandardMaterial
+  ): void {
+    if (originalMaterial instanceof THREE.MeshStandardMaterial) {
+      // Copy normal map if present
+      if (originalMaterial.normalMap) {
+        whiteMaterial.normalMap = originalMaterial.normalMap;
+        whiteMaterial.normalMapType = originalMaterial.normalMapType;
+        whiteMaterial.normalScale.copy(originalMaterial.normalScale);
+      }
+
+      // Copy roughness map if present
+      if (originalMaterial.roughnessMap) {
+        whiteMaterial.roughnessMap = originalMaterial.roughnessMap;
+        whiteMaterial.roughness = originalMaterial.roughness;
+      }
+
+      // Copy metalness map if present
+      if (originalMaterial.metalnessMap) {
+        whiteMaterial.metalnessMap = originalMaterial.metalnessMap;
+        whiteMaterial.metalness = originalMaterial.metalness;
+      }
+
+      // Copy ambient occlusion map if present
+      if (originalMaterial.aoMap) {
+        whiteMaterial.aoMap = originalMaterial.aoMap;
+        whiteMaterial.aoMapIntensity = originalMaterial.aoMapIntensity;
+      }
+
+      // Copy displacement map if present
+      if (originalMaterial.displacementMap) {
+        whiteMaterial.displacementMap = originalMaterial.displacementMap;
+        whiteMaterial.displacementScale = originalMaterial.displacementScale;
+        whiteMaterial.displacementBias = originalMaterial.displacementBias;
+      }
+    }
+  }
+
+  /**
+   * Replace materials in a tile with white material while preserving original properties
    * @param tile The tile object to process
    */
   private replaceMaterialsWithWhite(tile: THREE.Object3D): void {
-    // Skip if this implementation isn't using white materials
     if (!this.useWhiteMaterial) return;
 
-    let replacedCount = 0;
-
-    // Track this object as processed
     if (!tile.userData.whiteMatApplied) {
-      // Traverse the tile hierarchy
       tile.traverse((child) => {
         if (child instanceof THREE.Mesh) {
-          // Configure for shadows
           child.castShadow = true;
           child.receiveShadow = true;
 
-          // Replace materials with white material
           if (child.material && !child.userData.whiteMatApplied) {
+            const whiteMaterial = this.createWhiteMaterial();
             if (Array.isArray(child.material)) {
-              // For meshes with multiple materials, create a new array of materials
-              const newMaterials = child.material.map(() => {
-                replacedCount++;
-                return this.createWhiteMaterial();
+              child.material = child.material.map((originalMaterial) => {
+                this.preserveMaterialProperties(
+                  originalMaterial,
+                  whiteMaterial
+                );
+                return whiteMaterial;
               });
-              child.material = newMaterials;
             } else {
-              // For single material meshes, replace with a new material
-              child.material = this.createWhiteMaterial();
-              replacedCount++;
+              this.preserveMaterialProperties(child.material, whiteMaterial);
+              child.material = whiteMaterial;
             }
-
-            // Force material update
-            if (!Array.isArray(child.material)) {
-              child.material.needsUpdate = true;
-            }
-
-            // Mark as processed
             child.userData.whiteMatApplied = true;
           }
         }
       });
-
-      // Mark the parent as processed
       tile.userData.whiteMatApplied = true;
-    }
-
-    // Update total count and log
-    if (replacedCount > 0) {
-      this.materialReplacementCount += replacedCount;
     }
   }
 
@@ -863,17 +868,6 @@ export class TilesRendererService {
 
       this.processExistingTiles(this.tilesRenderer.group);
     }
-  }
-
-  /**
-   * Force white material on a specific object
-   * Can be called directly for debugging
-   */
-  public forceWhiteMaterialOnObject(object: THREE.Object3D): void {
-    if (!this.useWhiteMaterial) return;
-
-    object.userData.whiteMatApplied = false;
-    this.replaceMaterialsWithWhite(object);
   }
 
   /**
@@ -1033,7 +1027,7 @@ export class TilesRendererService {
     // Create a set to track processed objects
     this.processedObjects.clear();
 
-    // Function to apply shadow settings with distance-based LOD
+    // Function to apply shadow settings
     const applyShadowSettings = (object: THREE.Object3D) => {
       // Skip if already processed
       if (object.uuid && this.processedObjects.has(object.uuid)) {
@@ -1046,20 +1040,8 @@ export class TilesRendererService {
       }
 
       if (object instanceof THREE.Mesh) {
-        // Apply distance-based LOD for shadow casting if camera is available
-        if (this.camera instanceof THREE.PerspectiveCamera) {
-          const distanceToCamera = this.camera.position.distanceTo(
-            object.position
-          );
-          // CHANGE: Reduced shadow cast distance (300 -> 200)
-          const shadowCastDistance = 200;
-
-          object.castShadow = distanceToCamera < shadowCastDistance;
-        } else {
-          object.castShadow = true;
-        }
-
-        // Always receive shadows
+        // Always cast and receive shadows for all meshes
+        object.castShadow = true;
         object.receiveShadow = true;
 
         // Update materials

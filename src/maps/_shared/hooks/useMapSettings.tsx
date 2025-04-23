@@ -15,6 +15,7 @@ interface HookOperations {
   onSetTimeSpeed: (newSpeed: number) => void;
   onSetIsLoading: (newIsLoading: boolean) => void;
   onSetLoadingProgress: (newProgress: number) => void;
+  onSetShowWhiteTiles: (show: boolean) => void;
 
   onSetTimeOfDay: (newTime: Date) => void;
   onSetLightRef: (lightRef: THREE.DirectionalLight) => void;
@@ -58,6 +59,9 @@ const useMapSettings = (): HookResponse => {
 
     // Meta
     copyrightInfo,
+
+    // New variable
+    showWhiteTiles,
   } = internalState || {};
 
   //
@@ -109,6 +113,10 @@ const useMapSettings = (): HookResponse => {
     updateInternalState({ lightRef });
   };
 
+  const onSetShowWhiteTiles = (show: boolean) => {
+    updateInternalState({ showWhiteTiles: show });
+  };
+
   return {
     data: {
       // View
@@ -121,6 +129,7 @@ const useMapSettings = (): HookResponse => {
       isOrbiting,
       timeOfDay,
       timeSpeed,
+      showWhiteTiles,
       formattedTime,
       lightRef,
 
@@ -140,6 +149,7 @@ const useMapSettings = (): HookResponse => {
 
       onSetIsOrbiting,
       onSetTimeSpeed,
+      onSetShowWhiteTiles,
       onSetTimeOfDay,
       onSetLightRef,
 

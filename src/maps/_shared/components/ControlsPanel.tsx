@@ -1,13 +1,8 @@
 import { cn } from "../../../utils";
 import { PRESET_LOCATIONS, PresetLocation } from "../hooks/locationsData";
 import useMapSettings from "../hooks/useMapSettings";
-import { useState } from "react";
 
-interface ControlsPanelProps {
-  onSetSpecificTime: (hour: number) => void;
-}
-
-const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
+const ControlsPanel = () => {
   // Hooks
   const {
     data: {
@@ -15,6 +10,8 @@ const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
       isOrbiting,
       timeSpeed,
       formattedTime,
+      timeOfDay,
+      showWhiteTiles,
 
       // Location
       currentLocation,
@@ -22,14 +19,13 @@ const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
     operations: {
       onSetTimeSpeed,
       onSetIsOrbiting,
+      onSetTimeOfDay,
+      onSetShowWhiteTiles,
 
       // Location
       onSetCurrentLocation,
     },
   } = useMapSettings();
-
-  // Local state for slider
-  const [sliderValue, setSliderValue] = useState(12 * 4); // Default to noon (12 * 4 quarter hours)
 
   // Format the time from the slider value (0-95 representing quarter hours)
   const formatSliderTime = (value: number) => {
@@ -40,15 +36,23 @@ const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
     return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
   };
 
+  // Calculate slider value from timeOfDay
+  const getSliderValue = () => {
+    const currentTime =
+      timeOfDay instanceof Date ? timeOfDay : new Date(timeOfDay);
+    const hours = currentTime.getHours();
+    const minutes = currentTime.getMinutes();
+    return hours * 4 + Math.floor(minutes / 15);
+  };
+
   // Handle slider change - update in real-time
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    setSliderValue(value);
-
-    // Update time in real-time as user slides
     const hours = Math.floor(value / 4);
     const minutes = (value % 4) * 15;
-    onSetSpecificTime(hours + minutes / 60);
+    const newTime = new Date();
+    newTime.setHours(hours, minutes, 0, 0);
+    onSetTimeOfDay(newTime);
   };
 
   return (
@@ -87,12 +91,12 @@ const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
               min="0"
               max="95"
               step="1"
-              value={sliderValue}
+              value={getSliderValue()}
               onChange={handleSliderChange}
               className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
             <div className="text-center text-sm font-medium mt-1">
-              {formatSliderTime(sliderValue)}
+              {formatSliderTime(getSliderValue())}
             </div>
           </div>
 
@@ -101,29 +105,33 @@ const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
             <TimeButton
               label="6 AM"
               onClick={() => {
-                setSliderValue(6 * 4);
-                onSetSpecificTime(6);
+                const newTime = new Date();
+                newTime.setHours(6, 0, 0, 0);
+                onSetTimeOfDay(newTime);
               }}
             />
             <TimeButton
               label="Noon"
               onClick={() => {
-                setSliderValue(12 * 4);
-                onSetSpecificTime(12);
+                const newTime = new Date();
+                newTime.setHours(12, 0, 0, 0);
+                onSetTimeOfDay(newTime);
               }}
             />
             <TimeButton
               label="6 PM"
               onClick={() => {
-                setSliderValue(18 * 4);
-                onSetSpecificTime(18);
+                const newTime = new Date();
+                newTime.setHours(18, 0, 0, 0);
+                onSetTimeOfDay(newTime);
               }}
             />
             <TimeButton
               label="9 PM"
               onClick={() => {
-                setSliderValue(21 * 4);
-                onSetSpecificTime(21);
+                const newTime = new Date();
+                newTime.setHours(21, 0, 0, 0);
+                onSetTimeOfDay(newTime);
               }}
             />
           </div>
@@ -177,6 +185,22 @@ const ControlsPanel = ({ onSetSpecificTime }: ControlsPanelProps) => {
             )}
           >
             {isOrbiting ? "Stop Orbit" : "Start Orbit"}
+          </button>
+        </div>
+
+        {/* White tiles toggle */}
+        <div className="mb-2.5">
+          <p className="font-medium text-sm mb-1">Tile Display:</p>
+          <button
+            onClick={() => onSetShowWhiteTiles(!showWhiteTiles)}
+            className={cn(
+              "w-full py-2 px-3 mb-1 text-sm font-medium border rounded shadow-sm transition-colors",
+              showWhiteTiles
+                ? "bg-blue-500 text-white border-blue-600"
+                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
+            )}
+          >
+            {showWhiteTiles ? "Hide White Tiles" : "Show White Tiles"}
           </button>
         </div>
       </div>

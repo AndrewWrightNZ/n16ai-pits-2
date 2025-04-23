@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { ExtendedTilesRenderer } from "./tilesRendererService";
-import { CSM } from "../csm";
 
 // Location interface
 export interface Location {
@@ -20,7 +19,6 @@ export class CameraPositioner {
   private camera: THREE.PerspectiveCamera;
   private orbitControls: React.RefObject<any>; // OrbitControls reference
   private tilesRenderer: ExtendedTilesRenderer | null = null;
-  private csm: CSM | null = null;
 
   /**
    * Create a new CameraPositioner
@@ -41,14 +39,6 @@ export class CameraPositioner {
    */
   setTilesRenderer(tilesRenderer: ExtendedTilesRenderer | null): void {
     this.tilesRenderer = tilesRenderer;
-  }
-
-  /**
-   * Set the CSM instance
-   * @param csm CSM instance
-   */
-  setCSM(csm: CSM | null): void {
-    this.csm = csm;
   }
 
   /**
@@ -141,12 +131,6 @@ export class CameraPositioner {
       this.tilesRenderer.errorTarget = 1;
       this.tilesRenderer.update();
     }
-
-    // Update CSM after camera position changes
-    if (this.csm) {
-      this.csm.updateFrustums();
-      this.csm.update();
-    }
   }
 
   /**
@@ -173,12 +157,6 @@ export class CameraPositioner {
     if (this.tilesRenderer) {
       this.tilesRenderer.errorTarget = 0.2; // High detail for restored position
       this.tilesRenderer.update();
-    }
-
-    // Update CSM after camera position changes
-    if (this.csm) {
-      this.csm.updateFrustums();
-      this.csm.update();
     }
   }
 

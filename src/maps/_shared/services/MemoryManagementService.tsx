@@ -33,27 +33,27 @@ export class MemoryManagementService {
 
   // CHANGE: Lower memory thresholds to trigger optimization earlier
   private memoryThresholds = {
-    medium: 45, // % of heap limit (reduced from 60)
-    high: 60, // Reduced from 75
-    critical: 75, // Reduced from 90
+    medium: 35, // Reduced from 45
+    high: 50, // Reduced from 60
+    critical: 65, // Reduced from 75
   };
 
   // CHANGE: Adjust optimization settings to be more aggressive
   private optimizationSettings = {
     aggressive: {
-      errorTarget: 8, // Increased from 6
-      maxDepth: 30, // Reduced from 50
-      distanceThreshold: 600, // Reduced from 800
+      errorTarget: 12, // Increased from 8
+      maxDepth: 20, // Reduced from 30
+      distanceThreshold: 400, // Reduced from 600
     },
     normal: {
-      errorTarget: 4, // Increased from 2
-      maxDepth: 50, // Reduced from 100
-      distanceThreshold: 1000, // Reduced from 1500
+      errorTarget: 6, // Increased from 4
+      maxDepth: 30, // Reduced from 50
+      distanceThreshold: 600, // Reduced from 1000
     },
     detailed: {
-      errorTarget: 2, // Increased from 0.5
-      maxDepth: 100, // Reduced from 200
-      distanceThreshold: 1500, // Reduced from 2500
+      errorTarget: 3, // Increased from 2
+      maxDepth: 50, // Reduced from 100
+      distanceThreshold: 800, // Reduced from 1500
     },
   };
 
@@ -436,17 +436,25 @@ export class MemoryManagementService {
 
   /**
    * Dispose geometries and materials that are far from the camera
-   * @param distanceThreshold Distance threshold beyond which to dispose geometries
    */
   private disposeDistantGeometries(distanceThreshold: number) {
     if (!this.tilesRenderer || !this.camera) return;
 
     let disposedCount = 0;
+    let totalNodes = 0;
+    let shadowNodes = 0;
     const cameraPosition = this.camera.position;
 
     const processNode = (node: THREE.Object3D) => {
+      totalNodes++;
+
       // Skip already processed nodes
       if (node.userData && node.userData.__disposed) return;
+
+      // Skip if this is a tile geometry - we want to keep these
+      if (node.userData && node.userData.isTileGeometry) {
+        return;
+      }
 
       // Calculate distance to camera if node has a position
       if (node.position) {
@@ -459,38 +467,70 @@ export class MemoryManagementService {
             if (node.geometry && !this.disposedGeometries.has(node.geometry)) {
               // Only dispose if it's a BufferGeometry to avoid issues
               if (node.geometry instanceof THREE.BufferGeometry) {
-                // Add to disposed set to avoid disposing again
-                this.disposedGeometries.add(node.geometry);
+                // Check if this is a shadow-related object
+                const isShadowObject =
+                  node.userData?.isShadowOverlay ||
+                  node.userData?.isCSMObject ||
+                  node.userData?.isShadowMap ||
+                  (node.material &&
+                    (node.material instanceof THREE.ShadowMaterial ||
+                      (Array.isArray(node.material) &&
+                        node.material.some(
+                          (m) =>
+                            m instanceof THREE.ShadowMaterial ||
+                            m.userData?.isShadowMaterial ||
+                            m.userData?.isCSMMaterial
+                        )) ||
+                      node.material.userData?.isShadowMaterial ||
+                      node.material.userData?.isCSMMaterial));
 
-                // Actually dispose the geometry
-                node.geometry.dispose();
-
-                // If the mesh has materials, dispose them too
-                if (node.material) {
-                  const materials = Array.isArray(node.material)
-                    ? node.material
-                    : [node.material];
-
-                  materials.forEach((material) => {
-                    // Dispose textures
-                    if (material.map) material.map.dispose();
-                    if (material.normalMap) material.normalMap.dispose();
-                    if (material.specularMap) material.specularMap.dispose();
-                    if (material.emissiveMap) material.emissiveMap.dispose();
-
-                    // Dispose the material itself
-                    material.dispose();
+                if (isShadowObject) {
+                  shadowNodes++;
+                  console.log("Found shadow object:", {
+                    type: node.type,
+                    distance,
+                    userData: node.userData,
+                    material:
+                      node.material instanceof THREE.ShadowMaterial
+                        ? "ShadowMaterial"
+                        : Array.isArray(node.material)
+                          ? node.material.map((m) => m.type)
+                          : node.material?.type,
                   });
+
+                  // Add to disposed set to avoid disposing again
+                  this.disposedGeometries.add(node.geometry);
+
+                  // Actually dispose the geometry
+                  node.geometry.dispose();
+
+                  // If the mesh has materials, dispose them too
+                  if (node.material) {
+                    const materials = Array.isArray(node.material)
+                      ? node.material
+                      : [node.material];
+
+                    materials.forEach((material) => {
+                      // Dispose textures
+                      if (material.map) material.map.dispose();
+                      if (material.normalMap) material.normalMap.dispose();
+                      if (material.specularMap) material.specularMap.dispose();
+                      if (material.emissiveMap) material.emissiveMap.dispose();
+
+                      // Dispose the material itself
+                      material.dispose();
+                    });
+                  }
+
+                  // Hide the mesh to prevent rendering
+                  node.visible = false;
+
+                  // Mark as disposed
+                  node.userData.__disposed = true;
+                  node.userData.__disposedAt = Date.now();
+
+                  disposedCount++;
                 }
-
-                // Hide the mesh to prevent rendering
-                node.visible = false;
-
-                // Mark as disposed
-                node.userData.__disposed = true;
-                node.userData.__disposedAt = Date.now();
-
-                disposedCount++;
               }
             }
           }
@@ -504,8 +544,219 @@ export class MemoryManagementService {
     // Start processing the tiles group
     processNode(this.tilesRenderer.group);
 
-    console.log(`Disposed/hidden ${disposedCount} distant nodes`);
+    // Also process shadow maps from CSM
+    const shadowMapsDisposed = this.disposeShadowMaps();
+
+    console.log(`Memory cleanup stats:`, {
+      totalNodes,
+      shadowNodes,
+      disposedCount,
+      shadowMapsDisposed,
+      distanceThreshold,
+    });
+
     return disposedCount;
+  }
+
+  /**
+   * Dispose shadow maps from CSM and other shadow systems
+   */
+  private disposeShadowMaps() {
+    let disposedCount = 0;
+    let totalLights = 0;
+    let lightsWithShadows = 0;
+
+    // Traverse the scene to find shadow maps
+    this.tilesRenderer?.group.traverse((object) => {
+      if (object instanceof THREE.Light) {
+        totalLights++;
+
+        // Check if this is a shadow-casting light
+        if (object.castShadow) {
+          lightsWithShadows++;
+          console.log("Found light with shadow:", {
+            type: object.type,
+            intensity: object.intensity,
+            shadowMapSize: object.shadow?.mapSize,
+            shadowCamera: object.shadow?.camera
+              ? {
+                  type: object.shadow.camera.type,
+                  left: object.shadow.camera.left,
+                  right: object.shadow.camera.right,
+                  top: object.shadow.camera.top,
+                  bottom: object.shadow.camera.bottom,
+                }
+              : null,
+          });
+
+          // Optimize shadow map size based on light type and distance
+          if (object.shadow) {
+            // Reduce shadow map size for distant lights
+            if (object.shadow.mapSize) {
+              const originalSize = object.shadow.mapSize.width;
+              const reducedSize = Math.max(256, originalSize / 4); // More aggressive reduction
+              if (reducedSize < originalSize) {
+                object.shadow.mapSize.width = reducedSize;
+                object.shadow.mapSize.height = reducedSize;
+                disposedCount++;
+              }
+            }
+
+            // Dispose existing shadow map
+            if (object.shadow.map) {
+              object.shadow.map.dispose();
+              object.shadow.map = null;
+              disposedCount++;
+            }
+
+            // Optimize shadow camera for distant lights
+            if (object.shadow.camera) {
+              const camera = object.shadow.camera;
+              // More aggressive frustum reduction
+              camera.left *= 0.5;
+              camera.right *= 0.5;
+              camera.top *= 0.5;
+              camera.bottom *= 0.5;
+              camera.updateProjectionMatrix();
+              disposedCount++;
+            }
+          }
+        }
+      }
+    });
+
+    console.log(`Shadow map cleanup stats:`, {
+      totalLights,
+      lightsWithShadows,
+      disposedCount,
+    });
+
+    return disposedCount;
+  }
+
+  /**
+   * Optimize shadow map textures
+   */
+  private optimizeShadowMaps() {
+    let optimizedCount = 0;
+    let totalLights = 0;
+
+    // Traverse the scene to find shadow maps
+    this.tilesRenderer?.group.traverse((object) => {
+      if (object instanceof THREE.Light && object.castShadow) {
+        totalLights++;
+
+        if (object.shadow) {
+          // Reduce shadow map size for distant lights
+          if (object.shadow.mapSize) {
+            const originalSize = object.shadow.mapSize.width;
+            const reducedSize = Math.max(128, originalSize / 8); // Even more aggressive reduction
+            if (reducedSize < originalSize) {
+              object.shadow.mapSize.width = reducedSize;
+              object.shadow.mapSize.height = reducedSize;
+              object.shadow.map?.dispose();
+              object.shadow.map = null;
+              optimizedCount++;
+            }
+          }
+
+          // Optimize shadow camera for distant lights
+          if (object.shadow.camera) {
+            const camera = object.shadow.camera;
+            // More aggressive frustum reduction
+            camera.left *= 0.3;
+            camera.right *= 0.3;
+            camera.top *= 0.3;
+            camera.bottom *= 0.3;
+            camera.updateProjectionMatrix();
+            optimizedCount++;
+          }
+        }
+      }
+    });
+
+    console.log(`Shadow map optimization stats:`, {
+      totalLights,
+      optimizedCount,
+    });
+
+    return optimizedCount;
+  }
+
+  /**
+   * Release texture memory by reducing resolution of distant textures
+   */
+  private releaseTextureMemory() {
+    if (!this.tilesRenderer || !this.camera) return;
+
+    const cameraPosition = this.camera.position;
+    let modifiedTextureCount = 0;
+
+    // Process textures in the scene
+    this.tilesRenderer.group.traverse((node) => {
+      if (node instanceof THREE.Mesh && node.position && node.material) {
+        const distance = node.position.distanceTo(cameraPosition);
+
+        // More aggressive distance thresholds
+        if (distance > 400) {
+          // Reduced from 800
+          const materials = Array.isArray(node.material)
+            ? node.material
+            : [node.material];
+
+          materials.forEach((material) => {
+            // Check for texture maps
+            const textureProperties = [
+              "map",
+              "normalMap",
+              "aoMap",
+              "specularMap",
+              "emissiveMap",
+              "roughnessMap",
+              "metalnessMap",
+            ];
+
+            textureProperties.forEach((prop) => {
+              if (material[prop] && material[prop].image) {
+                // Lower the anisotropy for distant textures
+                if (material[prop].anisotropy > 1) {
+                  material[prop].anisotropy = 1;
+                  material[prop].needsUpdate = true;
+                  modifiedTextureCount++;
+                }
+
+                // Set mipmaps to lower memory usage
+                material[prop].minFilter = THREE.LinearMipmapLinearFilter;
+                material[prop].needsUpdate = true;
+
+                // For very distant objects, reduce texture quality more dramatically
+                if (distance > 800) {
+                  // Reduced from 1500
+                  // Set generating mipmaps to true to reduce memory
+                  material[prop].generateMipmaps = true;
+                  // Use nearest filter for even more memory savings at extreme distances
+                  if (distance > 1200) {
+                    // Reduced from 2000
+                    material[prop].minFilter = THREE.NearestFilter;
+                    material[prop].magFilter = THREE.NearestFilter;
+                  }
+                }
+              }
+            });
+          });
+        }
+      }
+    });
+
+    // Also optimize shadow map textures
+    const shadowMapsOptimized = this.optimizeShadowMaps();
+
+    console.log(`Texture optimization stats:`, {
+      modifiedTextureCount,
+      shadowMapsOptimized,
+    });
+
+    return modifiedTextureCount;
   }
 
   /**
@@ -594,73 +845,6 @@ export class MemoryManagementService {
     }
 
     return false;
-  }
-
-  /**
-   * Release texture memory by reducing resolution of distant textures
-   */
-  private releaseTextureMemory() {
-    if (!this.tilesRenderer || !this.camera) return;
-
-    const cameraPosition = this.camera.position;
-    let modifiedTextureCount = 0;
-
-    // Process textures in the scene
-    this.tilesRenderer.group.traverse((node) => {
-      if (node instanceof THREE.Mesh && node.position && node.material) {
-        const distance = node.position.distanceTo(cameraPosition);
-
-        // Process materials for distant objects
-        // CHANGE: Reduced distance threshold from 1000 to 800
-        if (distance > 800) {
-          const materials = Array.isArray(node.material)
-            ? node.material
-            : [node.material];
-
-          materials.forEach((material) => {
-            // Check for texture maps
-            const textureProperties = [
-              "map",
-              "normalMap",
-              "aoMap",
-              "specularMap",
-              "emissiveMap", // CHANGE: Added emissive map
-              "roughnessMap", // CHANGE: Added roughness map
-              "metalnessMap", // CHANGE: Added metalness map
-            ];
-
-            textureProperties.forEach((prop) => {
-              if (material[prop] && material[prop].image) {
-                // Lower the anisotropy for distant textures
-                if (material[prop].anisotropy > 1) {
-                  material[prop].anisotropy = 1;
-                  material[prop].needsUpdate = true;
-                  modifiedTextureCount++;
-                }
-
-                // CHANGE: Also set mipmaps to lower memory usage
-                material[prop].minFilter = THREE.LinearMipmapLinearFilter;
-                material[prop].needsUpdate = true;
-
-                // CHANGE: For very distant objects, reduce texture quality more dramatically
-                if (distance > 1500 && material[prop].image) {
-                  // Set generating mipmaps to true to reduce memory
-                  material[prop].generateMipmaps = true;
-                  // Use nearest filter for even more memory savings at extreme distances
-                  if (distance > 2000) {
-                    material[prop].minFilter = THREE.NearestFilter;
-                    material[prop].magFilter = THREE.NearestFilter;
-                  }
-                }
-              }
-            });
-          });
-        }
-      }
-    });
-
-    console.log(`Modified ${modifiedTextureCount} textures to save memory`);
-    return modifiedTextureCount;
   }
 }
 

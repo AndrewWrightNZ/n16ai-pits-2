@@ -283,7 +283,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
     return (
       <>
         {/* Simple lighting for better visibility */}
-        <ambientLight intensity={0.7} color={new THREE.Color(0xffffff)} />
+        <ambientLight intensity={0.1} color={new THREE.Color(0xffffff)} />
         <directionalLight intensity={0.8} position={[1, 1, 1]} />
 
         {/* Controls (orbit, panning, etc.) */}

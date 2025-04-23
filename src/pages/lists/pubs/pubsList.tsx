@@ -5,8 +5,7 @@ import usePubs from "../../finder/_shared/hooks/usePubs";
 const PitsOneHundredPubsList = () => {
   // Hooks
   const {
-    data: { areasOfTypes, selectedAreaTypes },
-    operations: { onToggleAreaTypeFilter },
+    data: { areasOfTypes },
   } = usePubAreas();
 
   const {
