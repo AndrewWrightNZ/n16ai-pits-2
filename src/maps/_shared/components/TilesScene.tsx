@@ -42,7 +42,7 @@ interface TilesSceneProps {
 
 // Main scene component
 const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
-  function TilesScene({ suppressWhiteOverlay = false }, ref) {
+  function TilesScene(_, ref) {
     // Refs for service instances
     const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
     const cameraPositionerRef = useRef<CameraPositioner | null>(null);
@@ -54,17 +54,22 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
     const [sunPosition, setSunPosition] = useState<[number, number, number]>([
       100, 100, 50,
     ]);
-    const [showWhiteTiles, setShowWhiteTiles] = useState(!suppressWhiteOverlay);
 
     // Hooks
     const {
-      data: { isOrbiting, timeOfDay: rawTimeOfDay, currentLocation },
+      data: {
+        isOrbiting,
+        timeOfDay: rawTimeOfDay,
+        currentLocation,
+        showWhiteTiles,
+      },
       operations: {
         onSetIsLoading,
         onSetLoadingProgress,
         onSetError,
         onSetTileCount,
         onSetCopyrightInfo,
+        onSetShowWhiteTiles,
       },
     } = useMapSettings();
 
@@ -84,6 +89,13 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
       const y = Math.sin(angle) * height + height;
       return [x, y, z] as [number, number, number];
     }, []);
+
+    // Update white material when showWhiteTiles changes
+    useEffect(() => {
+      if (tilesRendererServiceRef.current) {
+        tilesRendererServiceRef.current.setUseWhiteMaterial(showWhiteTiles);
+      }
+    }, [showWhiteTiles]);
 
     // Initialize 3D Tiles
     useEffect(() => {
@@ -180,7 +192,7 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
     useImperativeHandle(ref, () => ({
       getTilesService: () => tilesRendererServiceRef.current,
       toggleWhiteTiles: () => {
-        setShowWhiteTiles((prev) => !prev);
+        onSetShowWhiteTiles(!showWhiteTiles);
         if (tilesRendererServiceRef.current) {
           tilesRendererServiceRef.current.setUseWhiteMaterial(!showWhiteTiles);
         }

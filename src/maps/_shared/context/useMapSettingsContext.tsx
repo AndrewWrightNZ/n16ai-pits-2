@@ -16,6 +16,7 @@ export interface MapSettingsState {
   isOrbiting: boolean;
   timeOfDay: Date;
   timeSpeed: number;
+  showWhiteTiles: boolean;
 
   formattedTime: string;
 
@@ -51,6 +52,7 @@ const defaultState: MapSettingsState = {
   isOrbiting: false,
   timeOfDay: new Date(),
   timeSpeed: 0,
+  showWhiteTiles: true,
   formattedTime: "12:00 PM",
 
   // Locations

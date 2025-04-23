@@ -11,6 +11,7 @@ const ControlsPanel = () => {
       timeSpeed,
       formattedTime,
       timeOfDay,
+      showWhiteTiles,
 
       // Location
       currentLocation,
@@ -19,6 +20,7 @@ const ControlsPanel = () => {
       onSetTimeSpeed,
       onSetIsOrbiting,
       onSetTimeOfDay,
+      onSetShowWhiteTiles,
 
       // Location
       onSetCurrentLocation,
@@ -183,6 +185,22 @@ const ControlsPanel = () => {
             )}
           >
             {isOrbiting ? "Stop Orbit" : "Start Orbit"}
+          </button>
+        </div>
+
+        {/* White tiles toggle */}
+        <div className="mb-2.5">
+          <p className="font-medium text-sm mb-1">Tile Display:</p>
+          <button
+            onClick={() => onSetShowWhiteTiles(!showWhiteTiles)}
+            className={cn(
+              "w-full py-2 px-3 mb-1 text-sm font-medium border rounded shadow-sm transition-colors",
+              showWhiteTiles
+                ? "bg-blue-500 text-white border-blue-600"
+                : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
+            )}
+          >
+            {showWhiteTiles ? "Hide White Tiles" : "Show White Tiles"}
           </button>
         </div>
       </div>
