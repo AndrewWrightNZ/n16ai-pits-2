@@ -17,7 +17,6 @@ import {
 } from "../services/tilesRendererService";
 
 // Import components
-import TilesShadowWrapper from "./TilesShadowWrapper";
 import WhiteTilesMaterial from "./WhiteTilesMaterial";
 
 // Import data
@@ -195,34 +194,28 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
     return (
       <>
-        <ambientLight intensity={0.4} color={new THREE.Color(0xffffff)} />
+        <ambientLight intensity={0.9} color={new THREE.Color(0xffffff)} />
         <directionalLight
           position={sunPosition}
           intensity={2.0}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
-          shadow-camera-far={500}
-          shadow-camera-left={-100}
-          shadow-camera-right={100}
-          shadow-camera-top={100}
-          shadow-camera-bottom={-100}
+          shadow-camera-far={1000}
+          shadow-camera-left={-300}
+          shadow-camera-right={300}
+          shadow-camera-top={300}
+          shadow-camera-bottom={-300}
         />
         {tilesLoaded && showWhiteTiles && getCurrentTilesRenderer() && (
-          <>
-            <TilesShadowWrapper
-              tilesGroup={getCurrentTilesRenderer()!.group}
-              shadowOpacity={shadowOpacity}
-            />
-            <WhiteTilesMaterial
-              tilesGroup={getCurrentTilesRenderer()!.group}
-              shadowOpacity={shadowOpacity}
-              enabled={true}
-              brightness={0.8}
-              roughness={0.9}
-              shadowIntensity={0.8}
-            />
-          </>
+          <WhiteTilesMaterial
+            tilesGroup={getCurrentTilesRenderer()!.group}
+            shadowOpacity={shadowOpacity}
+            enabled={true}
+            brightness={0.8}
+            roughness={0.9}
+            shadowIntensity={0.8}
+          />
         )}
         <OrbitControls
           ref={orbitControlsRef}

@@ -1027,7 +1027,7 @@ export class TilesRendererService {
     // Create a set to track processed objects
     this.processedObjects.clear();
 
-    // Function to apply shadow settings with distance-based LOD
+    // Function to apply shadow settings
     const applyShadowSettings = (object: THREE.Object3D) => {
       // Skip if already processed
       if (object.uuid && this.processedObjects.has(object.uuid)) {
@@ -1040,20 +1040,8 @@ export class TilesRendererService {
       }
 
       if (object instanceof THREE.Mesh) {
-        // Apply distance-based LOD for shadow casting if camera is available
-        if (this.camera instanceof THREE.PerspectiveCamera) {
-          const distanceToCamera = this.camera.position.distanceTo(
-            object.position
-          );
-          // CHANGE: Reduced shadow cast distance (300 -> 200)
-          const shadowCastDistance = 200;
-
-          object.castShadow = distanceToCamera < shadowCastDistance;
-        } else {
-          object.castShadow = true;
-        }
-
-        // Always receive shadows
+        // Always cast and receive shadows for all meshes
+        object.castShadow = true;
         object.receiveShadow = true;
 
         // Update materials
