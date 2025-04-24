@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { useRef, useState, useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
 import {
   BrightnessContrast,
   EffectComposer,
   Vignette,
 } from "@react-three/postprocessing";
+import { Canvas } from "@react-three/fiber";
+import { useRef, useState, useEffect } from "react";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
@@ -119,7 +119,7 @@ export default function SimplePhotorealisticTilesMap({
     <div className="relative">
       <div className="w-full h-[850px] mx-auto relative overflow-hidden">
         <Canvas
-          shadows
+          shadows={pageName === "scene"}
           camera={{
             fov: 25,
             near: 1,
@@ -131,8 +131,11 @@ export default function SimplePhotorealisticTilesMap({
             gl.setClearColor(new THREE.Color(skyColor));
             gl.setPixelRatio(window.devicePixelRatio);
 
-            gl.shadowMap.enabled = true;
-            gl.shadowMap.type = THREE.PCFSoftShadowMap;
+            gl.shadowMap.enabled = pageName === "scene";
+            gl.shadowMap.type =
+              pageName === "scene"
+                ? THREE.PCFSoftShadowMap
+                : THREE.PCFShadowMap;
 
             // Keep the zoom for consistent view
             gl.domElement.style.transform = "scale(1.1)";
@@ -145,11 +148,17 @@ export default function SimplePhotorealisticTilesMap({
             allowShadows={pageName === "scene"}
           />
 
-          <EffectComposer>
-            <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
-            {/* Slight contrast increase */}
-            <Vignette eskil={false} offset={0.15} darkness={vignetteDarkness} />
-          </EffectComposer>
+          {pageName === "scene" && (
+            <EffectComposer>
+              <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
+              {/* Slight contrast increase */}
+              <Vignette
+                eskil={false}
+                offset={0.15}
+                darkness={vignetteDarkness}
+              />
+            </EffectComposer>
+          )}
         </Canvas>
 
         {pageName === "scene" && (
