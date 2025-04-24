@@ -1,11 +1,17 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 
+// Types
+import { PubArea } from "../../../../_shared/types";
+
 export interface PubAreasState {
   // Area details
   name: string;
   description: string;
   type: string;
   selectedPubId: number | null;
+
+  // Selected area (view)
+  selectedPubArea: PubArea | null;
 
   // Area types filters
   selectedAreaTypes: string[];
@@ -31,6 +37,9 @@ const defaultState: PubAreasState = {
   description: "",
   type: "",
   selectedPubId: null,
+
+  // Selected area (view)
+  selectedPubArea: null,
 
   // Area types filters
   selectedAreaTypes: ["pavement", "beer-garden"],

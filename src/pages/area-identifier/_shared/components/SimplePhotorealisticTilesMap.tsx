@@ -58,6 +58,7 @@ export default function SimplePhotorealisticTilesMap({
   } = useMapSettings();
 
   const {
+    data: { selectedPubArea },
     operations: { onSetSelectedPub },
   } = usePubAreas();
 
@@ -66,36 +67,40 @@ export default function SimplePhotorealisticTilesMap({
   // Function to update camera information
   const updateCameraInfo = () => {
     if (tilesSceneRef.current) {
-      const position = tilesSceneRef.current.getCameraPosition();
-      const target = tilesSceneRef.current.getCameraTarget();
+      if (selectedPubArea) {
+        const { position, target } = selectedPubArea.camera_position;
 
-      if (position && target) {
-        setCameraInfo({
-          position: {
-            x: parseFloat(position.x.toFixed(2)),
-            y: parseFloat(position.y.toFixed(2)),
-            z: parseFloat(position.z.toFixed(2)),
-          },
-          target: {
-            x: parseFloat(target.x.toFixed(2)),
-            y: parseFloat(target.y.toFixed(2)),
-            z: parseFloat(target.z.toFixed(2)),
-          },
-        });
+        // Use the tilesSceneRef to update the camera
+        tilesSceneRef.current.setCameraPosition(position);
+        tilesSceneRef.current.setCameraTarget(target);
+      } else {
+        const position = tilesSceneRef.current.getCameraPosition();
+        const target = tilesSceneRef.current.getCameraTarget();
+
+        if (position && target) {
+          setCameraInfo({
+            position: {
+              x: parseFloat(position.x.toFixed(2)),
+              y: parseFloat(position.y.toFixed(2)),
+              z: parseFloat(position.z.toFixed(2)),
+            },
+            target: {
+              x: parseFloat(target.x.toFixed(2)),
+              y: parseFloat(target.y.toFixed(2)),
+              z: parseFloat(target.z.toFixed(2)),
+            },
+          });
+        }
       }
     }
   };
 
   // Update camera info at regular intervals
   useEffect(() => {
-    if (!isLoading) {
-      const intervalId = setInterval(() => {
-        updateCameraInfo();
-      }, 1000); // Update every second
-
-      return () => clearInterval(intervalId);
+    if (selectedPubArea) {
+      updateCameraInfo();
     }
-  }, [isLoading]);
+  }, [selectedPubArea, isLoading]);
 
   // Function to jump to pub location using lat/lng
   const handleJumpToPub = (pub: Pub) => {
@@ -150,7 +155,7 @@ export default function SimplePhotorealisticTilesMap({
         {pageName === "scene" && (
           <>
             <ControlsPanel />
-            <SelectPubArea tilesSceneRef={tilesSceneRef} />
+            <SelectPubArea />
           </>
         )}
 

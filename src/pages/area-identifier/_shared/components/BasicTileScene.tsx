@@ -344,10 +344,10 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
     return (
       <>
         {/* Simple lighting for better visibility */}
-        <ambientLight intensity={0.1} color={new THREE.Color(0xffffff)} />
+        <ambientLight intensity={0.3} color={new THREE.Color(0xffffff)} />
         <directionalLight
           position={sunPosition}
-          intensity={2.0}
+          intensity={4.0}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}

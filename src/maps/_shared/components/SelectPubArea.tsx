@@ -1,16 +1,7 @@
 // Hooks
 import usePubAreas from "../../../pages/area-identifier/_shared/hooks/usePubAreas";
 
-// Types
-import { PubArea } from "../../../_shared/types";
-
-interface SelectPubAreaProps {
-  tilesSceneRef: React.RefObject<any>;
-}
-
-import React, { useEffect } from "react";
-
-const SelectPubArea = ({ tilesSceneRef }: SelectPubAreaProps) => {
+const SelectPubArea = () => {
   //
 
   // Hooks
@@ -26,37 +17,13 @@ const SelectPubArea = ({ tilesSceneRef }: SelectPubAreaProps) => {
       // Areas
       areasForPub = [],
     },
-    operations: { onSetPubAreasPresentForPub },
+    operations: { onSetPubAreasPresentForPub, onSelectPubArea },
   } = usePubAreas();
 
   //
 
   // Variables
   const { has_areas_added = false } = selectedPub || {};
-
-  //
-
-  // Handlers
-  const handleViewPubArea = (pubArea: PubArea) => {
-    if (!tilesSceneRef.current || !pubArea.camera_position) return;
-
-    // Set the camera position and target from the pub area
-    const { position, target } = pubArea.camera_position;
-
-    // Use the tilesSceneRef to update the camera
-    tilesSceneRef.current.setCameraPosition(position);
-    tilesSceneRef.current.setCameraTarget(target);
-  };
-
-  // On mount or when areasForPub changes, wait 1 second and set camera to first area's position
-  useEffect(() => {
-    if (areasForPub.length > 0) {
-      const timeout = setTimeout(() => {
-        handleViewPubArea(areasForPub[0]);
-      }, 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [areasForPub]);
 
   return (
     <div className="absolute top-24 right-2 bg-black/70 text-white p-3 rounded z-20 w-64">
@@ -79,7 +46,7 @@ const SelectPubArea = ({ tilesSceneRef }: SelectPubAreaProps) => {
                   className={
                     "rounded p-2 text-xs cursor-pointer transition-colors bg-gray-800 hover:bg-gray-700"
                   }
-                  onClick={() => handleViewPubArea(area)}
+                  onClick={() => onSelectPubArea(area)}
                 >
                   <div className="font-bold">{area.name}</div>
                   <div className="text-gray-300">{area.description}</div>

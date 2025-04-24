@@ -43,14 +43,15 @@ const ControlsPanel = () => {
         {/* Time slider */}
         <div className="mb-2">
           <div className="flex justify-between text-xs text-gray-600 mb-1">
-            <span>12 AM</span>
             <span>12 PM</span>
-            <span>11 PM</span>
+            <span>4 PM</span>
+            <span>9 PM</span>
           </div>
           <input
             type="range"
-            min="0"
-            max="95"
+            // 12pm = 48, 9pm = 84
+            min="48"
+            max="84"
             step="1"
             value={getSliderValue()}
             onChange={handleSliderChange}
