@@ -95,6 +95,8 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
     useEffect(() => {
       if (showWhiteTiles && !allowShadows) {
         onSetShowWhiteTiles(false);
+      } else if (!showWhiteTiles && allowShadows) {
+        onSetShowWhiteTiles(true);
       }
     }, [allowShadows, showWhiteTiles, onSetShowWhiteTiles]);
 
