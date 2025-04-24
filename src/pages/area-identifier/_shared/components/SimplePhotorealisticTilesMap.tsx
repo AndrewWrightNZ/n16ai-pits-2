@@ -15,6 +15,13 @@ import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedM
 // Types
 import { Pub } from "../../../../_shared/types";
 import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
+import ControlsPanel from "../../../../maps/_shared/components/ControlsPanel";
+import { useDaylightLighting } from "../../../../maps/_shared/hooks/useDaylightLighting";
+import {
+  BrightnessContrast,
+  EffectComposer,
+  Vignette,
+} from "@react-three/postprocessing";
 
 interface SimplePhotorealisticTilesMapProps {
   pageName: string;
@@ -52,6 +59,8 @@ export default function SimplePhotorealisticTilesMap({
   const {
     operations: { onSetSelectedPub },
   } = usePubAreas();
+
+  const { brightnessValue, vignetteDarkness, skyColor } = useDaylightLighting();
 
   // Function to update camera information
   const updateCameraInfo = () => {
@@ -104,6 +113,7 @@ export default function SimplePhotorealisticTilesMap({
     <div className="relative">
       <div className="w-full h-[850px] mx-auto relative overflow-hidden">
         <Canvas
+          shadows
           camera={{
             fov: 25,
             near: 1,
@@ -112,11 +122,11 @@ export default function SimplePhotorealisticTilesMap({
           }}
           onCreated={({ gl }) => {
             // Black background
-            gl.setClearColor(new THREE.Color(0x000000)); // Black
+            gl.setClearColor(new THREE.Color(skyColor));
             gl.setPixelRatio(window.devicePixelRatio);
 
-            // We don't need shadow maps for the basic version
-            gl.shadowMap.enabled = false;
+            gl.shadowMap.enabled = true;
+            gl.shadowMap.type = THREE.PCFSoftShadowMap;
 
             // Keep the zoom for consistent view
             gl.domElement.style.transform = "scale(1.1)";
@@ -124,8 +134,19 @@ export default function SimplePhotorealisticTilesMap({
           }}
         >
           {/* Use the EnhancedTilesScene for camera tracking */}
-          <EnhancedTilesScene ref={tilesSceneRef} />
+          <EnhancedTilesScene
+            ref={tilesSceneRef}
+            allowShadows={pageName === "scene"}
+          />
+
+          <EffectComposer>
+            <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
+            {/* Slight contrast increase */}
+            <Vignette eskil={false} offset={0.15} darkness={vignetteDarkness} />
+          </EffectComposer>
         </Canvas>
+
+        {pageName === "scene" && <ControlsPanel />}
 
         {/* Simplified location modal with pub jumping capability */}
         <DraggableLocationsModal

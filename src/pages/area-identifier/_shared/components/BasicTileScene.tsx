@@ -4,18 +4,24 @@ import {
   forwardRef,
   useImperativeHandle,
   useCallback,
+  useState,
 } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "@react-three/drei";
 
 // Services
-import { TilesRendererService } from "../../../../maps/_shared/services/tilesRendererService";
+import {
+  ExtendedTilesRenderer,
+  TilesRendererService,
+} from "../../../../maps/_shared/services/tilesRendererService";
 import CameraPositioner from "../../../../maps/_shared/services/cameraPositionerService";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
+import WhiteTilesMaterial from "../../../../maps/_shared/components/WhiteTilesMaterial";
+import { memoryManager } from "../../../../maps/_shared/services/MemoryManagementService";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -33,11 +39,25 @@ export interface TilesSceneRef {
   // New methods for camera control
   setCameraPosition: (position: { x: number; y: number; z: number }) => void;
   setCameraTarget: (target: { x: number; y: number; z: number }) => void;
+  toggleWhiteTiles?: () => void;
 }
 
 // Main scene component
-const EnhancedTilesScene = forwardRef<TilesSceneRef>(
-  function TilesScene(_, ref) {
+interface EnhancedTilesSceneProps {
+  allowShadows?: boolean;
+}
+
+const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
+  function TilesScene({ allowShadows }, ref) {
+    //
+
+    // State
+    const [tilesLoaded, setTilesLoaded] = useState(false);
+    const [shadowOpacity, setShadowOpacity] = useState(0.9);
+    const [sunPosition, setSunPosition] = useState<[number, number, number]>([
+      100, 100, 50,
+    ]);
+
     // Refs for service instances
     const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
     const cameraPositionerRef = useRef<CameraPositioner | null>(null);
@@ -48,70 +68,14 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       rotation: THREE.Euler;
     } | null>(null);
 
-    // Expose the TilesRendererService and camera tracking methods via ref
-    useImperativeHandle(ref, () => ({
-      getTilesService: () => tilesRendererServiceRef.current,
-      getCameraPosition: () => {
-        const camera = cameraRef.current;
-        return camera ? camera.position.clone() : null;
-      },
-      getCameraTarget: () => {
-        const controls = orbitControlsRef.current;
-        return controls && controls.target ? controls.target.clone() : null;
-      },
-      getCameraRotation: () => {
-        const camera = cameraRef.current;
-        return camera ? camera.rotation.clone() : null;
-      },
-      saveCameraState: () => {
-        const camera = cameraRef.current;
-        const controls = orbitControlsRef.current;
-
-        if (!camera || !controls) return null;
-
-        const state = {
-          position: camera.position.clone(),
-          target: controls.target.clone(),
-          rotation: camera.rotation.clone(),
-        };
-
-        lastCameraStateRef.current = state;
-        return state;
-      },
-      // New methods for camera control
-      setCameraPosition: (position) => {
-        const camera = cameraRef.current;
-        if (camera) {
-          camera.position.set(position.x, position.y, position.z);
-          // Update the camera state reference
-          if (lastCameraStateRef.current) {
-            lastCameraStateRef.current.position = camera.position.clone();
-          }
-          // Update controls if needed
-          if (orbitControlsRef.current) {
-            orbitControlsRef.current.update();
-          }
-        }
-      },
-      setCameraTarget: (target) => {
-        const controls = orbitControlsRef.current;
-        if (controls && controls.target) {
-          controls.target.set(target.x, target.y, target.z);
-          // Update the camera state reference
-          if (lastCameraStateRef.current) {
-            lastCameraStateRef.current.target = controls.target.clone();
-          }
-          // Update the controls
-          controls.update();
-        }
-      },
-    }));
-
     // Hooks
     const {
       data: {
         // View
         isOrbiting,
+        timeOfDay: rawTimeOfDay,
+
+        showWhiteTiles,
       },
       operations: {
         // Loading
@@ -120,10 +84,26 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
         onSetError,
         onSetTileCount,
 
+        onSetShowWhiteTiles,
+
         // View
         onSetCopyrightInfo,
       },
     } = useMapSettings();
+
+    // Calculate sun position based on time of day
+    const calculateSunPosition = useCallback((timeOfDay: Date) => {
+      const hours = timeOfDay.getHours();
+      const minutes = timeOfDay.getMinutes();
+      const timeInHours = hours + minutes / 60;
+      const angle = ((timeInHours - 6) / 12) * Math.PI;
+      const radius = 200;
+      const height = 100;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const y = Math.sin(angle) * height + height;
+      return [x, y, z] as [number, number, number];
+    }, []);
 
     const {
       data: { selectedPub },
@@ -131,6 +111,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
 
     // R3F hooks
     const { scene, camera, gl: renderer } = useThree();
+
     const cameraRef = useRef(camera);
 
     // Keep camera ref updated
@@ -150,11 +131,24 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
           target: newTarget,
           rotation: cameraRef.current.rotation.clone(),
         };
-
-        // You could call an external callback here if needed
-        // onCameraChanged({ position: newPosition, target: newTarget });
       }
     }, []);
+
+    // Update sun position and shadow opacity
+    useEffect(() => {
+      const timeOfDay = new Date(rawTimeOfDay);
+      setSunPosition(calculateSunPosition(timeOfDay));
+
+      const hours = timeOfDay.getHours();
+      setShadowOpacity(hours >= 6 && hours <= 18 ? 0.9 : 0.7);
+    }, [rawTimeOfDay, calculateSunPosition]);
+
+    // Update white material when showWhiteTiles changes
+    useEffect(() => {
+      if (tilesRendererServiceRef.current) {
+        tilesRendererServiceRef.current.setUseWhiteMaterial(showWhiteTiles);
+      }
+    }, [showWhiteTiles]);
 
     // Initialize 3D Tiles
     useEffect(() => {
@@ -162,6 +156,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
 
       onSetIsLoading(true);
       onSetError(null);
+      setTilesLoaded(false);
 
       // Create TilesRendererService without any material modifications
       const tilesRendererService = new TilesRendererService(
@@ -169,7 +164,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
         renderer,
         scene,
         API_KEY,
-        false // Don't force white material in the service
+        true
       );
 
       // Set callbacks
@@ -186,15 +181,12 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
           if (tilesRenderer) {
             onSetTileCount(tilesRenderer.group.children.length);
 
-            // Apply balanced settings - prioritize performance
-            if (tilesRenderer.errorTarget) {
-              tilesRenderer.errorTarget = 1.0; // Higher error target = less detail but better performance
-            }
-            if ("maxDepth" in tilesRenderer) {
-              tilesRenderer.maxDepth = 100; // Lower max depth for performance
-            }
-            if ("maximumMemoryUsage" in tilesRenderer) {
-              tilesRenderer.maximumMemoryUsage = 4000 * 1024 * 1024; // 4GB - moderate memory limit
+            setTilesLoaded(true);
+
+            if (tilesRenderer) {
+              onSetTileCount(tilesRenderer.group.children.length);
+              tilesRendererService.setupShadowsForTiles();
+              memoryManager.initialize(tilesRenderer, camera);
             }
           }
         },
@@ -206,14 +198,13 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
 
       // Initialize with performance-focused config
       tilesRendererService.initializeWithConfig({
-        errorTarget: 0.2,
-        maxDepth: 200, // Reduced depth
-        maximumMemoryUsage: 4000 * 1024 * 1024, // 4GB
-        loadSiblings: false, // Don't load neighboring tiles for performance
-        skipLevelOfDetail: true, // Skip LODs for better performance
-        maxConcurrentRequests: 16, // Fewer concurrent requests
+        errorTarget: 0.1,
+        maxDepth: 1000,
+        maximumMemoryUsage: 8000 * 1024 * 1024,
+        loadSiblings: true,
+        skipLevelOfDetail: false,
+        maxConcurrentRequests: 64,
       });
-
       tilesRendererServiceRef.current = tilesRendererService;
 
       // Create camera positioner
@@ -280,11 +271,106 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       }
     });
 
+    // Get the current tiles renderer for JSX
+    const getCurrentTilesRenderer = (): ExtendedTilesRenderer | null => {
+      return tilesRendererServiceRef.current?.getTilesRenderer() || null;
+    };
+
+    // Expose the TilesRendererService and camera tracking methods via ref
+    useImperativeHandle(ref, () => ({
+      getTilesService: () => tilesRendererServiceRef.current,
+      toggleWhiteTiles: () => {
+        onSetShowWhiteTiles(!showWhiteTiles);
+        if (tilesRendererServiceRef.current) {
+          tilesRendererServiceRef.current.setUseWhiteMaterial(!showWhiteTiles);
+        }
+      },
+      getCameraPosition: () => {
+        const camera = cameraRef.current;
+        return camera ? camera.position.clone() : null;
+      },
+      getCameraTarget: () => {
+        const controls = orbitControlsRef.current;
+        return controls && controls.target ? controls.target.clone() : null;
+      },
+      getCameraRotation: () => {
+        const camera = cameraRef.current;
+        return camera ? camera.rotation.clone() : null;
+      },
+      saveCameraState: () => {
+        const camera = cameraRef.current;
+        const controls = orbitControlsRef.current;
+
+        if (!camera || !controls) return null;
+
+        const state = {
+          position: camera.position.clone(),
+          target: controls.target.clone(),
+          rotation: camera.rotation.clone(),
+        };
+
+        lastCameraStateRef.current = state;
+        return state;
+      },
+      // New methods for camera control
+      setCameraPosition: (position) => {
+        const camera = cameraRef.current;
+        if (camera) {
+          camera.position.set(position.x, position.y, position.z);
+          // Update the camera state reference
+          if (lastCameraStateRef.current) {
+            lastCameraStateRef.current.position = camera.position.clone();
+          }
+          // Update controls if needed
+          if (orbitControlsRef.current) {
+            orbitControlsRef.current.update();
+          }
+        }
+      },
+      setCameraTarget: (target) => {
+        const controls = orbitControlsRef.current;
+        if (controls && controls.target) {
+          controls.target.set(target.x, target.y, target.z);
+          // Update the camera state reference
+          if (lastCameraStateRef.current) {
+            lastCameraStateRef.current.target = controls.target.clone();
+          }
+          // Update the controls
+          controls.update();
+        }
+      },
+    }));
+
     return (
       <>
         {/* Simple lighting for better visibility */}
         <ambientLight intensity={0.1} color={new THREE.Color(0xffffff)} />
-        <directionalLight intensity={0.8} position={[1, 1, 1]} />
+        <directionalLight
+          position={sunPosition}
+          intensity={2.0}
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+          shadow-camera-far={1000}
+          shadow-camera-left={-300}
+          shadow-camera-right={300}
+          shadow-camera-top={300}
+          shadow-camera-bottom={-300}
+        />
+
+        {tilesLoaded &&
+          showWhiteTiles &&
+          allowShadows &&
+          getCurrentTilesRenderer() && (
+            <WhiteTilesMaterial
+              tilesGroup={getCurrentTilesRenderer()!.group}
+              shadowOpacity={shadowOpacity}
+              enabled={true}
+              brightness={0.8}
+              roughness={0.9}
+              shadowIntensity={0.8}
+            />
+          )}
 
         {/* Controls (orbit, panning, etc.) */}
         <OrbitControls

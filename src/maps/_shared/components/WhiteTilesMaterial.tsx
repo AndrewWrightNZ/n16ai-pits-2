@@ -197,6 +197,9 @@ export default function WhiteTilesMaterial({
       // Replace with white material
       if (whiteMaterialRef.current && isActive) {
         object.material = whiteMaterialRef.current;
+        // Ensure original mesh casts and receives shadows
+        object.castShadow = true;
+        object.receiveShadow = true;
       }
 
       // Ensure shadows are enabled with improved settings
@@ -234,14 +237,6 @@ export default function WhiteTilesMaterial({
           }
         }
       }
-
-      // // Special case for any object below the ground level - hide it <- bug bug bug
-      // if (object.position.y < groundLevelY - 10) {
-      //   console.log(
-      //     `Hiding object ${object.uuid} below ground level: ${object.position.y}`
-      //   );
-      //   // object.visible = false;
-      // }
     }
 
     // Process all children
