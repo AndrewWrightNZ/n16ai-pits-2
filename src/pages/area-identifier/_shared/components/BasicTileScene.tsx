@@ -4,18 +4,24 @@ import {
   forwardRef,
   useImperativeHandle,
   useCallback,
+  useState,
 } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "@react-three/drei";
 
 // Services
-import { TilesRendererService } from "../../../../maps/_shared/services/tilesRendererService";
+import {
+  ExtendedTilesRenderer,
+  TilesRendererService,
+} from "../../../../maps/_shared/services/tilesRendererService";
 import CameraPositioner from "../../../../maps/_shared/services/cameraPositionerService";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
+import WhiteTilesMaterial from "../../../../maps/_shared/components/WhiteTilesMaterial";
+import { memoryManager } from "../../../../maps/_shared/services/MemoryManagementService";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -33,11 +39,25 @@ export interface TilesSceneRef {
   // New methods for camera control
   setCameraPosition: (position: { x: number; y: number; z: number }) => void;
   setCameraTarget: (target: { x: number; y: number; z: number }) => void;
+  toggleWhiteTiles?: () => void;
 }
 
 // Main scene component
-const EnhancedTilesScene = forwardRef<TilesSceneRef>(
-  function TilesScene(_, ref) {
+interface EnhancedTilesSceneProps {
+  allowShadows?: boolean;
+}
+
+const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
+  function TilesScene({ allowShadows }, ref) {
+    //
+
+    // State
+    const [tilesLoaded, setTilesLoaded] = useState(false);
+    const [shadowOpacity, setShadowOpacity] = useState(0.9);
+    const [sunPosition, setSunPosition] = useState<[number, number, number]>([
+      100, 100, 50,
+    ]);
+
     // Refs for service instances
     const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
     const cameraPositionerRef = useRef<CameraPositioner | null>(null);
@@ -47,6 +67,20 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       target: THREE.Vector3;
       rotation: THREE.Euler;
     } | null>(null);
+
+    // Calculate sun position based on time of day
+    const calculateSunPosition = useCallback((timeOfDay: Date) => {
+      const hours = timeOfDay.getHours();
+      const minutes = timeOfDay.getMinutes();
+      const timeInHours = hours + minutes / 60;
+      const angle = ((timeInHours - 6) / 12) * Math.PI;
+      const radius = 200;
+      const height = 100;
+      const x = Math.cos(angle) * radius;
+      const z = Math.sin(angle) * radius;
+      const y = Math.sin(angle) * height + height;
+      return [x, y, z] as [number, number, number];
+    }, []);
 
     // Expose the TilesRendererService and camera tracking methods via ref
     useImperativeHandle(ref, () => ({
@@ -112,6 +146,9 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       data: {
         // View
         isOrbiting,
+        timeOfDay: rawTimeOfDay,
+
+        showWhiteTiles,
       },
       operations: {
         // Loading
@@ -150,11 +187,24 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
           target: newTarget,
           rotation: cameraRef.current.rotation.clone(),
         };
-
-        // You could call an external callback here if needed
-        // onCameraChanged({ position: newPosition, target: newTarget });
       }
     }, []);
+
+    // Update sun position and shadow opacity
+    useEffect(() => {
+      const timeOfDay = new Date(rawTimeOfDay);
+      setSunPosition(calculateSunPosition(timeOfDay));
+
+      const hours = timeOfDay.getHours();
+      setShadowOpacity(hours >= 6 && hours <= 18 ? 0.9 : 0.7);
+    }, [rawTimeOfDay, calculateSunPosition]);
+
+    // Update white material when showWhiteTiles changes
+    useEffect(() => {
+      if (tilesRendererServiceRef.current) {
+        tilesRendererServiceRef.current.setUseWhiteMaterial(showWhiteTiles);
+      }
+    }, [showWhiteTiles]);
 
     // Initialize 3D Tiles
     useEffect(() => {
@@ -162,6 +212,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
 
       onSetIsLoading(true);
       onSetError(null);
+      setTilesLoaded(false);
 
       // Create TilesRendererService without any material modifications
       const tilesRendererService = new TilesRendererService(
@@ -186,15 +237,12 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
           if (tilesRenderer) {
             onSetTileCount(tilesRenderer.group.children.length);
 
-            // Apply balanced settings - prioritize performance
-            if (tilesRenderer.errorTarget) {
-              tilesRenderer.errorTarget = 1.0; // Higher error target = less detail but better performance
-            }
-            if ("maxDepth" in tilesRenderer) {
-              tilesRenderer.maxDepth = 100; // Lower max depth for performance
-            }
-            if ("maximumMemoryUsage" in tilesRenderer) {
-              tilesRenderer.maximumMemoryUsage = 4000 * 1024 * 1024; // 4GB - moderate memory limit
+            setTilesLoaded(true);
+
+            if (tilesRenderer) {
+              onSetTileCount(tilesRenderer.group.children.length);
+              tilesRendererService.setupShadowsForTiles();
+              memoryManager.initialize(tilesRenderer, camera);
             }
           }
         },
@@ -280,11 +328,30 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef>(
       }
     });
 
+    // Get the current tiles renderer for JSX
+    const getCurrentTilesRenderer = (): ExtendedTilesRenderer | null => {
+      return tilesRendererServiceRef.current?.getTilesRenderer() || null;
+    };
+
     return (
       <>
         {/* Simple lighting for better visibility */}
         <ambientLight intensity={0.1} color={new THREE.Color(0xffffff)} />
-        <directionalLight intensity={0.8} position={[1, 1, 1]} />
+        <directionalLight intensity={0.8} position={sunPosition} />
+
+        {tilesLoaded &&
+          showWhiteTiles &&
+          allowShadows &&
+          getCurrentTilesRenderer() && (
+            <WhiteTilesMaterial
+              tilesGroup={getCurrentTilesRenderer()!.group}
+              shadowOpacity={shadowOpacity}
+              enabled={true}
+              brightness={0.8}
+              roughness={0.9}
+              shadowIntensity={0.8}
+            />
+          )}
 
         {/* Controls (orbit, panning, etc.) */}
         <OrbitControls

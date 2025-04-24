@@ -124,7 +124,10 @@ export default function SimplePhotorealisticTilesMap({
           }}
         >
           {/* Use the EnhancedTilesScene for camera tracking */}
-          <EnhancedTilesScene ref={tilesSceneRef} />
+          <EnhancedTilesScene
+            ref={tilesSceneRef}
+            allowShadows={pageName === "scene"}
+          />
         </Canvas>
 
         {/* Simplified location modal with pub jumping capability */}

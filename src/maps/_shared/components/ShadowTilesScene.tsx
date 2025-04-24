@@ -19,21 +19,16 @@ import {
 // Import components
 import WhiteTilesMaterial from "./WhiteTilesMaterial";
 
-// Import data
-import { PRESET_LOCATIONS } from "../hooks/locationsData";
+// Import usePubs hook
+import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
 
 // Hooks
 import useMapSettings from "../hooks/useMapSettings";
 import CameraPositioner from "../services/cameraPositionerService";
 import { memoryManager } from "../services/MemoryManagementService";
+import { TilesSceneRef } from "../../../pages/area-identifier/_shared/components/BasicTileScene";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-// Define a type for the ref
-export interface TilesSceneRef {
-  getTilesService: () => TilesRendererService | null;
-  toggleWhiteTiles: () => void;
-}
 
 /// Define props interface for TilesScene
 interface TilesSceneProps {
@@ -41,7 +36,7 @@ interface TilesSceneProps {
 }
 
 // Main scene component
-const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
+const ShadowTilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
   function TilesScene(_, ref) {
     // Refs for service instances
     const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
@@ -57,12 +52,7 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
 
     // Hooks
     const {
-      data: {
-        isOrbiting,
-        timeOfDay: rawTimeOfDay,
-        currentLocation,
-        showWhiteTiles,
-      },
+      data: { isOrbiting, timeOfDay: rawTimeOfDay, showWhiteTiles },
       operations: {
         onSetIsLoading,
         onSetLoadingProgress,
@@ -72,6 +62,11 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
         onSetShowWhiteTiles,
       },
     } = useMapSettings();
+
+    // Pub selection
+    const {
+      data: { selectedPub },
+    } = usePubs();
 
     // R3F hooks
     const { scene, camera, gl: renderer } = useThree();
@@ -151,10 +146,57 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
       );
       cameraPositionerRef.current = cameraPositioner;
 
-      const locationData = PRESET_LOCATIONS[currentLocation];
-      if (locationData) {
-        cameraPositioner.positionCameraAtLocation(locationData);
+      // Camera setup: use selected pub if available, else default
+      const DEFAULT_CAMERA_POSITION = {
+        x: 62.68,
+        y: 179.57,
+        z: -73.2,
+      };
+      const DEFAULT_CAMERA_TARGET = {
+        x: -36.43,
+        y: 0,
+        z: 40.59,
+      };
+
+      // Helper: convert lat/lng to scene (simple placeholder)
+      function latLngToSceneCoords(lat: number, lng: number) {
+        // Replace with real conversion if needed
+        return {
+          x: lng,
+          y: 0,
+          z: lat,
+        };
       }
+
+      // Compose cameraLocation with required lat/lng/heading for CameraPositioner
+      let cameraLocation: any = {
+        lat: selectedPub?.latitude ?? 0,
+        lng: selectedPub?.longitude ?? 0,
+        heading: 0, // Default heading
+        position: DEFAULT_CAMERA_POSITION,
+        target: DEFAULT_CAMERA_TARGET,
+        description: selectedPub ? selectedPub.name : "Default View",
+      };
+
+      if (selectedPub && selectedPub.latitude && selectedPub.longitude) {
+        const pubCoords = latLngToSceneCoords(
+          selectedPub.latitude,
+          selectedPub.longitude
+        );
+        cameraLocation = {
+          lat: selectedPub.latitude,
+          lng: selectedPub.longitude,
+          heading: 0, // Or use a property from pub if available
+          position: {
+            x: pubCoords.x + DEFAULT_CAMERA_POSITION.x,
+            y: DEFAULT_CAMERA_POSITION.y,
+            z: pubCoords.z + DEFAULT_CAMERA_POSITION.z,
+          },
+          target: pubCoords,
+          description: selectedPub.name,
+        };
+      }
+      cameraPositioner.positionCameraAtLocation(cameraLocation);
 
       return () => {
         if (tilesRendererServiceRef.current) {
@@ -163,7 +205,7 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
         }
         cameraPositionerRef.current = null;
       };
-    }, [camera, renderer, scene, currentLocation, showWhiteTiles]);
+    }, [camera, renderer, scene, selectedPub, showWhiteTiles]);
 
     // Update orbit controls auto-rotation
     useEffect(() => {
@@ -196,6 +238,28 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
         if (tilesRendererServiceRef.current) {
           tilesRendererServiceRef.current.setUseWhiteMaterial(!showWhiteTiles);
         }
+      },
+      getCameraPosition: () => {
+        console.log("getCameraPosition");
+        return null;
+      },
+      getCameraTarget: () => {
+        console.log("getCameraTarget");
+        return null;
+      },
+      getCameraRotation: () => {
+        console.log("getCameraRotation");
+        return null;
+      },
+      saveCameraState: () => {
+        console.log("saveCameraState");
+        return null;
+      },
+      setCameraPosition: () => {
+        console.log("setCameraPosition");
+      },
+      setCameraTarget: () => {
+        console.log("setCameraTarget");
       },
     }));
 
@@ -243,4 +307,4 @@ const TilesScene = forwardRef<TilesSceneRef, TilesSceneProps>(
   }
 );
 
-export default TilesScene;
+export default ShadowTilesScene;

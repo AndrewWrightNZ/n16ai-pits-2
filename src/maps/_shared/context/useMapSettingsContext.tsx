@@ -24,7 +24,7 @@ export interface MapSettingsState {
   lightRef?: THREE.DirectionalLight;
 
   // Locations
-  currentLocation: string | { lat: number; lng: number };
+  currentLocation: string;
 
   // Meta
   copyrightInfo: string;

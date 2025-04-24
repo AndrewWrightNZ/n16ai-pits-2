@@ -1,5 +1,8 @@
+import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
 import { cn } from "../../../utils";
-import { PRESET_LOCATIONS, PresetLocation } from "../hooks/locationsData";
+
+// Hooks
+
 import useMapSettings from "../hooks/useMapSettings";
 
 const ControlsPanel = () => {
@@ -12,20 +15,21 @@ const ControlsPanel = () => {
       formattedTime,
       timeOfDay,
       showWhiteTiles,
-
-      // Location
-      currentLocation,
     },
     operations: {
       onSetTimeSpeed,
       onSetIsOrbiting,
       onSetTimeOfDay,
       onSetShowWhiteTiles,
-
-      // Location
-      onSetCurrentLocation,
     },
   } = useMapSettings();
+  const {
+    data: { pubs },
+  } = usePubs();
+
+  const examplePubs = pubs.slice(0, 2);
+
+  console.log({ examplePubs });
 
   // Format the time from the slider value (0-95 representing quarter hours)
   const formatSliderTime = (value: number) => {
@@ -58,21 +62,8 @@ const ControlsPanel = () => {
   return (
     <>
       <div className="absolute top-2.5 left-2.5 bg-white/80 p-2.5 rounded z-10 max-w-[250px]">
-        <h3 className="font-bold text-gray-800 mb-2.5">3D Controls</h3>
-
-        {/* Location selection */}
         <div className="mb-2.5">
-          <p className="font-medium text-sm mb-1">Change Location:</p>
-
-          {Object.entries(PRESET_LOCATIONS).map(([key, loc]) => (
-            <LocationButton
-              key={key}
-              locationKey={key}
-              location={loc}
-              isActive={currentLocation === key}
-              onClick={() => onSetCurrentLocation(key)}
-            />
-          ))}
+          <p className="font-medium text-sm mb-1"> Change Pub:</p>
         </div>
 
         {/* Time of day controls */}
@@ -207,32 +198,6 @@ const ControlsPanel = () => {
     </>
   );
 };
-
-// Location Button component
-const LocationButton = ({
-  locationKey,
-  location,
-  isActive,
-  onClick,
-}: {
-  locationKey: string;
-  location: PresetLocation;
-  isActive: boolean;
-  onClick: () => void;
-}) => (
-  <button
-    key={locationKey}
-    onClick={onClick}
-    className={cn(
-      "w-full py-2 px-3 mb-1 text-sm font-medium border rounded shadow-sm transition-colors",
-      isActive
-        ? "bg-green-500 text-white border-green-600"
-        : "bg-white text-gray-800 border-gray-300 hover:bg-gray-50"
-    )}
-  >
-    {location.description}
-  </button>
-);
 
 // Time Button component
 const TimeButton = ({
