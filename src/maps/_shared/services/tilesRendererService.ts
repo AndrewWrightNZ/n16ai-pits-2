@@ -62,6 +62,16 @@ interface TilesRendererConfig {
 export class TilesRendererService {
   private tilesRenderer: ExtendedTilesRenderer | null = null;
   private processedUrls = new Map<string, string>();
+
+  // Counter for root tileset requests
+  private rootTilesetRequestCount: number = 0;
+
+  /**
+   * Get the number of root tileset requests made so far
+   */
+  public getRootTilesetRequestCount(): number {
+    return this.rootTilesetRequestCount;
+  }
   private currentSessionId = "";
   private camera: Camera;
   private renderer: WebGLRenderer;
@@ -701,6 +711,14 @@ export class TilesRendererService {
    */
   private preprocessURL(url: URL | string): string {
     const urlString = url.toString();
+
+    // Count and log root tileset requests
+    if (urlString.includes("/root.json")) {
+      this.rootTilesetRequestCount++;
+      console.log(
+        `[TilesRendererService] Root tileset request #${this.rootTilesetRequestCount}: ${urlString}`
+      );
+    }
 
     // Skip blob URLs
     if (urlString.startsWith("blob:")) return urlString;

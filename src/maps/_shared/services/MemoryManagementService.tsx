@@ -270,20 +270,12 @@ export class MemoryManagementService {
     setTimeout(() => {
       const after = this.getMemoryStats().usagePercentage;
       this.lastCleanupEffectiveness = before - after;
-      console.log(
-        `Memory cleanup effectiveness: ${this.lastCleanupEffectiveness.toFixed(
-          2
-        )}%`
-      );
 
       // If cleanup was not very effective, try more aggressive approach
       if (
         this.lastCleanupEffectiveness < 2 &&
         after > this.memoryThresholds.medium
       ) {
-        console.log(
-          "Previous cleanup not effective enough, applying aggressive optimization"
-        );
         this.applyAggressiveOptimization();
       }
     }, 3000);
@@ -294,8 +286,6 @@ export class MemoryManagementService {
    */
   public applyAggressiveOptimization() {
     if (!this.tilesRenderer || !this.camera) return;
-
-    console.log("Applying AGGRESSIVE memory optimization");
 
     // 1. Update tiles renderer settings
     if ("errorTarget" in this.tilesRenderer) {
@@ -373,8 +363,6 @@ export class MemoryManagementService {
   private applyMediumOptimization() {
     if (!this.tilesRenderer) return;
 
-    console.log("Applying MEDIUM memory optimization");
-
     // 1. Update tiles renderer settings - slightly less detail
     if ("errorTarget" in this.tilesRenderer) {
       // Use a middle ground error target
@@ -409,8 +397,6 @@ export class MemoryManagementService {
    */
   private resetToNormalSettings() {
     if (!this.tilesRenderer) return;
-
-    console.log("Resetting to NORMAL memory settings");
 
     // Reset to detailed settings
     if ("errorTarget" in this.tilesRenderer) {
@@ -528,15 +514,7 @@ export class MemoryManagementService {
     processNode(this.tilesRenderer.group);
 
     // Also process shadow maps from CSM
-    const shadowMapsDisposed = this.disposeShadowMaps();
-
-    console.log(`Memory cleanup stats:`, {
-      totalNodes,
-      shadowNodes,
-      disposedCount,
-      shadowMapsDisposed,
-      distanceThreshold,
-    });
+    this.disposeShadowMaps();
 
     return disposedCount;
   }
@@ -638,11 +616,6 @@ export class MemoryManagementService {
       }
     });
 
-    console.log(`Shadow map optimization stats:`, {
-      totalLights,
-      optimizedCount,
-    });
-
     return optimizedCount;
   }
 
@@ -712,12 +685,7 @@ export class MemoryManagementService {
     });
 
     // Also optimize shadow map textures
-    const shadowMapsOptimized = this.optimizeShadowMaps();
-
-    console.log(`Texture optimization stats:`, {
-      modifiedTextureCount,
-      shadowMapsOptimized,
-    });
+    this.optimizeShadowMaps();
 
     return modifiedTextureCount;
   }
@@ -800,7 +768,6 @@ export class MemoryManagementService {
         for (let i = 0; i < largeArrays.length; i++) {
           largeArrays[i] = null;
         }
-        console.log("Attempted to encourage garbage collection");
       } catch (e) {
         console.log("Alternative GC approach failed:", e);
       }

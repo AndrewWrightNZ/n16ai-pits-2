@@ -1,6 +1,11 @@
 import * as THREE from "three";
 import { useRef, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
+import {
+  BrightnessContrast,
+  EffectComposer,
+  Vignette,
+} from "@react-three/postprocessing";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
@@ -17,11 +22,7 @@ import { Pub } from "../../../../_shared/types";
 import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
 import ControlsPanel from "../../../../maps/_shared/components/ControlsPanel";
 import { useDaylightLighting } from "../../../../maps/_shared/hooks/useDaylightLighting";
-import {
-  BrightnessContrast,
-  EffectComposer,
-  Vignette,
-} from "@react-three/postprocessing";
+import SelectPubArea from "../../../../maps/_shared/components/SelectPubArea";
 
 interface SimplePhotorealisticTilesMapProps {
   pageName: string;
@@ -146,7 +147,12 @@ export default function SimplePhotorealisticTilesMap({
           </EffectComposer>
         </Canvas>
 
-        {pageName === "scene" && <ControlsPanel />}
+        {pageName === "scene" && (
+          <>
+            <ControlsPanel />
+            <SelectPubArea tilesSceneRef={tilesSceneRef} />
+          </>
+        )}
 
         {/* Simplified location modal with pub jumping capability */}
         <DraggableLocationsModal
