@@ -10,19 +10,21 @@ import { useRef, useState, useEffect } from "react";
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
 import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
+import { useDaylightLighting } from "../../../../maps/_shared/hooks/useDaylightLighting";
 
 // Components
+import ShadowEnabledTilesScene, {
+  TilesSceneRef,
+} from "./ShadowEnabledTilesScene";
 import CreatePubArea from "./CreatePubArea";
 import DraggableLocationsModal from "./DraggableLocationsModal";
-import EnhancedTilesScene, { TilesSceneRef } from "./BasicTileScene";
+import ControlsPanel from "../../../../maps/_shared/components/ControlsPanel";
+import SelectPubArea from "../../../../maps/_shared/components/SelectPubArea";
+import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
 import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedMemoryMonitor";
 
 // Types
 import { Pub } from "../../../../_shared/types";
-import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
-import ControlsPanel from "../../../../maps/_shared/components/ControlsPanel";
-import { useDaylightLighting } from "../../../../maps/_shared/hooks/useDaylightLighting";
-import SelectPubArea from "../../../../maps/_shared/components/SelectPubArea";
 
 interface SimplePhotorealisticTilesMapProps {
   pageName: string;
@@ -142,8 +144,8 @@ export default function SimplePhotorealisticTilesMap({
             gl.domElement.style.transformOrigin = "center center";
           }}
         >
-          {/* Use the EnhancedTilesScene for camera tracking */}
-          <EnhancedTilesScene
+          {/* Use the ShadowEnabledTilesScene for camera tracking */}
+          <ShadowEnabledTilesScene
             ref={tilesSceneRef}
             allowShadows={pageName === "scene"}
           />

@@ -1,9 +1,11 @@
 import { cn } from "../../../utils";
+import { useNavigate } from "@tanstack/react-router";
 
 // Hooks
 import useMapSettings from "../hooks/useMapSettings";
 
 const ControlsPanel = () => {
+  const navigate = useNavigate();
   // Hooks
   const {
     data: {
@@ -36,6 +38,14 @@ const ControlsPanel = () => {
 
   return (
     <div className="absolute top-2.5 left-2.5 bg-white/80 p-2.5 rounded z-10 max-w-[250px]">
+      {/* Back Button */}
+      <button
+        className="mb-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded text-sm font-medium"
+        onClick={() => navigate({ to: "/finder" })}
+        type="button"
+      >
+        ← Back to Map
+      </button>
       {/* Time of day controls */}
       <div className="mb-2.5">
         <p className="font-medium text-sm mb-1">Time: {formattedTime}</p>

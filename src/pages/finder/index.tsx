@@ -1,17 +1,16 @@
+import { Filter } from "lucide-react";
 import { Helmet } from "react-helmet";
+import { Link } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
-import { GoogleMap, LoadScript, InfoWindow } from "@react-google-maps/api";
+import { GoogleMap, LoadScript } from "@react-google-maps/api";
 
 // Hooks
 import usePubs from "./_shared/hooks/usePubs";
-import { Pub } from "../../_shared/types";
 
 // Components for custom markers
 import RenderPubsOfType from "./_shared/components/renderPubsOfType";
 import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
 import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
-import { Filter } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 // Default center (London)
 const defaultCenter = {
@@ -23,13 +22,12 @@ function Finder() {
   // State for Google Maps
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
   const [center, setCenter] = useState(defaultCenter);
-  const [activeInfoWindow, setActiveInfoWindow] = useState<Pub | null>(null);
   const [showFilterModal, setShowFilterModal] = useState(false);
 
   // Hooks from your existing code
   const {
     data: { uiReadyPubs = [], pubsInTheSun = [], selectedPub = null },
-    operations: { onSetMapBounds, onSetSelectedPubId },
+    operations: { onSetMapBounds },
   } = usePubs();
 
   const {
@@ -85,16 +83,6 @@ function Finder() {
     }
   }, [mapInstance]);
 
-  // Close info window
-  const handleInfoWindowClose = useCallback(() => {
-    setActiveInfoWindow(null);
-    onSetSelectedPubId(0);
-
-    if (mapInstance) {
-      mapInstance.setZoom(13); // Reset zoom level
-    }
-  }, [onSetSelectedPubId]);
-
   // Effect to center map on selected pub
   useEffect(() => {
     if (selectedPub && mapInstance) {
@@ -104,7 +92,6 @@ function Finder() {
       };
       mapInstance.panTo(position);
       mapInstance.setZoom(17);
-      setActiveInfoWindow(selectedPub);
     }
   }, [selectedPub, mapInstance]);
 
@@ -223,39 +210,6 @@ function Finder() {
                   <RenderPubsOfType filterName="full_sun" />
                   {/* <RenderPubsOfType filterName="partial_sun" areaTypeFilters={selectedAreaTypes} />
                   <RenderPubsOfType filterName="no_sun" areaTypeFilters={selectedAreaTypes} /> */}
-
-                  {/* Show info window for active pub */}
-                  {activeInfoWindow && (
-                    <InfoWindow
-                      position={{
-                        lat: activeInfoWindow.latitude,
-                        lng: activeInfoWindow.longitude,
-                      }}
-                      onCloseClick={handleInfoWindowClose}
-                    >
-                      <div className="info-window max-w-xs">
-                        <h3 className="text-lg font-bold mb-1">
-                          {activeInfoWindow.name}
-                        </h3>
-                        <div className="flex justify-between mt-2">
-                          <a
-                            href={`https://maps.google.com/maps?daddr=${activeInfoWindow.latitude},${activeInfoWindow.longitude}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                          >
-                            Get Directions
-                          </a>
-                          <a
-                            href={`/pub/${activeInfoWindow.id}`}
-                            className="text-gray-600 hover:text-gray-800 text-sm"
-                          >
-                            View Details
-                          </a>
-                        </div>
-                      </div>
-                    </InfoWindow>
-                  )}
                 </GoogleMap>
               </LoadScript>
             </div>
