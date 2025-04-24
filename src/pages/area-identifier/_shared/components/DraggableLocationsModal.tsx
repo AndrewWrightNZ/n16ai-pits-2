@@ -21,9 +21,9 @@ const DraggableLocationsModal: React.FC<DraggableLocationsModalProps> = ({
   } = usePubs();
 
   // State for modal positioning and behavior
-  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [position, setPosition] = useState({ x: 10, y: 210 });
   const [isDragging, setIsDragging] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPub, setSelectedPub] = useState<Pub | null>(null);
   const [showNeedsWork, setShowNeedsWork] = useState(true); // New state for toggling filter

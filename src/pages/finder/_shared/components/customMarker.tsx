@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
 // Types
@@ -6,12 +7,15 @@ import { Pub } from "../../../../_shared/types";
 
 // Hooks
 import usePubs from "../hooks/usePubs";
+import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
 
 // Utils
 import * as fn from "../../../../_shared/utils";
 
 // Components
 import React from "react";
+
+// Icons
 import { ChevronRight } from "lucide-react";
 
 interface MarkerWrapperProps {
@@ -113,9 +117,13 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
   //
   // Hooks
   const {
-    data: { selectedPub, hoveredPubId },
-    operations: { onSetSelectedPubId, onSetHoveredPubId },
+    data: { selectedPub, hoveredPubId, uiReadyPubs = [] },
+    operations: { onSetHoveredPubId },
   } = usePubs();
+
+  const {
+    operations: { onSetSelectedPub },
+  } = usePubAreas();
 
   //
   // Variables
@@ -136,9 +144,16 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
 
   //
   // Handlers
+  const navigate = useNavigate();
   const handleClick = useCallback(() => {
-    onSetSelectedPubId(pubId);
-  }, [onSetSelectedPubId, pubId]);
+    const pub = uiReadyPubs.find((pub) => pub.id === pubId);
+
+    if (!pub) return;
+    onSetSelectedPub(pub);
+
+    // Navigate to /scene
+    navigate({ to: "/scene" });
+  }, [onSetSelectedPub, pubId, uiReadyPubs, navigate]);
 
   const handleMouseEnter = useCallback(() => {
     onSetHoveredPubId(pubId);
@@ -148,8 +163,6 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
     onSetHoveredPubId(hoveredPubId);
   }, [onSetHoveredPubId, hoveredPubId]);
 
-  // Create an invisible marker for handling click events
-  // The actual visual content will be in the OverlayView
   return (
     <>
       {/* Invisible marker for click handling */}

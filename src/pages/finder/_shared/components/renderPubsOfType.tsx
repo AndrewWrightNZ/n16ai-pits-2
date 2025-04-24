@@ -1,10 +1,10 @@
 // Hooks
+import usePubs from "../hooks/usePubs";
 
 // Types
+import { Pub } from "../../../../_shared/types";
 
 // Components
-import { Pub } from "../../../../_shared/types";
-import usePubs from "../hooks/usePubs";
 import CustomMarker from "./customMarker";
 
 interface RenderPubsOfTypeProps {
@@ -16,9 +16,10 @@ const RenderPubsOfType = ({ filterName }: RenderPubsOfTypeProps) => {
   // Hooks
   const {
     data: {
-      pubsInTheSun = [],
-      pubsPartiallyInTheSun = [],
-      pubsNotInTheSun = [],
+      uiReadyPubs = [],
+      // pubsInTheSun = [],
+      // pubsPartiallyInTheSun = [],
+      // pubsNotInTheSun = [],
     },
   } = usePubs();
 
@@ -28,13 +29,13 @@ const RenderPubsOfType = ({ filterName }: RenderPubsOfTypeProps) => {
 
   switch (filterName) {
     case "full_sun":
-      pubsToRender = pubsInTheSun;
+      pubsToRender = uiReadyPubs;
       break;
     case "partial_sun":
-      pubsToRender = pubsPartiallyInTheSun;
+      pubsToRender = [];
       break;
     case "no_sun":
-      pubsToRender = pubsNotInTheSun;
+      pubsToRender = [];
       break;
     default:
       pubsToRender = [];
