@@ -188,10 +188,6 @@ export class MemoryManagementService {
       isMemoryIncreasing &&
       stats.usagePercentage > this.memoryThresholds.medium - 10
     ) {
-      console.log(
-        "Memory trend is increasing, taking preemptive optimization steps"
-      );
-
       if (stats.pressureLevel === MemoryPressureLevel.LOW) {
         this.applyMediumOptimization();
         this.lastOptimizationTime = now;
@@ -258,8 +254,6 @@ export class MemoryManagementService {
    */
   private schedulePreventiveMaintenance() {
     if (!this.tilesRenderer) return;
-
-    console.log("Performing scheduled preventive memory maintenance");
 
     // Every 10th maintenance cycle, perform more aggressive cleanup
     if (this.memoryCheckCount % 10 === 0) {
@@ -486,17 +480,6 @@ export class MemoryManagementService {
 
                 if (isShadowObject) {
                   shadowNodes++;
-                  console.log("Found shadow object:", {
-                    type: node.type,
-                    distance,
-                    userData: node.userData,
-                    material:
-                      node.material instanceof THREE.ShadowMaterial
-                        ? "ShadowMaterial"
-                        : Array.isArray(node.material)
-                          ? node.material.map((m) => m.type)
-                          : node.material?.type,
-                  });
 
                   // Add to disposed set to avoid disposing again
                   this.disposedGeometries.add(node.geometry);
@@ -574,20 +557,6 @@ export class MemoryManagementService {
         // Check if this is a shadow-casting light
         if (object.castShadow) {
           lightsWithShadows++;
-          console.log("Found light with shadow:", {
-            type: object.type,
-            intensity: object.intensity,
-            shadowMapSize: object.shadow?.mapSize,
-            shadowCamera: object.shadow?.camera
-              ? {
-                  type: object.shadow.camera.type,
-                  left: object.shadow.camera.left,
-                  right: object.shadow.camera.right,
-                  top: object.shadow.camera.top,
-                  bottom: object.shadow.camera.bottom,
-                }
-              : null,
-          });
 
           // Optimize shadow map size based on light type and distance
           if (object.shadow) {
@@ -623,12 +592,6 @@ export class MemoryManagementService {
           }
         }
       }
-    });
-
-    console.log(`Shadow map cleanup stats:`, {
-      totalLights,
-      lightsWithShadows,
-      disposedCount,
     });
 
     return disposedCount;
@@ -808,7 +771,6 @@ export class MemoryManagementService {
       }
     });
 
-    console.log(`Disposed ${disposedCount} unused resources`);
     return disposedCount;
   }
 

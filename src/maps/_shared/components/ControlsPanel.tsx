@@ -1,4 +1,3 @@
-import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
 import { cn } from "../../../utils";
 
 // Hooks
@@ -23,13 +22,6 @@ const ControlsPanel = () => {
       onSetShowWhiteTiles,
     },
   } = useMapSettings();
-  const {
-    data: { pubs },
-  } = usePubs();
-
-  const examplePubs = pubs.slice(0, 2);
-
-  console.log({ examplePubs });
 
   // Format the time from the slider value (0-95 representing quarter hours)
   const formatSliderTime = (value: number) => {
