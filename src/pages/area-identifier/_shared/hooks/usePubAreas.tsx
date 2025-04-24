@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Hooks
@@ -82,6 +83,9 @@ interface PubAreasOperations {
   // UI filtering
   onSelectAreaType: (type: string) => void;
 
+  // Select pub area
+  onSelectPubArea: (pubArea: PubArea) => void;
+
   // Database updates
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
   onSaveFloorArea: (payload: SaveFloorAreaPayload) => void;
@@ -154,6 +158,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Queries
   const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPubId];
+
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
   const GET_ALL_AVAILABLE_AREAS_QUERY_KEY = ["getAllAvailableAreas"];
 
@@ -171,6 +176,17 @@ const usePubAreas = (): PubAreasResponse => {
     queryFn: fetchAreasForPub,
     enabled: !!selectedPubId,
   });
+
+  // When areasForPub changes after selecting a pub, set selectedPubArea to the first area
+  useEffect(() => {
+    if (selectedPubId && areasForPub && areasForPub.length > 0) {
+      updatePubAreasState({ selectedPubArea: areasForPub[0] });
+    }
+    // Optionally, you may want to clear selectedPubArea if areasForPub becomes empty
+    // else if (selectedPubId && areasForPub && areasForPub.length === 0) {
+    //   updatePubAreasState({ selectedPubArea: null });
+    // }
+  }, [selectedPubId, areasForPub]);
 
   const { data: areasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
     useQuery({
@@ -261,8 +277,6 @@ const usePubAreas = (): PubAreasResponse => {
   //
 
   // Variables
-
-  // find all unique area types from all available areas
   const availableAreaTypes = allAvailableAreas.reduce(
     (acc: string[], area: PubArea) => {
       if (!acc.includes(area.type)) {
@@ -404,6 +418,10 @@ const usePubAreas = (): PubAreasResponse => {
     updatePubAreasState({ selectedAreaTypes: newSelectedTypes });
   };
 
+  const onSelectPubArea = (pubArea: PubArea) => {
+    updatePubAreasState({ selectedPubArea: pubArea });
+  };
+
   return {
     data: {
       ...pubAreasState,
@@ -441,6 +459,9 @@ const usePubAreas = (): PubAreasResponse => {
 
       // UI filtering
       onSelectAreaType,
+
+      // Select pub area
+      onSelectPubArea,
 
       // Update DB
       onSavePubAreaDetails,

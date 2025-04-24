@@ -91,6 +91,13 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
       },
     } = useMapSettings();
 
+    // Ensure showWhiteTiles is false if allowShadows is false
+    useEffect(() => {
+      if (showWhiteTiles && !allowShadows) {
+        onSetShowWhiteTiles(false);
+      }
+    }, [allowShadows, showWhiteTiles, onSetShowWhiteTiles]);
+
     // Calculate sun position based on time of day
     const calculateSunPosition = useCallback((timeOfDay: Date) => {
       const hours = timeOfDay.getHours();
@@ -146,9 +153,13 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
     // Update white material when showWhiteTiles changes
     useEffect(() => {
       if (tilesRendererServiceRef.current) {
-        tilesRendererServiceRef.current.setUseWhiteMaterial(showWhiteTiles);
+        if (showWhiteTiles && allowShadows) {
+          tilesRendererServiceRef.current.setUseWhiteMaterial(true);
+        } else {
+          tilesRendererServiceRef.current.setUseWhiteMaterial(false);
+        }
       }
-    }, [showWhiteTiles]);
+    }, [showWhiteTiles, allowShadows]);
 
     // Initialize 3D Tiles
     useEffect(() => {
@@ -164,7 +175,7 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
         renderer,
         scene,
         API_KEY,
-        true
+        showWhiteTiles
       );
 
       // Set callbacks
@@ -184,9 +195,10 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
             setTilesLoaded(true);
 
             if (tilesRenderer) {
-              onSetTileCount(tilesRenderer.group.children.length);
-              tilesRendererService.setupShadowsForTiles();
               memoryManager.initialize(tilesRenderer, camera);
+              if (allowShadows) {
+                tilesRendererService.setupShadowsForTiles();
+              }
             }
           }
         },
@@ -282,7 +294,11 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
       toggleWhiteTiles: () => {
         onSetShowWhiteTiles(!showWhiteTiles);
         if (tilesRendererServiceRef.current) {
-          tilesRendererServiceRef.current.setUseWhiteMaterial(!showWhiteTiles);
+          if (!showWhiteTiles && allowShadows) {
+            tilesRendererServiceRef.current.setUseWhiteMaterial(true);
+          } else {
+            tilesRendererServiceRef.current.setUseWhiteMaterial(false);
+          }
         }
       },
       getCameraPosition: () => {
@@ -341,13 +357,19 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
       },
     }));
 
+    const showWhiteMaterial =
+      tilesLoaded &&
+      showWhiteTiles &&
+      allowShadows &&
+      getCurrentTilesRenderer();
+
     return (
       <>
         {/* Simple lighting for better visibility */}
-        <ambientLight intensity={0.1} color={new THREE.Color(0xffffff)} />
+        <ambientLight intensity={0.3} color={new THREE.Color(0xffffff)} />
         <directionalLight
           position={sunPosition}
-          intensity={2.0}
+          intensity={4.0}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
@@ -358,19 +380,16 @@ const EnhancedTilesScene = forwardRef<TilesSceneRef, EnhancedTilesSceneProps>(
           shadow-camera-bottom={-300}
         />
 
-        {tilesLoaded &&
-          showWhiteTiles &&
-          allowShadows &&
-          getCurrentTilesRenderer() && (
-            <WhiteTilesMaterial
-              tilesGroup={getCurrentTilesRenderer()!.group}
-              shadowOpacity={shadowOpacity}
-              enabled={true}
-              brightness={0.8}
-              roughness={0.9}
-              shadowIntensity={0.8}
-            />
-          )}
+        {showWhiteMaterial && (
+          <WhiteTilesMaterial
+            tilesGroup={getCurrentTilesRenderer()!.group}
+            shadowOpacity={shadowOpacity}
+            enabled={true}
+            brightness={0.8}
+            roughness={0.9}
+            shadowIntensity={0.8}
+          />
+        )}
 
         {/* Controls (orbit, panning, etc.) */}
         <OrbitControls

@@ -1,6 +1,11 @@
 import * as THREE from "three";
-import { useRef, useState, useEffect } from "react";
+import {
+  BrightnessContrast,
+  EffectComposer,
+  Vignette,
+} from "@react-three/postprocessing";
 import { Canvas } from "@react-three/fiber";
+import { useRef, useState, useEffect } from "react";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
@@ -17,11 +22,7 @@ import { Pub } from "../../../../_shared/types";
 import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
 import ControlsPanel from "../../../../maps/_shared/components/ControlsPanel";
 import { useDaylightLighting } from "../../../../maps/_shared/hooks/useDaylightLighting";
-import {
-  BrightnessContrast,
-  EffectComposer,
-  Vignette,
-} from "@react-three/postprocessing";
+import SelectPubArea from "../../../../maps/_shared/components/SelectPubArea";
 
 interface SimplePhotorealisticTilesMapProps {
   pageName: string;
@@ -57,6 +58,7 @@ export default function SimplePhotorealisticTilesMap({
   } = useMapSettings();
 
   const {
+    data: { selectedPubArea },
     operations: { onSetSelectedPub },
   } = usePubAreas();
 
@@ -65,36 +67,40 @@ export default function SimplePhotorealisticTilesMap({
   // Function to update camera information
   const updateCameraInfo = () => {
     if (tilesSceneRef.current) {
-      const position = tilesSceneRef.current.getCameraPosition();
-      const target = tilesSceneRef.current.getCameraTarget();
+      if (selectedPubArea) {
+        const { position, target } = selectedPubArea.camera_position;
 
-      if (position && target) {
-        setCameraInfo({
-          position: {
-            x: parseFloat(position.x.toFixed(2)),
-            y: parseFloat(position.y.toFixed(2)),
-            z: parseFloat(position.z.toFixed(2)),
-          },
-          target: {
-            x: parseFloat(target.x.toFixed(2)),
-            y: parseFloat(target.y.toFixed(2)),
-            z: parseFloat(target.z.toFixed(2)),
-          },
-        });
+        // Use the tilesSceneRef to update the camera
+        tilesSceneRef.current.setCameraPosition(position);
+        tilesSceneRef.current.setCameraTarget(target);
+      } else {
+        const position = tilesSceneRef.current.getCameraPosition();
+        const target = tilesSceneRef.current.getCameraTarget();
+
+        if (position && target) {
+          setCameraInfo({
+            position: {
+              x: parseFloat(position.x.toFixed(2)),
+              y: parseFloat(position.y.toFixed(2)),
+              z: parseFloat(position.z.toFixed(2)),
+            },
+            target: {
+              x: parseFloat(target.x.toFixed(2)),
+              y: parseFloat(target.y.toFixed(2)),
+              z: parseFloat(target.z.toFixed(2)),
+            },
+          });
+        }
       }
     }
   };
 
   // Update camera info at regular intervals
   useEffect(() => {
-    if (!isLoading) {
-      const intervalId = setInterval(() => {
-        updateCameraInfo();
-      }, 1000); // Update every second
-
-      return () => clearInterval(intervalId);
+    if (selectedPubArea) {
+      updateCameraInfo();
     }
-  }, [isLoading]);
+  }, [selectedPubArea, isLoading]);
 
   // Function to jump to pub location using lat/lng
   const handleJumpToPub = (pub: Pub) => {
@@ -113,7 +119,7 @@ export default function SimplePhotorealisticTilesMap({
     <div className="relative">
       <div className="w-full h-[850px] mx-auto relative overflow-hidden">
         <Canvas
-          shadows
+          shadows={pageName === "scene"}
           camera={{
             fov: 25,
             near: 1,
@@ -125,8 +131,11 @@ export default function SimplePhotorealisticTilesMap({
             gl.setClearColor(new THREE.Color(skyColor));
             gl.setPixelRatio(window.devicePixelRatio);
 
-            gl.shadowMap.enabled = true;
-            gl.shadowMap.type = THREE.PCFSoftShadowMap;
+            gl.shadowMap.enabled = pageName === "scene";
+            gl.shadowMap.type =
+              pageName === "scene"
+                ? THREE.PCFSoftShadowMap
+                : THREE.PCFShadowMap;
 
             // Keep the zoom for consistent view
             gl.domElement.style.transform = "scale(1.1)";
@@ -139,14 +148,25 @@ export default function SimplePhotorealisticTilesMap({
             allowShadows={pageName === "scene"}
           />
 
-          <EffectComposer>
-            <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
-            {/* Slight contrast increase */}
-            <Vignette eskil={false} offset={0.15} darkness={vignetteDarkness} />
-          </EffectComposer>
+          {pageName === "scene" && (
+            <EffectComposer>
+              <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
+              {/* Slight contrast increase */}
+              <Vignette
+                eskil={false}
+                offset={0.15}
+                darkness={vignetteDarkness}
+              />
+            </EffectComposer>
+          )}
         </Canvas>
 
-        {pageName === "scene" && <ControlsPanel />}
+        {pageName === "scene" && (
+          <>
+            <ControlsPanel />
+            <SelectPubArea />
+          </>
+        )}
 
         {/* Simplified location modal with pub jumping capability */}
         <DraggableLocationsModal
