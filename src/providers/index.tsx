@@ -8,6 +8,8 @@ import { MapSettingsProvider } from "../pages/scene/_shared/context/useMapSettin
 import { PubLabelsProvider } from "../pages/pub-labels/_shared/providers/PubLabelsProvider";
 import { PubAreasProvider } from "../pages/area-identifier/_shared/providers/PubAreasProvider";
 
+import { GoogleMapsProvider } from "./GoogleMapsProvider";
+
 export const GeneralProviders = ({ children }: any) => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -18,16 +20,18 @@ export const GeneralProviders = ({ children }: any) => {
   });
   return (
     <QueryClientProvider client={queryClient}>
-      <PubProvider>
-        <PubAreasProvider>
-          <PubLabelsProvider>
-            <GeoLocationProvider>
-              <MapSettingsProvider>{children}</MapSettingsProvider>
-            </GeoLocationProvider>
-            <ReactQueryDevtools />
-          </PubLabelsProvider>
-        </PubAreasProvider>
-      </PubProvider>
+      <GoogleMapsProvider>
+        <PubProvider>
+          <PubAreasProvider>
+            <PubLabelsProvider>
+              <GeoLocationProvider>
+                <MapSettingsProvider>{children}</MapSettingsProvider>
+              </GeoLocationProvider>
+              <ReactQueryDevtools />
+            </PubLabelsProvider>
+          </PubAreasProvider>
+        </PubProvider>
+      </GoogleMapsProvider>
     </QueryClientProvider>
   );
 };
