@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Providers
 import { PubProvider } from "../pages/finder/_shared/providers/PubProvider";
 import { GeoLocationProvider } from "../_shared/providers/useGeolocationContext";
-import { MapSettingsProvider } from "../maps/_shared/context/useMapSettingsContext";
+import { MapSettingsProvider } from "../pages/scene/_shared/context/useMapSettingsContext";
 import { PubLabelsProvider } from "../pages/pub-labels/_shared/providers/PubLabelsProvider";
 import { PubAreasProvider } from "../pages/area-identifier/_shared/providers/PubAreasProvider";
 
