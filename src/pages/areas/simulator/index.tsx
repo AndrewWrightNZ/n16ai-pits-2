@@ -27,7 +27,6 @@ const PubAreaSimulator = () => {
   //
 
   // Variables
-
   const visionMaskPoints = selectedPubArea?.vision_mask_points || [];
 
   //
@@ -41,7 +40,7 @@ const PubAreaSimulator = () => {
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     // Draw semi-transparent black over the whole canvas
     ctx.save();
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = 0.8;
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ctx.restore();
@@ -60,17 +59,6 @@ const PubAreaSimulator = () => {
       ctx.fill();
       ctx.restore();
     }
-
-    // Draw points on top
-    ctx.save();
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "#ff0000";
-    for (const pt of visionMaskPoints) {
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
   }, [visionMaskPoints]);
 
   return (
@@ -108,10 +96,15 @@ const PubAreaSimulator = () => {
             top: 0,
             pointerEvents: "auto",
             zIndex: 2,
-            cursor: "crosshair",
+            cursor: "none",
           }}
         />
       </div>
+
+      <p>
+        Add controls below the fold - the simulator can interact with these but
+        they wont show in the UI/screenshot
+      </p>
     </div>
   );
 };

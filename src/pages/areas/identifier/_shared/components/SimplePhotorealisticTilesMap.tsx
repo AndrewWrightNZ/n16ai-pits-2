@@ -68,7 +68,8 @@ export default function SimplePhotorealisticTilesMap({
   //
 
   // Variables
-  const hideAllOverlays = ["create-mask"].includes(pageName);
+  const hideAllOverlays = ["create-mask", "simulator"].includes(pageName);
+  const enableShadows = ["simulator", "scene"].includes(pageName);
 
   // Function to update camera information
   const updateCameraInfo = () => {
@@ -125,7 +126,7 @@ export default function SimplePhotorealisticTilesMap({
     <div className="relative">
       <div className="w-full h-[850px] mx-auto relative overflow-hidden">
         <Canvas
-          shadows={pageName === "scene"}
+          shadows={enableShadows}
           camera={{
             fov: 25,
             near: 1,
@@ -137,11 +138,10 @@ export default function SimplePhotorealisticTilesMap({
             gl.setClearColor(new THREE.Color(skyColor));
             gl.setPixelRatio(window.devicePixelRatio);
 
-            gl.shadowMap.enabled = pageName === "scene";
-            gl.shadowMap.type =
-              pageName === "scene"
-                ? THREE.PCFSoftShadowMap
-                : THREE.PCFShadowMap;
+            gl.shadowMap.enabled = enableShadows;
+            gl.shadowMap.type = enableShadows
+              ? THREE.PCFSoftShadowMap
+              : THREE.PCFShadowMap;
 
             // Keep the zoom for consistent view
             gl.domElement.style.transform = "scale(1.1)";
@@ -151,10 +151,10 @@ export default function SimplePhotorealisticTilesMap({
           {/* Use the ShadowEnabledTilesScene for camera tracking */}
           <ShadowEnabledTilesScene
             ref={tilesSceneRef}
-            allowShadows={pageName === "scene"}
+            allowShadows={enableShadows}
           />
 
-          {pageName === "scene" && (
+          {enableShadows && (
             <EffectComposer>
               <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
               {/* Slight contrast increase */}
