@@ -6,6 +6,7 @@ import SimplePhotorealisticTilesMap from "../identifier/_shared/components/Simpl
 // Hooks
 import usePubAreas from "../identifier/_shared/hooks/usePubAreas";
 import useMapSettings from "../../scene/_shared/hooks/useMapSettings";
+import { ChevronRight } from "lucide-react";
 
 // Constants
 export const CANVAS_WIDTH = 800;
@@ -17,16 +18,14 @@ const PubAreaSimulator = () => {
   // Hooks
 
   const {
-    data: { selectedPub, selectedPubArea },
-    operations: { onGoToNextArea },
+    data: { selectedPub, selectedPubArea, simulationReadyPubs },
+    operations: { onGoToNextArea, onSimulateNextPub },
   } = usePubAreas();
 
   const {
-    data: { timeOfDay, formattedTime },
+    data: { isLoading, tileCount, timeOfDay, formattedTime },
     operations: { onSetTimeOfDay },
   } = useMapSettings();
-
-  console.log({ selectedPub, selectedPubArea });
 
   // Refs
   const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -116,7 +115,7 @@ const PubAreaSimulator = () => {
   }, [visionMaskPoints]);
 
   return (
-    <div className="w-full h-[100vh] bg-black text-white">
+    <div className="w-full min-h-[100vh] bg-black text-white pb-[20vh]">
       <div
         style={{
           position: "relative",
@@ -155,9 +154,18 @@ const PubAreaSimulator = () => {
         />
       </div>
 
+      {isLoading && <p>Loading...</p>}
+
+      {tileCount && <p>Tile count: {tileCount}</p>}
+
       <p>
-        Add controls below the fold - the simulator can interact with these but
-        they wont show in the UI/screenshot
+        {selectedPub?.name || "No pub selected"} |{" "}
+        {selectedPub?.address_text || "No address"}
+      </p>
+
+      <p>
+        {selectedPubArea?.name || "No pub area selected"} |{" "}
+        {selectedPubArea?.description || "No description"}
       </p>
 
       <div className="mt-6 w-1/3">
@@ -181,6 +189,7 @@ const PubAreaSimulator = () => {
             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
           />
         </div>
+
         {/* Automation buttons for system interaction */}
         <div className="mt-4 flex gap-2" aria-label="automation-controls">
           <button
@@ -216,6 +225,20 @@ const PubAreaSimulator = () => {
             Go to Next Area
           </button>
         </div>
+
+        {/* Simulation pub selector */}
+        <p className="text-sm text-gray-200 mt-6">
+          Simulation ready pubs: {simulationReadyPubs.length}
+        </p>
+
+        <button
+          className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white p-3 rounded mt-2"
+          type="button"
+          data-automation="view-next-pub"
+          onClick={onSimulateNextPub}
+        >
+          View next available pub <ChevronRight className="w-4 h-4" />
+        </button>
       </div>
     </div>
   );
