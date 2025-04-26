@@ -116,7 +116,7 @@ const PubAreaSimulator = () => {
   }, [visionMaskPoints]);
 
   return (
-    <div className="w-full h-[100vh] bg-black text-white p-4 rounded">
+    <div className="w-full h-[100vh] bg-black text-white">
       <div
         style={{
           position: "relative",
