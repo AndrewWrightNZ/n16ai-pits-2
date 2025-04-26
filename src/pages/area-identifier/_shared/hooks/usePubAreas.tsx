@@ -182,7 +182,7 @@ const usePubAreas = (): PubAreasResponse => {
       .select()
       // has areas measured but doesn't have vision mask
       .eq("has_areas_measured", true)
-      .is("has_vision_masks_added", false);
+      .is("has_vision_masks_added", null);
     if (error) throw error;
     return data;
   };
