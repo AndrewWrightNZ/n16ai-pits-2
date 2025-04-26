@@ -1,4 +1,4 @@
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Providers
@@ -27,7 +27,7 @@ export const GeneralProviders = ({ children }: any) => {
               <GeoLocationProvider>
                 <MapSettingsProvider>{children}</MapSettingsProvider>
               </GeoLocationProvider>
-              <ReactQueryDevtools />
+              {/* <ReactQueryDevtools /> */}
             </PubLabelsProvider>
           </PubAreasProvider>
         </PubProvider>
