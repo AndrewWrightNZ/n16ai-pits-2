@@ -129,6 +129,9 @@ function Finder() {
         <Link to="/area-sizer" className="[&.active]:font-bold">
           Area sizer
         </Link>
+        <Link to="/vision-mask" className="[&.active]:font-bold">
+          Vision mask
+        </Link>
         <Link to="/pub-labels" className="[&.active]:font-bold">
           Pub Labels
         </Link>
