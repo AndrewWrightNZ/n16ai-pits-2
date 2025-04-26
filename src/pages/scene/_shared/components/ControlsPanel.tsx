@@ -1,8 +1,8 @@
-import { cn } from "../../../utils";
 import { useNavigate } from "@tanstack/react-router";
 
 // Hooks
 import useMapSettings from "../hooks/useMapSettings";
+import { cn } from "../../../../utils";
 
 const ControlsPanel = () => {
   const navigate = useNavigate();

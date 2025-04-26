@@ -14,16 +14,16 @@ import { OrbitControls } from "@react-three/drei";
 import {
   ExtendedTilesRenderer,
   TilesRendererService,
-} from "../../../../maps/_shared/services/tilesRendererService";
-import CameraPositioner from "../../../../maps/_shared/services/cameraPositionerService";
-import { memoryManager } from "../../../../maps/_shared/services/MemoryManagementService";
+} from "../../../scene/_shared/services/tilesRendererService";
+import CameraPositioner from "../../../scene/_shared/services/cameraPositionerService";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
-import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
+import useMapSettings from "../../../scene/_shared/hooks/useMapSettings";
 
 // Components
-import WhiteTilesMaterial from "../../../../maps/_shared/components/WhiteTilesMaterial";
+import { memoryManager } from "../../../scene/_shared/services/MemoryManagementService";
+import WhiteTilesMaterial from "../../../scene/_shared/components/WhiteTilesMaterial";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 

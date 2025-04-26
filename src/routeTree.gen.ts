@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SessionImport } from './routes/session'
 import { Route as SceneImport } from './routes/scene'
 import { Route as PubLabelsImport } from './routes/pub-labels'
 import { Route as OneHundredImport } from './routes/one-hundred'
@@ -23,6 +24,12 @@ import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
+
+const SessionRoute = SessionImport.update({
+  id: '/session',
+  path: '/session',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const SceneRoute = SceneImport.update({
   id: '/scene',
@@ -158,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SceneImport
       parentRoute: typeof rootRoute
     }
+    '/session': {
+      id: '/session'
+      path: '/session'
+      fullPath: '/session'
+      preLoaderRoute: typeof SessionImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -174,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
+  '/session': typeof SessionRoute
 }
 
 export interface FileRoutesByTo {
@@ -187,6 +202,7 @@ export interface FileRoutesByTo {
   '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
+  '/session': typeof SessionRoute
 }
 
 export interface FileRoutesById {
@@ -201,6 +217,7 @@ export interface FileRoutesById {
   '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
+  '/session': typeof SessionRoute
 }
 
 export interface FileRouteTypes {
@@ -216,6 +233,7 @@ export interface FileRouteTypes {
     | '/one-hundred'
     | '/pub-labels'
     | '/scene'
+    | '/session'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -228,6 +246,7 @@ export interface FileRouteTypes {
     | '/one-hundred'
     | '/pub-labels'
     | '/scene'
+    | '/session'
   id:
     | '__root__'
     | '/'
@@ -240,6 +259,7 @@ export interface FileRouteTypes {
     | '/one-hundred'
     | '/pub-labels'
     | '/scene'
+    | '/session'
   fileRoutesById: FileRoutesById
 }
 
@@ -254,6 +274,7 @@ export interface RootRouteChildren {
   OneHundredRoute: typeof OneHundredRoute
   PubLabelsRoute: typeof PubLabelsRoute
   SceneRoute: typeof SceneRoute
+  SessionRoute: typeof SessionRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -267,6 +288,7 @@ const rootRouteChildren: RootRouteChildren = {
   OneHundredRoute: OneHundredRoute,
   PubLabelsRoute: PubLabelsRoute,
   SceneRoute: SceneRoute,
+  SessionRoute: SessionRoute,
 }
 
 export const routeTree = rootRoute
@@ -288,7 +310,8 @@ export const routeTree = rootRoute
         "/finder",
         "/one-hundred",
         "/pub-labels",
-        "/scene"
+        "/scene",
+        "/session"
       ]
     },
     "/": {
@@ -320,6 +343,9 @@ export const routeTree = rootRoute
     },
     "/scene": {
       "filePath": "scene.tsx"
+    },
+    "/session": {
+      "filePath": "session.tsx"
     }
   }
 }

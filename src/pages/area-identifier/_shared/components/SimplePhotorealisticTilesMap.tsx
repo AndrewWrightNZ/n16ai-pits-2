@@ -9,8 +9,8 @@ import { useRef, useState, useEffect } from "react";
 
 // Hooks
 import usePubAreas from "../hooks/usePubAreas";
-import useMapSettings from "../../../../maps/_shared/hooks/useMapSettings";
-import { useDaylightLighting } from "../../../../maps/_shared/hooks/useDaylightLighting";
+import useMapSettings from "../../../scene/_shared/hooks/useMapSettings";
+import { useDaylightLighting } from "../../../scene/_shared/hooks/useDaylightLighting";
 
 // Components
 import ShadowEnabledTilesScene, {
@@ -18,10 +18,10 @@ import ShadowEnabledTilesScene, {
 } from "./ShadowEnabledTilesScene";
 import CreatePubArea from "./CreatePubArea";
 import DraggableLocationsModal from "./DraggableLocationsModal";
-import ControlsPanel from "../../../../maps/_shared/components/ControlsPanel";
-import SelectPubArea from "../../../../maps/_shared/components/SelectPubArea";
+import ControlsPanel from "../../../scene/_shared/components/ControlsPanel";
+import SelectPubArea from "../../../scene/_shared/components/SelectPubArea";
 import CreatePubLabels from "../../../pub-labels/_shared/components/CreatePubLabels";
-import EnhancedMemoryMonitor from "../../../../maps/_shared/components/EnhancedMemoryMonitor";
+import EnhancedMemoryMonitor from "../../../scene/_shared/components/EnhancedMemoryMonitor";
 
 // Types
 import { Pub } from "../../../../_shared/types";

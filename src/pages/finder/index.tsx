@@ -2,7 +2,7 @@ import { Filter } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
-import { GoogleMap, LoadScript } from "@react-google-maps/api";
+import { GoogleMap } from "@react-google-maps/api";
 
 // Hooks
 import usePubs from "./_shared/hooks/usePubs";
@@ -117,6 +117,9 @@ function Finder() {
         <Link to="/scene" className="[&.active]:font-bold">
           3D Scene
         </Link>
+        <Link to="/session" className="[&.active]:font-bold">
+          Pub Sesh
+        </Link>
         <Link to="/areas-list" className="[&.active]:font-bold">
           Areas List
         </Link>
@@ -185,33 +188,29 @@ function Finder() {
 
             {/* Google Maps Component */}
             <div className="w-full h-[70vh] rounded-lg overflow-hidden shadow-lg relative">
-              <LoadScript
-                googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+              <GoogleMap
+                mapContainerStyle={{
+                  width: "100%",
+                  height: "100%",
+                }}
+                center={center}
+                zoom={13}
+                onLoad={onMapLoad}
+                onBoundsChanged={onBoundsChanged}
+                options={{
+                  gestureHandling: "greedy",
+                  styles: [],
+                  mapTypeControl: true,
+                  streetViewControl: true,
+                  zoomControl: true,
+                  fullscreenControl: true,
+                }}
               >
-                <GoogleMap
-                  mapContainerStyle={{
-                    width: "100%",
-                    height: "100%",
-                  }}
-                  center={center}
-                  zoom={13}
-                  onLoad={onMapLoad}
-                  onBoundsChanged={onBoundsChanged}
-                  options={{
-                    gestureHandling: "greedy",
-                    styles: [],
-                    mapTypeControl: true,
-                    streetViewControl: true,
-                    zoomControl: true,
-                    fullscreenControl: true,
-                  }}
-                >
-                  {/* Render pubs by sun category */}
-                  <RenderPubsOfType filterName="full_sun" />
-                  {/* <RenderPubsOfType filterName="partial_sun" areaTypeFilters={selectedAreaTypes} />
-                  <RenderPubsOfType filterName="no_sun" areaTypeFilters={selectedAreaTypes} /> */}
-                </GoogleMap>
-              </LoadScript>
+                {/* Render pubs by sun category */}
+                <RenderPubsOfType filterName="full_sun" />
+                {/* <RenderPubsOfType filterName="partial_sun" areaTypeFilters={selectedAreaTypes} />
+                <RenderPubsOfType filterName="no_sun" areaTypeFilters={selectedAreaTypes} /> */}
+              </GoogleMap>
             </div>
           </div>
         </main>
