@@ -215,8 +215,6 @@ const usePubAreas = (): PubAreasResponse => {
     queryFn: fetchMaskReadyPubs,
   });
 
-  console.log({ maskReadyPubs });
-
   // When areasForPub changes after selecting a pub, set selectedPubArea to the first area
   useEffect(() => {
     if (selectedPubId && areasForPub && areasForPub.length > 0) {
