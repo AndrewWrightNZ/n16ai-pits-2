@@ -80,6 +80,10 @@ interface PubAreasData extends PubAreasState {
 
   // Filters
   availableAreaTypes: string[];
+
+  // Simulation
+  currentSimulationPubIndex: number;
+  simulationReadyPubs: Pub[];
 }
 
 interface PubAreasOperations {
@@ -109,6 +113,9 @@ interface PubAreasOperations {
   onSaveFloorArea: (payload: SaveFloorAreaPayload) => void;
   onSetPubAreasPresentForPub: () => void;
   onSetPubAreasMeasuredForPub: () => void;
+
+  // Simulation
+  onSimulateNextPub: () => void;
 }
 
 interface PubAreasResponse {
@@ -193,10 +200,22 @@ const usePubAreas = (): PubAreasResponse => {
     return data;
   };
 
+  const fetchSimulationReadyPubs = async () => {
+    // Get pubs where the has_vision_masks_added is true
+    const { data, error } = await supabaseClient
+      .from("pub")
+      .select()
+      .eq("has_vision_masks_added", true);
+    if (error) throw error;
+    return data;
+  };
+
   // Queries
   const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPubId];
 
   const GET_MASK_READY_PUBS_QUERY_KEY = ["getMaskReadyPubs"];
+
+  const GET_SIMULATION_READY_PUBS_QUERY_KEY = ["getSimulationReadyPubs"];
 
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
   const GET_ALL_AVAILABLE_AREAS_QUERY_KEY = ["getAllAvailableAreas"];
@@ -219,6 +238,11 @@ const usePubAreas = (): PubAreasResponse => {
   const { data: maskReadyPubs = [] } = useQuery({
     queryKey: GET_MASK_READY_PUBS_QUERY_KEY,
     queryFn: fetchMaskReadyPubs,
+  });
+
+  const { data: simulationReadyPubs = [] } = useQuery({
+    queryKey: GET_SIMULATION_READY_PUBS_QUERY_KEY,
+    queryFn: fetchSimulationReadyPubs,
   });
 
   // When areasForPub changes after selecting a pub, set selectedPubArea to the first area
@@ -251,6 +275,12 @@ const usePubAreas = (): PubAreasResponse => {
     queryFn: fetchPubById,
     enabled: !!selectedPubId,
   });
+
+  //
+
+  // Variables
+  const currentSimulationPubIndex =
+    simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
 
   // Mutations
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
@@ -559,6 +589,18 @@ const usePubAreas = (): PubAreasResponse => {
     }
   };
 
+  const onSimulateNextPub = () => {
+    //
+    // Go to the next pub in the simulationReadyPubs list
+    const indexOfCurrentPub =
+      simulationReadyPubs.findIndex((pub) => pub.id === selectedPubId) || 0;
+
+    const nextPub = simulationReadyPubs[indexOfCurrentPub + 1];
+    if (nextPub) {
+      onSetSelectedPub(nextPub);
+    }
+  };
+
   return {
     data: {
       ...pubAreasState,
@@ -584,6 +626,10 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Filters
       availableAreaTypes,
+
+      // Simulation
+      currentSimulationPubIndex,
+      simulationReadyPubs,
     },
     operations: {
       // Select pub
@@ -612,6 +658,9 @@ const usePubAreas = (): PubAreasResponse => {
       onSaveFloorArea,
       onSetPubAreasPresentForPub,
       onSetPubAreasMeasuredForPub,
+
+      // Simulation
+      onSimulateNextPub,
     },
   };
 };
