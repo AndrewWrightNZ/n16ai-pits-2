@@ -14,6 +14,7 @@ export interface Pub {
   has_areas_added: boolean;
   has_areas_measured: boolean;
   has_labels_added: boolean;
+  has_vision_masks_added: boolean;
 }
 
 export interface SimpleCameraPosition {
