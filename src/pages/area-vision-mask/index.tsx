@@ -18,10 +18,18 @@ const PubAreaVisionMask = () => {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    // Draw semi-transparent black over the whole canvas
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.restore();
+
+    // If we have a polygon, cut a hole in the mask
     if (points.length > 1) {
       ctx.save();
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = "#00ff00";
+      // Set compositing to punch out the polygon area
+      ctx.globalCompositeOperation = "destination-out";
       ctx.beginPath();
       ctx.moveTo(points[0].x, points[0].y);
       for (let i = 1; i < points.length; i++) {
@@ -31,13 +39,17 @@ const PubAreaVisionMask = () => {
       ctx.fill();
       ctx.restore();
     }
-    // Draw points
+
+    // Draw points on top
+    ctx.save();
+    ctx.globalCompositeOperation = "source-over";
     ctx.fillStyle = "#ff0000";
     for (const pt of points) {
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
   }, [points]);
 
   // Handle mouse click to add a point
@@ -82,7 +94,7 @@ const PubAreaVisionMask = () => {
             overflow: "hidden",
           }}
         >
-          <SimplePhotorealisticTilesMap pageName="scene" />
+          <SimplePhotorealisticTilesMap pageName="areas" />
         </div>
         {/* Overlay canvas for mask creation */}
         <canvas
