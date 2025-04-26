@@ -6,6 +6,8 @@ import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
 
 // Contexts
 import { PubState, usePubContext } from "../providers/PubProvider";
+
+// Types
 import { Pub } from "../../../../_shared/types";
 
 //

@@ -2,10 +2,12 @@ import { useNavigate } from "@tanstack/react-router";
 import React, { useRef, useEffect, useState } from "react";
 
 // Icons
-import { ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 
 // Components
 import SimplePhotorealisticTilesMap from "../area-identifier/_shared/components/SimplePhotorealisticTilesMap";
+
+// Hooks
 import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
 
 // Constants
@@ -18,8 +20,13 @@ const PubAreaVisionMask = () => {
   // Hooks
   const navigate = useNavigate();
   const {
-    data: { isSavingVisionMask, selectedPubArea },
-    operations: { onGoToNextArea, onGoToPreviousArea, onSaveMask },
+    data: { isSavingVisionMask, selectedPubArea, selectedPub, areasForPub },
+    operations: {
+      onGoToNextArea,
+      onGoToPreviousArea,
+      onSaveMask,
+      onGoToNextPub,
+    },
   } = usePubAreas();
 
   // Refs
@@ -28,7 +35,15 @@ const PubAreaVisionMask = () => {
   // State
   const [points, setPoints] = useState<{ x: number; y: number }[]>([]);
 
-  console.log("points", points);
+  //
+
+  // Variables
+  const isSaveDisabled = points.length < 3;
+
+  // make disabled unless all have area.vision_mask_points?.length
+  const isNextPubDisabled = areasForPub.some((area) => {
+    return !area.vision_mask_points?.length;
+  });
 
   //
 
@@ -73,7 +88,7 @@ const PubAreaVisionMask = () => {
     ctx.restore();
   }, [points]);
 
-  // Handle mouse click to add a point
+  // Handlers
   const handleOverlayClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -81,8 +96,23 @@ const PubAreaVisionMask = () => {
     setPoints([...points, { x, y }]);
   };
 
-  // Optionally, add a reset button to clear points
   const handleReset = () => setPoints([]);
+
+  const handleSaveMask = () => {
+    // Save the mask
+    onSaveMask(points);
+
+    // Reset points
+    handleReset();
+  };
+
+  const handleGoToNextPub = () => {
+    // Update the pub to show that it has been masked
+    onGoToNextPub();
+
+    // Reset points
+    handleReset();
+  };
 
   return (
     <div className="w-full h-[100vh] bg-black text-white p-4 rounded">
@@ -94,43 +124,73 @@ const PubAreaVisionMask = () => {
         back to map
       </button>
       <p className="mb-2">Set up Pub Area Vision Mask</p>
-      <div
-        style={{
-          position: "relative",
-          width: CANVAS_WIDTH,
-          height: CANVAS_HEIGHT,
-          marginBottom: 16,
-        }}
-      >
-        {/* Render the actual 3D scene */}
+
+      <p className="mb-2 text-sm">{selectedPub?.name}</p>
+
+      <div className="flex flex-row items-start gap-2 justify-start">
         <div
           style={{
+            position: "relative",
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
-            position: "absolute",
-            left: 0,
-            top: 0,
-            zIndex: 1,
-            overflow: "hidden",
+            marginBottom: 16,
           }}
         >
-          <SimplePhotorealisticTilesMap pageName="create-mask" />
+          {/* Render the actual 3D scene */}
+          <div
+            style={{
+              width: CANVAS_WIDTH,
+              height: CANVAS_HEIGHT,
+              position: "absolute",
+              left: 0,
+              top: 0,
+              zIndex: 1,
+              overflow: "hidden",
+            }}
+          >
+            <SimplePhotorealisticTilesMap pageName="create-mask" />
+          </div>
+          {/* Overlay canvas for mask creation */}
+          <canvas
+            ref={overlayRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              pointerEvents: "auto",
+              zIndex: 2,
+              cursor: "crosshair",
+            }}
+            onClick={handleOverlayClick}
+          />
         </div>
-        {/* Overlay canvas for mask creation */}
-        <canvas
-          ref={overlayRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            pointerEvents: "auto",
-            zIndex: 2,
-            cursor: "crosshair",
-          }}
-          onClick={handleOverlayClick}
-        />
+
+        <div className="flex flex-col items-start justify-start">
+          <p className="text-sm mb-4">Areas to mask:</p>
+
+          {areasForPub.map(({ id, name, vision_mask_points }) => (
+            <div key={id} className="flex flex-row items-center gap-2">
+              {vision_mask_points ? <Check /> : <Circle />}
+              <p>
+                {name}
+                {vision_mask_points?.length
+                  ? ` (${vision_mask_points?.length})`
+                  : ""}
+              </p>
+            </div>
+          ))}
+
+          <button
+            disabled={isNextPubDisabled}
+            onClick={handleGoToNextPub}
+            className="flex flex-row cursor-pointer items-center px-4 py-2 bg-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+          >
+            Go to next pub
+            <ChevronRight />
+          </button>
+        </div>
       </div>
       <div className="mt-2 text-sm">{selectedPubArea?.name}</div>
 
@@ -143,25 +203,31 @@ const PubAreaVisionMask = () => {
       <div className="mt-2 flex flex-row items-center gap-2">
         <button
           onClick={onGoToPreviousArea}
-          className="    px-4 py-1 bg-gray-700 rounded"
+          disabled={!!points.length}
+          className="px-4 py-1 bg-gray-700 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous Area
         </button>
         <button
           onClick={onGoToNextArea}
-          className="px-4 py-1 bg-gray-700 rounded"
+          disabled={!!points.length}
+          className="px-4 py-1 bg-gray-700 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next Area
         </button>
       </div>
       <div className="mt-2 flex flex-row items-center gap-2">
-        <button onClick={handleReset} className="px-4 py-1 bg-gray-700 rounded">
+        <button
+          onClick={handleReset}
+          className="px-4 py-1 bg-gray-700 rounded cursor-pointer"
+        >
           Reset Mask
         </button>
 
         <button
-          onClick={() => onSaveMask(points)}
-          className="px-4 py-1 bg-gray-700 rounded"
+          onClick={handleSaveMask}
+          disabled={isSaveDisabled}
+          className="px-4 py-1 bg-gray-700 rounded disabled:opacity-50 cursor-pointer"
         >
           {isSavingVisionMask ? "Saving..." : "Save Vision Mask"}
         </button>

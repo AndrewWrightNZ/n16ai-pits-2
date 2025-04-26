@@ -96,6 +96,7 @@ interface PubAreasOperations {
 
   // Create masks
   onSaveMask: (bagOfPoints: { x: number; y: number }[]) => void;
+  onGoToNextPub: () => void;
 
   // Database updates
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
@@ -174,8 +175,22 @@ const usePubAreas = (): PubAreasResponse => {
     return data?.[0] as Pub;
   };
 
+  const fetchMaskReadyPubs = async () => {
+    // Get pubs where the has_areas_measured is true
+    const { data, error } = await supabaseClient
+      .from("pub")
+      .select()
+      // has areas measured but doesn't have vision mask
+      .eq("has_areas_measured", true)
+      .is("has_vision_masks_added", false);
+    if (error) throw error;
+    return data;
+  };
+
   // Queries
   const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPubId];
+
+  const GET_MASK_READY_PUBS_QUERY_KEY = ["getMaskReadyPubs"];
 
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
   const GET_ALL_AVAILABLE_AREAS_QUERY_KEY = ["getAllAvailableAreas"];
@@ -195,15 +210,18 @@ const usePubAreas = (): PubAreasResponse => {
     enabled: !!selectedPubId,
   });
 
+  const { data: maskReadyPubs = [] } = useQuery({
+    queryKey: GET_MASK_READY_PUBS_QUERY_KEY,
+    queryFn: fetchMaskReadyPubs,
+  });
+
+  console.log({ maskReadyPubs });
+
   // When areasForPub changes after selecting a pub, set selectedPubArea to the first area
   useEffect(() => {
     if (selectedPubId && areasForPub && areasForPub.length > 0) {
       updatePubAreasState({ selectedPubArea: areasForPub[0] });
     }
-    // Optionally, you may want to clear selectedPubArea if areasForPub becomes empty
-    // else if (selectedPubId && areasForPub && areasForPub.length === 0) {
-    //   updatePubAreasState({ selectedPubArea: null });
-    // }
   }, [selectedPubId, areasForPub]);
 
   const { data: areasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
@@ -292,6 +310,18 @@ const usePubAreas = (): PubAreasResponse => {
       },
     });
 
+  const { mutate: setVisionMasksAdded } = useMutation({
+    mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
+      // Update floor area for the pub area
+      const { data, error } = await supabaseClient
+        .from("pub")
+        .update({ has_vision_masks_added: true })
+        .eq("id", pub_id);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { mutate: saveVisionMask, isPending: isSavingVisionMask } = useMutation(
     {
       mutationFn: async ({
@@ -352,9 +382,6 @@ const usePubAreas = (): PubAreasResponse => {
 
           onRefetchAreasForPub();
         },
-        onError: (error) => {
-          console.error("Error saving pub area details:", error);
-        },
       }
     );
   };
@@ -368,9 +395,6 @@ const usePubAreas = (): PubAreasResponse => {
         onSuccess: () => {
           // Reset the selected area
           onRefetchAreasForPub();
-        },
-        onError: (error) => {
-          console.error("Error saving floor area:", error);
         },
       }
     );
@@ -390,9 +414,6 @@ const usePubAreas = (): PubAreasResponse => {
           queryClient.refetchQueries({
             queryKey: ["pubs"],
           });
-        },
-        onError: (error) => {
-          console.error("Error saving floor area:", error);
         },
       }
     );
@@ -510,12 +531,28 @@ const usePubAreas = (): PubAreasResponse => {
               );
             }
           );
-        },
-        onError: (error) => {
-          console.error("Error saving vision mask:", error);
+
+          onGoToNextArea();
         },
       }
     );
+  };
+
+  const onGoToNextPub = () => {
+    //
+    // Update the pub to show that it has been masked
+    setVisionMasksAdded({ pub_id: selectedPubId as number });
+
+    //
+    // Go to the next pub in the maskReadyPubs list
+    const indexOfCurrentPub = maskReadyPubs.findIndex(
+      (pub) => pub.id === selectedPubId
+    );
+
+    const nextPub = maskReadyPubs[indexOfCurrentPub + 1];
+    if (nextPub) {
+      onSetSelectedPub(nextPub);
+    }
   };
 
   return {
@@ -564,6 +601,7 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Vision masks
       onSaveMask,
+      onGoToNextPub,
 
       // Update DB
       onSavePubAreaDetails,
