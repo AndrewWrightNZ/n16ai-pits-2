@@ -6,7 +6,7 @@ import SimplePhotorealisticTilesMap from "../identifier/_shared/components/Simpl
 // Hooks
 import usePubAreas from "../identifier/_shared/hooks/usePubAreas";
 import useMapSettings from "../../scene/_shared/hooks/useMapSettings";
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // Constants
 export const CANVAS_WIDTH = 800;
@@ -18,7 +18,13 @@ const PubAreaSimulator = () => {
   // Hooks
 
   const {
-    data: { selectedPub, selectedPubArea, simulationReadyPubs },
+    data: {
+      selectedPub,
+      areasForPub,
+      selectedPubArea,
+      currentSimulationPubIndex,
+      simulationReadyPubs,
+    },
     operations: { onGoToNextArea, onSimulateNextPub },
   } = usePubAreas();
 
@@ -52,13 +58,28 @@ const PubAreaSimulator = () => {
   };
 
   const handleGoToNextArea = () => {
-    if (onGoToNextArea) onGoToNextArea();
+    onGoToNextArea();
+    handleResetTime();
+  };
+
+  const handleGoToNextPub = () => {
+    onSimulateNextPub();
+    handleResetTime();
   };
 
   //
 
   // Variables
   const visionMaskPoints = selectedPubArea?.vision_mask_points || [];
+
+  const isOnLastArea =
+    selectedPubArea &&
+    selectedPubArea?.id === areasForPub[areasForPub.length - 1]?.id;
+
+  const decTimeDisabled =
+    timeOfDay instanceof Date && timeOfDay.getHours() === 12;
+  const incTimeDisabled =
+    timeOfDay instanceof Date && timeOfDay.getHours() === 21;
 
   //
 
@@ -201,44 +222,54 @@ const PubAreaSimulator = () => {
             Reset Time
           </button>
           <button
-            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
+            className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded disabled:opacity-50"
             onClick={handleDecTime}
             data-automation="dec-time"
+            disabled={decTimeDisabled}
             type="button"
           >
+            <ChevronLeft className="w-4 h-4" />
             Dec Time
           </button>
           <button
-            className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
+            className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded disabled:opacity-50"
             onClick={handleIncTime}
             data-automation="inc-time"
+            disabled={incTimeDisabled}
             type="button"
           >
             Inc Time
+            <ChevronRight className="w-4 h-4" />
           </button>
-          <button
-            className="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
-            onClick={handleGoToNextArea}
-            data-automation="go-to-next-area"
-            type="button"
-          >
-            Go to Next Area
-          </button>
+          {!isOnLastArea && (
+            <button
+              className="flex flex-row items-center bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
+              onClick={handleGoToNextArea}
+              data-automation="go-to-next-area"
+              type="button"
+            >
+              Next Area
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Simulation pub selector */}
         <p className="text-sm text-gray-200 mt-6">
-          Simulation ready pubs: {simulationReadyPubs.length}
+          Simulation ready pubs: {currentSimulationPubIndex + 1} of{" "}
+          {simulationReadyPubs.length}
         </p>
 
-        <button
-          className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white p-3 rounded mt-2"
-          type="button"
-          data-automation="view-next-pub"
-          onClick={onSimulateNextPub}
-        >
-          View next available pub <ChevronRight className="w-4 h-4" />
-        </button>
+        {isOnLastArea && (
+          <button
+            className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white p-3 rounded mt-2"
+            type="button"
+            data-automation="view-next-pub"
+            onClick={handleGoToNextPub}
+          >
+            View next available pub <ChevronRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );

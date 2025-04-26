@@ -82,6 +82,7 @@ interface PubAreasData extends PubAreasState {
   availableAreaTypes: string[];
 
   // Simulation
+  currentSimulationPubIndex: number;
   simulationReadyPubs: Pub[];
 }
 
@@ -274,6 +275,12 @@ const usePubAreas = (): PubAreasResponse => {
     queryFn: fetchPubById,
     enabled: !!selectedPubId,
   });
+
+  //
+
+  // Variables
+  const currentSimulationPubIndex =
+    simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
 
   // Mutations
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
@@ -621,6 +628,7 @@ const usePubAreas = (): PubAreasResponse => {
       availableAreaTypes,
 
       // Simulation
+      currentSimulationPubIndex,
       simulationReadyPubs,
     },
     operations: {
