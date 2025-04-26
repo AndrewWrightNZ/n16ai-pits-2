@@ -1,5 +1,7 @@
 import * as THREE from "three";
-import { PolygonCoordinate } from "../../pages/area-identifier/_shared/hooks/usePubAreas";
+
+// Types
+import { PolygonCoordinate } from "../../pages/areas/identifier/_shared/hooks/usePubAreas";
 
 export interface Pub {
   id: number;

@@ -1,4 +1,5 @@
-import { PubArea } from "../../../../_shared/types";
+// Types
+import { PubArea } from "../../../../../_shared/types";
 
 // Status indicator types
 export type AreaStatus = "complete" | "incomplete" | "none";

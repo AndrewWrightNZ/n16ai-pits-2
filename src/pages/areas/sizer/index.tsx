@@ -9,13 +9,13 @@ import SavedAreas from "./_shared/components/SavedAreas";
 import PubList from "./_shared/components/SelectPubFromList";
 
 // Hooks
-import usePubs from "../finder/_shared/hooks/usePubs";
 import usePubAreas, {
   PolygonCoordinate,
-} from "../area-identifier/_shared/hooks/usePubAreas";
+} from "../identifier/_shared/hooks/usePubAreas";
+import usePubs from "../../finder/_shared/hooks/usePubs";
 
 // Types
-import { Pub } from "../../_shared/types";
+import { Pub } from "../../../_shared/types";
 
 const PubAreaSizer: React.FC = () => {
   // State

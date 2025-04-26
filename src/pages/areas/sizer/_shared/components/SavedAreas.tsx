@@ -1,8 +1,12 @@
 import React, { useMemo, useEffect } from "react";
 
 // Types
-import { PubArea } from "../../../../_shared/types";
-import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
+import { PubArea } from "../../../../../_shared/types";
+
+// Hooks
+import usePubAreas from "../../../identifier/_shared/hooks/usePubAreas";
+
+// Helpers
 import {
   AreaStatus,
   getAreaMeasurementStatus,

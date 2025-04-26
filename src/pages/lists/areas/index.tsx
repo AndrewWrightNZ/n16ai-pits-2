@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import { ArrowUpDown, Filter } from "lucide-react";
 
 // Hooks
-import usePubAreas from "../../area-identifier/_shared/hooks/usePubAreas";
 import usePubs from "../../finder/_shared/hooks/usePubs";
+import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Types
 import { PubArea } from "../../../_shared/types";

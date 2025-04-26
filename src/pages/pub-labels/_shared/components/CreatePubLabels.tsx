@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 // Hooks
 import usePubLabels from "../hooks/usePubLabels";
-import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Types
 import { PubArea, PubLabel } from "../../../../_shared/types";

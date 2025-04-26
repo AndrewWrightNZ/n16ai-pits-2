@@ -1,6 +1,8 @@
 import { useMemo } from "react";
-import usePubAreas from "../../area-identifier/_shared/hooks/usePubAreas";
+
+// Hooks
 import usePubs from "../../finder/_shared/hooks/usePubs";
+import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 
 const PitsOneHundredPubsList = () => {
   // Hooks
