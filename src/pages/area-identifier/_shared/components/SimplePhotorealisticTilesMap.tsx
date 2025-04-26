@@ -50,11 +50,8 @@ export default function SimplePhotorealisticTilesMap({
     data: {
       // Loading
       isLoading,
-      loadingProgress,
-      error,
-      tileCount,
 
-      // View - only for copyright info
+      // View
       copyrightInfo,
     },
   } = useMapSettings();
@@ -65,6 +62,11 @@ export default function SimplePhotorealisticTilesMap({
   } = usePubAreas();
 
   const { brightnessValue, vignetteDarkness, skyColor } = useDaylightLighting();
+
+  //
+
+  // Variables
+  const hideAllOverlays = ["create-mask"].includes(pageName);
 
   // Function to update camera information
   const updateCameraInfo = () => {
@@ -171,10 +173,12 @@ export default function SimplePhotorealisticTilesMap({
         )}
 
         {/* Simplified location modal with pub jumping capability */}
-        <DraggableLocationsModal
-          onJumpToPub={handleJumpToPub}
-          filterType={pageName}
-        />
+        {!hideAllOverlays && (
+          <DraggableLocationsModal
+            onJumpToPub={handleJumpToPub}
+            filterType={pageName}
+          />
+        )}
 
         {!isLoading && showCameraPanel && pageName === "areas" && (
           <CreatePubArea
@@ -187,55 +191,24 @@ export default function SimplePhotorealisticTilesMap({
           <CreatePubLabels tilesSceneRef={tilesSceneRef} />
         )}
 
-        {/* Loading overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center text-white z-50">
-            <div>Loading 3D Tiles... {loadingProgress}%</div>
-            <div className="w-52 h-2.5 bg-gray-700 mt-2.5 rounded-md overflow-hidden">
-              <div
-                className="h-full bg-green-500 transition-all duration-300"
-                style={{ width: `${loadingProgress}%` }}
-              />
-            </div>
+        {!hideAllOverlays && (
+          <div className="absolute bottom-1 left-1 z-10">
+            <img
+              src="https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_68x28dp.png"
+              alt="Google"
+              height="20"
+              className="h-5"
+            />
           </div>
         )}
 
-        {/* Error overlay */}
-        {error && (
-          <div className="absolute inset-0 bg-black/70 flex justify-center items-center text-white p-5 text-center z-50">
-            <div>
-              <h3 className="text-xl font-bold mb-2">Error</h3>
-              <p>{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Tile count */}
-        {!isLoading && (
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white bg-black/50 py-1 px-2.5 rounded text-xs z-10">
-            {tileCount > 0
-              ? `Tiles loaded: ${tileCount}`
-              : "No tiles visible - try resetting view"}
-          </div>
-        )}
-
-        {/* Google branding + attributions */}
-        <div className="absolute bottom-1 left-1 z-10">
-          <img
-            src="https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_68x28dp.png"
-            alt="Google"
-            height="20"
-            className="h-5"
-          />
-        </div>
-
-        {copyrightInfo && (
+        {!hideAllOverlays && copyrightInfo && (
           <div className="absolute bottom-1 right-1 text-[10px] text-white bg-black/50 py-0.5 px-1 rounded-sm z-10">
             {copyrightInfo}
           </div>
         )}
 
-        <EnhancedMemoryMonitor refreshInterval={2000} />
+        {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />}
       </div>
     </div>
   );

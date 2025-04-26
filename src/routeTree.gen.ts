@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as VisionMaskImport } from './routes/vision-mask'
 import { Route as SessionImport } from './routes/session'
 import { Route as SceneImport } from './routes/scene'
 import { Route as PubLabelsImport } from './routes/pub-labels'
@@ -24,6 +25,12 @@ import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
+
+const VisionMaskRoute = VisionMaskImport.update({
+  id: '/vision-mask',
+  path: '/vision-mask',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const SessionRoute = SessionImport.update({
   id: '/session',
@@ -172,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessionImport
       parentRoute: typeof rootRoute
     }
+    '/vision-mask': {
+      id: '/vision-mask'
+      path: '/vision-mask'
+      fullPath: '/vision-mask'
+      preLoaderRoute: typeof VisionMaskImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -189,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
+  '/vision-mask': typeof VisionMaskRoute
 }
 
 export interface FileRoutesByTo {
@@ -203,6 +218,7 @@ export interface FileRoutesByTo {
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
+  '/vision-mask': typeof VisionMaskRoute
 }
 
 export interface FileRoutesById {
@@ -218,6 +234,7 @@ export interface FileRoutesById {
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
+  '/vision-mask': typeof VisionMaskRoute
 }
 
 export interface FileRouteTypes {
@@ -234,6 +251,7 @@ export interface FileRouteTypes {
     | '/pub-labels'
     | '/scene'
     | '/session'
+    | '/vision-mask'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -247,6 +265,7 @@ export interface FileRouteTypes {
     | '/pub-labels'
     | '/scene'
     | '/session'
+    | '/vision-mask'
   id:
     | '__root__'
     | '/'
@@ -260,6 +279,7 @@ export interface FileRouteTypes {
     | '/pub-labels'
     | '/scene'
     | '/session'
+    | '/vision-mask'
   fileRoutesById: FileRoutesById
 }
 
@@ -275,6 +295,7 @@ export interface RootRouteChildren {
   PubLabelsRoute: typeof PubLabelsRoute
   SceneRoute: typeof SceneRoute
   SessionRoute: typeof SessionRoute
+  VisionMaskRoute: typeof VisionMaskRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -289,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   PubLabelsRoute: PubLabelsRoute,
   SceneRoute: SceneRoute,
   SessionRoute: SessionRoute,
+  VisionMaskRoute: VisionMaskRoute,
 }
 
 export const routeTree = rootRoute
@@ -311,7 +333,8 @@ export const routeTree = rootRoute
         "/one-hundred",
         "/pub-labels",
         "/scene",
-        "/session"
+        "/session",
+        "/vision-mask"
       ]
     },
     "/": {
@@ -346,6 +369,9 @@ export const routeTree = rootRoute
     },
     "/session": {
       "filePath": "session.tsx"
+    },
+    "/vision-mask": {
+      "filePath": "vision-mask.tsx"
     }
   }
 }

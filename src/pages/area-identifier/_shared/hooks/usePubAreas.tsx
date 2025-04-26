@@ -13,6 +13,11 @@ import {
 // Types
 import { Pub, PubArea, SimpleCameraPosition } from "../../../../_shared/types";
 
+interface SaveVisionMaskPayload {
+  pubAreaId: number;
+  visionMaskPoints: { x: number; y: number }[];
+}
+
 interface SavePubAreaDetailsPayload {
   pub_id: number;
   latitude: number;
@@ -52,6 +57,7 @@ interface PubAreasData extends PubAreasState {
   isLoadingAreasForPub: boolean;
   isLoadingSelectedPub: boolean;
   isLoadingAllAvailableAreas: boolean;
+  isSavingVisionMask: boolean;
 
   isSavingFloorArea: boolean;
   isSettingPubAreasPresent: boolean;
@@ -85,6 +91,12 @@ interface PubAreasOperations {
 
   // Select pub area
   onSelectPubArea: (pubArea: PubArea) => void;
+  onGoToPreviousArea: () => void;
+  onGoToNextArea: () => void;
+
+  // Create masks
+  onSaveMask: (bagOfPoints: { x: number; y: number }[]) => void;
+  onGoToNextPub: () => void;
 
   // Database updates
   onSavePubAreaDetails: (payload: SavePubAreaDetailsPayload) => void;
@@ -99,11 +111,17 @@ interface PubAreasResponse {
 }
 
 const usePubAreas = (): PubAreasResponse => {
+  //
+
   // Hooks
   const queryClient = useQueryClient();
 
+  //
+
   // Context
   const { pubAreasState, updatePubAreasState } = usePubAreasContext();
+
+  //
 
   // Variables
   const {
@@ -112,6 +130,7 @@ const usePubAreas = (): PubAreasResponse => {
     type,
     selectedPubId,
     selectedAreaTypes = [],
+    selectedPubArea,
   } = pubAreasState;
 
   // Query functions
@@ -156,8 +175,22 @@ const usePubAreas = (): PubAreasResponse => {
     return data?.[0] as Pub;
   };
 
+  const fetchMaskReadyPubs = async () => {
+    // Get pubs where the has_areas_measured is true
+    const { data, error } = await supabaseClient
+      .from("pub")
+      .select()
+      // has areas measured but doesn't have vision mask
+      .eq("has_areas_measured", true)
+      .is("has_vision_masks_added", false);
+    if (error) throw error;
+    return data;
+  };
+
   // Queries
   const GET_PUB_AREAS_QUERY_KEY = ["getPubAreas", selectedPubId];
+
+  const GET_MASK_READY_PUBS_QUERY_KEY = ["getMaskReadyPubs"];
 
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
   const GET_ALL_AVAILABLE_AREAS_QUERY_KEY = ["getAllAvailableAreas"];
@@ -177,15 +210,16 @@ const usePubAreas = (): PubAreasResponse => {
     enabled: !!selectedPubId,
   });
 
+  const { data: maskReadyPubs = [] } = useQuery({
+    queryKey: GET_MASK_READY_PUBS_QUERY_KEY,
+    queryFn: fetchMaskReadyPubs,
+  });
+
   // When areasForPub changes after selecting a pub, set selectedPubArea to the first area
   useEffect(() => {
     if (selectedPubId && areasForPub && areasForPub.length > 0) {
       updatePubAreasState({ selectedPubArea: areasForPub[0] });
     }
-    // Optionally, you may want to clear selectedPubArea if areasForPub becomes empty
-    // else if (selectedPubId && areasForPub && areasForPub.length === 0) {
-    //   updatePubAreasState({ selectedPubArea: null });
-    // }
   }, [selectedPubId, areasForPub]);
 
   const { data: areasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
@@ -274,6 +308,35 @@ const usePubAreas = (): PubAreasResponse => {
       },
     });
 
+  const { mutate: setVisionMasksAdded } = useMutation({
+    mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
+      // Update floor area for the pub area
+      const { data, error } = await supabaseClient
+        .from("pub")
+        .update({ has_vision_masks_added: true })
+        .eq("id", pub_id);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { mutate: saveVisionMask, isPending: isSavingVisionMask } = useMutation(
+    {
+      mutationFn: async ({
+        pubAreaId,
+        visionMaskPoints,
+      }: SaveVisionMaskPayload) => {
+        // Update floor area for the pub area
+        const { data, error } = await supabaseClient
+          .from("pub_area")
+          .update({ vision_mask_points: visionMaskPoints })
+          .eq("id", pubAreaId);
+        if (error) throw error;
+        return data;
+      },
+    }
+  );
+
   //
 
   // Variables
@@ -317,9 +380,6 @@ const usePubAreas = (): PubAreasResponse => {
 
           onRefetchAreasForPub();
         },
-        onError: (error) => {
-          console.error("Error saving pub area details:", error);
-        },
       }
     );
   };
@@ -333,9 +393,6 @@ const usePubAreas = (): PubAreasResponse => {
         onSuccess: () => {
           // Reset the selected area
           onRefetchAreasForPub();
-        },
-        onError: (error) => {
-          console.error("Error saving floor area:", error);
         },
       }
     );
@@ -355,9 +412,6 @@ const usePubAreas = (): PubAreasResponse => {
           queryClient.refetchQueries({
             queryKey: ["pubs"],
           });
-        },
-        onError: (error) => {
-          console.error("Error saving floor area:", error);
         },
       }
     );
@@ -422,6 +476,83 @@ const usePubAreas = (): PubAreasResponse => {
     updatePubAreasState({ selectedPubArea: pubArea });
   };
 
+  const onGoToPreviousArea = () => {
+    const indexOfCurrentPubArea = areasForPub.findIndex(
+      (area) => area.id === selectedPubArea?.id
+    );
+
+    if (indexOfCurrentPubArea === -1) return;
+
+    // If we're at the first pub area, go to the last
+    if (indexOfCurrentPubArea === 0) {
+      onSelectPubArea(areasForPub[areasForPub.length - 1]);
+    } else {
+      const previousPubArea = areasForPub[indexOfCurrentPubArea - 1];
+      onSelectPubArea(previousPubArea);
+    }
+  };
+
+  const onGoToNextArea = () => {
+    const indexOfCurrentPubArea = areasForPub.findIndex(
+      (area) => area.id === selectedPubArea?.id
+    );
+
+    if (indexOfCurrentPubArea === -1) return;
+
+    // If we're at the last pub area, go back to the start
+    if (indexOfCurrentPubArea === areasForPub.length - 1) {
+      onSelectPubArea(areasForPub[0]);
+    } else {
+      const nextPubArea = areasForPub[indexOfCurrentPubArea + 1];
+      onSelectPubArea(nextPubArea);
+    }
+  };
+
+  const onSaveMask = (bagOfPoints: { x: number; y: number }[]) => {
+    // Save the mask to the Supbase DB
+    saveVisionMask(
+      {
+        pubAreaId: selectedPubArea?.id || 0,
+        visionMaskPoints: bagOfPoints,
+      },
+      {
+        onSuccess: () => {
+          // Update the query client cache
+          queryClient.setQueryData(
+            GET_PUB_AREAS_QUERY_KEY,
+            (oldData: PubArea[] | undefined) => {
+              if (!oldData) return [];
+              return oldData.map((area) =>
+                area.id === selectedPubArea?.id
+                  ? { ...area, vision_mask_points: bagOfPoints }
+                  : area
+              );
+            }
+          );
+
+          onGoToNextArea();
+        },
+      }
+    );
+  };
+
+  const onGoToNextPub = () => {
+    //
+    // Update the pub to show that it has been masked
+    setVisionMasksAdded({ pub_id: selectedPubId as number });
+
+    //
+    // Go to the next pub in the maskReadyPubs list
+    const indexOfCurrentPub = maskReadyPubs.findIndex(
+      (pub) => pub.id === selectedPubId
+    );
+
+    const nextPub = maskReadyPubs[indexOfCurrentPub + 1];
+    if (nextPub) {
+      onSetSelectedPub(nextPub);
+    }
+  };
+
   return {
     data: {
       ...pubAreasState,
@@ -435,6 +566,7 @@ const usePubAreas = (): PubAreasResponse => {
       isSettingPubAreasPresent,
       isSettingPubAreasMeasured,
       isLoadingAreasOfTypes,
+      isSavingVisionMask,
 
       // Pub
       selectedPub,
@@ -462,6 +594,12 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Select pub area
       onSelectPubArea,
+      onGoToNextArea,
+      onGoToPreviousArea,
+
+      // Vision masks
+      onSaveMask,
+      onGoToNextPub,
 
       // Update DB
       onSavePubAreaDetails,
