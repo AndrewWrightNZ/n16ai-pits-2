@@ -1,17 +1,38 @@
-import React, { useRef, useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
-import SimplePhotorealisticTilesMap from "../area-identifier/_shared/components/SimplePhotorealisticTilesMap";
+import React, { useRef, useEffect, useState } from "react";
 
+// Icons
+import { ChevronLeft } from "lucide-react";
+
+// Components
+import SimplePhotorealisticTilesMap from "../area-identifier/_shared/components/SimplePhotorealisticTilesMap";
+import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
+
+// Constants
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
 const PubAreaVisionMask = () => {
+  //
+
+  // Hooks
   const navigate = useNavigate();
+  const {
+    data: { isSavingVisionMask, selectedPubArea },
+    operations: { onGoToNextArea, onGoToPreviousArea, onSaveMask },
+  } = usePubAreas();
+
+  // Refs
   const overlayRef = useRef<HTMLCanvasElement>(null);
+
+  // State
   const [points, setPoints] = useState<{ x: number; y: number }[]>([]);
 
-  // Draw the mask polygon on the overlay canvas
+  console.log("points", points);
+
+  //
+
+  // Effects
   useEffect(() => {
     const canvas = overlayRef.current;
     if (!canvas) return;
@@ -64,7 +85,7 @@ const PubAreaVisionMask = () => {
   const handleReset = () => setPoints([]);
 
   return (
-    <div>
+    <div className="w-full h-[100vh] bg-black text-white p-4 rounded">
       <button
         onClick={() => navigate({ to: "/finder" })}
         className="flex items-center gap-2 mb-4"
@@ -78,7 +99,6 @@ const PubAreaVisionMask = () => {
           position: "relative",
           width: CANVAS_WIDTH,
           height: CANVAS_HEIGHT,
-          border: "2px solid #ccc",
           marginBottom: 16,
         }}
       >
@@ -94,7 +114,7 @@ const PubAreaVisionMask = () => {
             overflow: "hidden",
           }}
         >
-          <SimplePhotorealisticTilesMap pageName="areas" />
+          <SimplePhotorealisticTilesMap pageName="create-mask" />
         </div>
         {/* Overlay canvas for mask creation */}
         <canvas
@@ -112,15 +132,39 @@ const PubAreaVisionMask = () => {
           onClick={handleOverlayClick}
         />
       </div>
-      <button
-        onClick={handleReset}
-        className="mt-2 px-4 py-1 bg-gray-200 rounded"
-      >
-        Reset Mask
-      </button>
-      <div className="mt-2 text-sm text-gray-500">
-        Click to add points. Area inside the polygon will be masked. Reset to
-        start over.
+      <div className="mt-2 text-sm">{selectedPubArea?.name}</div>
+
+      <div className="mt-2 text-sm">
+        {selectedPubArea?.vision_mask_points?.length
+          ? `Mask Saved (${selectedPubArea?.vision_mask_points?.length} points)`
+          : "No Mask"}
+      </div>
+
+      <div className="mt-2 flex flex-row items-center gap-2">
+        <button
+          onClick={onGoToPreviousArea}
+          className="    px-4 py-1 bg-gray-700 rounded"
+        >
+          Previous Area
+        </button>
+        <button
+          onClick={onGoToNextArea}
+          className="px-4 py-1 bg-gray-700 rounded"
+        >
+          Next Area
+        </button>
+      </div>
+      <div className="mt-2 flex flex-row items-center gap-2">
+        <button onClick={handleReset} className="px-4 py-1 bg-gray-700 rounded">
+          Reset Mask
+        </button>
+
+        <button
+          onClick={() => onSaveMask(points)}
+          className="px-4 py-1 bg-gray-700 rounded"
+        >
+          {isSavingVisionMask ? "Saving..." : "Save Vision Mask"}
+        </button>
       </div>
     </div>
   );

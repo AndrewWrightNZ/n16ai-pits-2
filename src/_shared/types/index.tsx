@@ -41,6 +41,7 @@ export interface PubArea {
   created_at: string;
   floor_area: number;
   coordinates: PolygonCoordinate[];
+  vision_mask_points: { x: number; y: number }[];
 }
 
 export interface PubLabel {

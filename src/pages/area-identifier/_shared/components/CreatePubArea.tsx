@@ -27,6 +27,7 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
 
       // Pub
       selectedPub,
+      selectedPubArea,
 
       // Draft details
       name,
@@ -208,6 +209,9 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
                   className="bg-gray-800 rounded p-2 text-xs cursor-pointer hover:bg-gray-700 transition-colors"
                   onClick={() => handleViewPubArea(area)}
                 >
+                  {selectedPubArea?.id === area.id && (
+                    <div className="text-green-500">Current Area</div>
+                  )}
                   <div className="font-bold">{area.name}</div>
                   <div className="text-gray-300">{area.description}</div>
                   <div className="text-gray-400 mt-1">Type: {area.type}</div>
