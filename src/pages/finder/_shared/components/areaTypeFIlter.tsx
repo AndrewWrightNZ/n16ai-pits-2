@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
+
+// Icons
 import { Cross, Beer, Coffee, Umbrella, Home, Building } from "lucide-react";
 
 // Hooks
-import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 interface AreaTypeFilterProps {
   onClose: () => void;

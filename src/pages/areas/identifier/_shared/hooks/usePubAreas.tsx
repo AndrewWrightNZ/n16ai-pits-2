@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Hooks
-import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
+import { supabaseClient } from "../../../../../_shared/hooks/useSupabase";
 
 // Providers
 import {
@@ -11,7 +11,13 @@ import {
 } from "../providers/PubAreasProvider";
 
 // Types
-import { Pub, PubArea, SimpleCameraPosition } from "../../../../_shared/types";
+import {
+  SimpleCameraPosition,
+  Pub,
+  PubArea,
+} from "../../../../../_shared/types";
+
+// Types
 
 interface SaveVisionMaskPayload {
   pubAreaId: number;

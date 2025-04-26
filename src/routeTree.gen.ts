@@ -18,11 +18,12 @@ import { Route as PubLabelsImport } from './routes/pub-labels'
 import { Route as OneHundredImport } from './routes/one-hundred'
 import { Route as FinderImport } from './routes/finder'
 import { Route as AreasListImport } from './routes/areas-list'
-import { Route as AreaSizerImport } from './routes/area-sizer'
-import { Route as AreaIdentifierImport } from './routes/area-identifier'
 import { Route as AdminImport } from './routes/admin'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
+import { Route as AreasSizerImport } from './routes/areas/sizer'
+import { Route as AreasSimulatorImport } from './routes/areas/simulator'
+import { Route as AreasIdentifierImport } from './routes/areas/identifier'
 
 // Create/Update Routes
 
@@ -68,18 +69,6 @@ const AreasListRoute = AreasListImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const AreaSizerRoute = AreaSizerImport.update({
-  id: '/area-sizer',
-  path: '/area-sizer',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AreaIdentifierRoute = AreaIdentifierImport.update({
-  id: '/area-identifier',
-  path: '/area-identifier',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const AdminRoute = AdminImport.update({
   id: '/admin',
   path: '/admin',
@@ -95,6 +84,24 @@ const AboutRoute = AboutImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AreasSizerRoute = AreasSizerImport.update({
+  id: '/areas/sizer',
+  path: '/areas/sizer',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AreasSimulatorRoute = AreasSimulatorImport.update({
+  id: '/areas/simulator',
+  path: '/areas/simulator',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AreasIdentifierRoute = AreasIdentifierImport.update({
+  id: '/areas/identifier',
+  path: '/areas/identifier',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -121,20 +128,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminImport
-      parentRoute: typeof rootRoute
-    }
-    '/area-identifier': {
-      id: '/area-identifier'
-      path: '/area-identifier'
-      fullPath: '/area-identifier'
-      preLoaderRoute: typeof AreaIdentifierImport
-      parentRoute: typeof rootRoute
-    }
-    '/area-sizer': {
-      id: '/area-sizer'
-      path: '/area-sizer'
-      fullPath: '/area-sizer'
-      preLoaderRoute: typeof AreaSizerImport
       parentRoute: typeof rootRoute
     }
     '/areas-list': {
@@ -186,6 +179,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VisionMaskImport
       parentRoute: typeof rootRoute
     }
+    '/areas/identifier': {
+      id: '/areas/identifier'
+      path: '/areas/identifier'
+      fullPath: '/areas/identifier'
+      preLoaderRoute: typeof AreasIdentifierImport
+      parentRoute: typeof rootRoute
+    }
+    '/areas/simulator': {
+      id: '/areas/simulator'
+      path: '/areas/simulator'
+      fullPath: '/areas/simulator'
+      preLoaderRoute: typeof AreasSimulatorImport
+      parentRoute: typeof rootRoute
+    }
+    '/areas/sizer': {
+      id: '/areas/sizer'
+      path: '/areas/sizer'
+      fullPath: '/areas/sizer'
+      preLoaderRoute: typeof AreasSizerImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -195,8 +209,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/area-identifier': typeof AreaIdentifierRoute
-  '/area-sizer': typeof AreaSizerRoute
   '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
   '/one-hundred': typeof OneHundredRoute
@@ -204,14 +216,15 @@ export interface FileRoutesByFullPath {
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
   '/vision-mask': typeof VisionMaskRoute
+  '/areas/identifier': typeof AreasIdentifierRoute
+  '/areas/simulator': typeof AreasSimulatorRoute
+  '/areas/sizer': typeof AreasSizerRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/area-identifier': typeof AreaIdentifierRoute
-  '/area-sizer': typeof AreaSizerRoute
   '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
   '/one-hundred': typeof OneHundredRoute
@@ -219,6 +232,9 @@ export interface FileRoutesByTo {
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
   '/vision-mask': typeof VisionMaskRoute
+  '/areas/identifier': typeof AreasIdentifierRoute
+  '/areas/simulator': typeof AreasSimulatorRoute
+  '/areas/sizer': typeof AreasSizerRoute
 }
 
 export interface FileRoutesById {
@@ -226,8 +242,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/area-identifier': typeof AreaIdentifierRoute
-  '/area-sizer': typeof AreaSizerRoute
   '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
   '/one-hundred': typeof OneHundredRoute
@@ -235,6 +249,9 @@ export interface FileRoutesById {
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
   '/vision-mask': typeof VisionMaskRoute
+  '/areas/identifier': typeof AreasIdentifierRoute
+  '/areas/simulator': typeof AreasSimulatorRoute
+  '/areas/sizer': typeof AreasSizerRoute
 }
 
 export interface FileRouteTypes {
@@ -243,8 +260,6 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
-    | '/area-identifier'
-    | '/area-sizer'
     | '/areas-list'
     | '/finder'
     | '/one-hundred'
@@ -252,13 +267,14 @@ export interface FileRouteTypes {
     | '/scene'
     | '/session'
     | '/vision-mask'
+    | '/areas/identifier'
+    | '/areas/simulator'
+    | '/areas/sizer'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/admin'
-    | '/area-identifier'
-    | '/area-sizer'
     | '/areas-list'
     | '/finder'
     | '/one-hundred'
@@ -266,13 +282,14 @@ export interface FileRouteTypes {
     | '/scene'
     | '/session'
     | '/vision-mask'
+    | '/areas/identifier'
+    | '/areas/simulator'
+    | '/areas/sizer'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/admin'
-    | '/area-identifier'
-    | '/area-sizer'
     | '/areas-list'
     | '/finder'
     | '/one-hundred'
@@ -280,6 +297,9 @@ export interface FileRouteTypes {
     | '/scene'
     | '/session'
     | '/vision-mask'
+    | '/areas/identifier'
+    | '/areas/simulator'
+    | '/areas/sizer'
   fileRoutesById: FileRoutesById
 }
 
@@ -287,8 +307,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
-  AreaIdentifierRoute: typeof AreaIdentifierRoute
-  AreaSizerRoute: typeof AreaSizerRoute
   AreasListRoute: typeof AreasListRoute
   FinderRoute: typeof FinderRoute
   OneHundredRoute: typeof OneHundredRoute
@@ -296,14 +314,15 @@ export interface RootRouteChildren {
   SceneRoute: typeof SceneRoute
   SessionRoute: typeof SessionRoute
   VisionMaskRoute: typeof VisionMaskRoute
+  AreasIdentifierRoute: typeof AreasIdentifierRoute
+  AreasSimulatorRoute: typeof AreasSimulatorRoute
+  AreasSizerRoute: typeof AreasSizerRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
-  AreaIdentifierRoute: AreaIdentifierRoute,
-  AreaSizerRoute: AreaSizerRoute,
   AreasListRoute: AreasListRoute,
   FinderRoute: FinderRoute,
   OneHundredRoute: OneHundredRoute,
@@ -311,6 +330,9 @@ const rootRouteChildren: RootRouteChildren = {
   SceneRoute: SceneRoute,
   SessionRoute: SessionRoute,
   VisionMaskRoute: VisionMaskRoute,
+  AreasIdentifierRoute: AreasIdentifierRoute,
+  AreasSimulatorRoute: AreasSimulatorRoute,
+  AreasSizerRoute: AreasSizerRoute,
 }
 
 export const routeTree = rootRoute
@@ -326,15 +348,16 @@ export const routeTree = rootRoute
         "/",
         "/about",
         "/admin",
-        "/area-identifier",
-        "/area-sizer",
         "/areas-list",
         "/finder",
         "/one-hundred",
         "/pub-labels",
         "/scene",
         "/session",
-        "/vision-mask"
+        "/vision-mask",
+        "/areas/identifier",
+        "/areas/simulator",
+        "/areas/sizer"
       ]
     },
     "/": {
@@ -345,12 +368,6 @@ export const routeTree = rootRoute
     },
     "/admin": {
       "filePath": "admin.tsx"
-    },
-    "/area-identifier": {
-      "filePath": "area-identifier.tsx"
-    },
-    "/area-sizer": {
-      "filePath": "area-sizer.tsx"
     },
     "/areas-list": {
       "filePath": "areas-list.tsx"
@@ -372,6 +389,15 @@ export const routeTree = rootRoute
     },
     "/vision-mask": {
       "filePath": "vision-mask.tsx"
+    },
+    "/areas/identifier": {
+      "filePath": "areas/identifier.tsx"
+    },
+    "/areas/simulator": {
+      "filePath": "areas/simulator.tsx"
+    },
+    "/areas/sizer": {
+      "filePath": "areas/sizer.tsx"
     }
   }
 }

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Pub } from "../../../../_shared/types";
+
+// Types
+import { Pub } from "../../../../../_shared/types";
 
 interface PubListProps {
   pubs: Pub[];

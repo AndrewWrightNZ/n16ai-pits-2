@@ -1,5 +1,5 @@
 // Hooks
-import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 const SelectPubArea = () => {
   //

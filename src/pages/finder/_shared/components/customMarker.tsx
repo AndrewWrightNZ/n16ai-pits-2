@@ -7,7 +7,7 @@ import { Pub } from "../../../../_shared/types";
 
 // Hooks
 import usePubs from "../hooks/usePubs";
-import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Utils
 import * as fn from "../../../../_shared/utils";

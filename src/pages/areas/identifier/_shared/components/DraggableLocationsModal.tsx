@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 
 // Hooks
-import usePubs from "../../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../../finder/_shared/hooks/usePubs";
 
 // Types
-import { Pub } from "../../../../_shared/types";
+import { Pub } from "../../../../../_shared/types";
 
 interface DraggableLocationsModalProps {
   filterType: string;

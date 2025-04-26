@@ -1,16 +1,16 @@
 import { Filter } from "lucide-react";
 import { Helmet } from "react-helmet";
 import { Link } from "@tanstack/react-router";
-import { useState, useEffect, useCallback } from "react";
 import { GoogleMap } from "@react-google-maps/api";
+import { useState, useEffect, useCallback } from "react";
 
 // Hooks
 import usePubs from "./_shared/hooks/usePubs";
+import usePubAreas from "../areas/identifier/_shared/hooks/usePubAreas";
 
-// Components for custom markers
-import RenderPubsOfType from "./_shared/components/renderPubsOfType";
-import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
+// Components
 import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
+import RenderPubsOfType from "./_shared/components/renderPubsOfType";
 
 // Default center (London)
 const defaultCenter = {
@@ -123,14 +123,17 @@ function Finder() {
         <Link to="/areas-list" className="[&.active]:font-bold">
           Areas List
         </Link>
-        <Link to="/area-identifier" className="[&.active]:font-bold ml-4">
+        <Link to="/areas/identifier" className="[&.active]:font-bold ml-4">
           Area identifier
         </Link>
-        <Link to="/area-sizer" className="[&.active]:font-bold">
+        <Link to="/areas/sizer" className="[&.active]:font-bold">
           Area sizer
         </Link>
         <Link to="/vision-mask" className="[&.active]:font-bold">
           Vision mask
+        </Link>
+        <Link to="/areas/simulator" className="[&.active]:font-bold">
+          Simulator
         </Link>
         <Link to="/pub-labels" className="[&.active]:font-bold">
           Pub Labels

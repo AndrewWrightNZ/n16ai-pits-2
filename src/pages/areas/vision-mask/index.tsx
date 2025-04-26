@@ -5,14 +5,13 @@ import React, { useRef, useEffect, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 
 // Components
-import SimplePhotorealisticTilesMap from "../area-identifier/_shared/components/SimplePhotorealisticTilesMap";
+import SimplePhotorealisticTilesMap from "../identifier/_shared/components/SimplePhotorealisticTilesMap";
 
 // Hooks
-import usePubAreas from "../area-identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../identifier/_shared/hooks/usePubAreas";
 
 // Constants
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../simulator";
 
 const PubAreaVisionMask = () => {
   //
