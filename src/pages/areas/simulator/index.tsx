@@ -79,28 +79,6 @@ const PubAreaSimulator = () => {
 
   //
 
-  // Functions
-  // Calculate slider value from timeOfDay
-  const getSliderValue = () => {
-    const currentTime =
-      timeOfDay instanceof Date ? timeOfDay : new Date(timeOfDay);
-    const hours = currentTime.getHours();
-    const minutes = currentTime.getMinutes();
-    return hours * 4 + Math.floor(minutes / 15);
-  };
-
-  // Handle slider change - update in real-time
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    const hours = Math.floor(value / 4);
-    const minutes = (value % 4) * 15;
-    const newTime = new Date();
-    newTime.setHours(hours, minutes, 0, 0);
-    onSetTimeOfDay(newTime);
-  };
-
-  //
-
   // Effects
   useEffect(() => {
     const canvas = overlayRef.current;
@@ -133,7 +111,7 @@ const PubAreaSimulator = () => {
 
   return (
     <div
-      className="bg-black text-white"
+      className="bg-black text-gray-600"
       style={{
         width: 800,
         height: 600,
@@ -178,38 +156,20 @@ const PubAreaSimulator = () => {
         />
 
         <div className="w-1/3 absolute top-0 right-0 relative z-999999 text-xs">
-          <p id="selected-pub">{selectedPub?.name || "No pub selected"}</p>
-
-          <p id="selected-pub-area-name">
-            {selectedPubArea?.name || "No pub area selected"}
-          </p>
-
-          <p id="selected-pub-id">{selectedPub?.id || "No pub selected"}</p>
-          <p className="font-medium text-sm mb-1">Time: {formattedTime}</p>
-
-          {/* Time slider */}
-          <div className="mb-2">
-            <div className="flex justify-between text-xs text-gray-200 mb-1">
-              <span>12 PM</span>
-              <span>4 PM</span>
-              <span>9 PM</span>
-            </div>
-            <input
-              type="range"
-              // 12pm = 48, 9pm = 84
-              min="48"
-              max="84"
-              step="1"
-              value={getSliderValue()}
-              onChange={handleSliderChange}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-            />
+          <div className="flex flex-row gap-2 p-1 whitespace-nowrap">
+            <p id="selected-pub-id">
+              {selectedPub?.id ? `p-${selectedPub?.id}` : "p-null"}
+            </p>
+            <p id="selected-pub-area-id">
+              {selectedPubArea?.id ? `a-${selectedPubArea?.id}` : "a-null"}
+            </p>
+            <p className="font-medium whitespace-nowrap">{formattedTime}</p>
           </div>
 
           {/* Automation buttons for system interaction */}
-          <div className="mt-4 flex gap-2" aria-label="automation-controls">
+          <div className="mt-1 flex gap-2 border border-transparent bg-transparent p-1 rounded text-transparent">
             <button
-              className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
+              className="flex flex-row items-center whitespace-nowrap "
               onClick={handleResetTime}
               id="reset-time"
               type="button"
@@ -217,7 +177,7 @@ const PubAreaSimulator = () => {
               Reset Time
             </button>
             <button
-              className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded disabled:opacity-50"
+              className="flex flex-row items-center whitespace-nowrap"
               onClick={handleDecTime}
               id="dec-time"
               disabled={decTimeDisabled}
@@ -227,7 +187,7 @@ const PubAreaSimulator = () => {
               Dec Time
             </button>
             <button
-              className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded disabled:opacity-50"
+              className="flex flex-row items-center whitespace-nowrap"
               onClick={handleIncTime}
               id="inc-time"
               disabled={incTimeDisabled}
@@ -238,7 +198,7 @@ const PubAreaSimulator = () => {
             </button>
             {!isOnLastArea && (
               <button
-                className="flex flex-row items-center bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                className="flex flex-row items-center whitespace-nowrap"
                 onClick={handleGoToNextArea}
                 id="go-to-next-area"
                 type="button"
@@ -247,16 +207,16 @@ const PubAreaSimulator = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             )}
-          </div>
 
-          <button
-            className="flex flex-row items-center bg-gray-700 hover:bg-gray-600 text-white p-3 rounded mt-2"
-            type="button"
-            id="view-next-pub"
-            onClick={handleGoToNextPub}
-          >
-            View next available pub <ChevronRight className="w-4 h-4" />
-          </button>
+            <button
+              className="flex flex-row items-center whitespace-nowrap"
+              type="button"
+              id="view-next-pub"
+              onClick={handleGoToNextPub}
+            >
+              Next pub <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
