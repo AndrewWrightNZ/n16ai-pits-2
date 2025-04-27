@@ -1,14 +1,13 @@
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+// import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Providers
+import { GoogleMapsProvider } from "./GoogleMapsProvider";
 import { PubProvider } from "../pages/finder/_shared/providers/PubProvider";
 import { GeoLocationProvider } from "../_shared/providers/useGeolocationContext";
 import { MapSettingsProvider } from "../pages/scene/_shared/context/useMapSettingsContext";
 import { PubLabelsProvider } from "../pages/pub-labels/_shared/providers/PubLabelsProvider";
 import { PubAreasProvider } from "../pages/areas/identifier/_shared/providers/PubAreasProvider";
-
-import { GoogleMapsProvider } from "./GoogleMapsProvider";
 
 export const GeneralProviders = ({ children }: any) => {
   const queryClient = new QueryClient({
@@ -27,7 +26,7 @@ export const GeneralProviders = ({ children }: any) => {
               <GeoLocationProvider>
                 <MapSettingsProvider>{children}</MapSettingsProvider>
               </GeoLocationProvider>
-              <ReactQueryDevtools />
+              {/* <ReactQueryDevtools /> */}
             </PubLabelsProvider>
           </PubAreasProvider>
         </PubProvider>
