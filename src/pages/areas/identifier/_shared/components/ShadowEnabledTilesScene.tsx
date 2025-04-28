@@ -6,6 +6,7 @@ import {
   useCallback,
   useState,
 } from "react";
+import SunPositionCalculator from "../../../../scene/_shared/helpers/sunPositionCalculator";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { OrbitControls } from "@react-three/drei";
@@ -62,6 +63,9 @@ const ShadowEnabledTilesScene = forwardRef<
     100, 100, 50,
   ]);
 
+  // Debug flag: set to true to show debug helpers
+  const debugHelpers = true;
+
   // Refs for service instances
   const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
   const cameraPositionerRef = useRef<CameraPositioner | null>(null);
@@ -104,19 +108,27 @@ const ShadowEnabledTilesScene = forwardRef<
     }
   }, [allowShadows, showWhiteTiles, onSetShowWhiteTiles]);
 
-  // Calculate sun position based on time of day
-  const calculateSunPosition = useCallback((timeOfDay: Date) => {
-    const hours = timeOfDay.getHours();
-    const minutes = timeOfDay.getMinutes();
-    const timeInHours = hours + minutes / 60;
-    const angle = ((timeInHours - 6) / 12) * Math.PI;
-    const radius = 200;
-    const height = 100;
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    const y = Math.sin(angle) * height + height;
-    return [x, y, z] as [number, number, number];
-  }, []);
+  // Calculate sun position and shadow opacity using SunPositionCalculator
+  const calculateSunPosition = useCallback(
+    (timeOfDay: Date, latitude: number, longitude: number) => {
+      // Use SunPositionCalculator to get sun direction
+      const { azimuth, altitude } = SunPositionCalculator.calculateSunPosition(
+        timeOfDay,
+        latitude,
+        longitude
+      );
+      // Get a direction vector (normalized)
+      const direction = SunPositionCalculator.getLightDirectionFromSunPosition(
+        azimuth,
+        altitude
+      );
+      // Scale direction for scene
+      const distance = 200; // Keep similar to previous radius
+      const sunVec = direction.clone().multiplyScalar(distance);
+      return [sunVec.x, sunVec.y, sunVec.z] as [number, number, number];
+    },
+    []
+  );
 
   const {
     data: { selectedPub },
@@ -149,12 +161,20 @@ const ShadowEnabledTilesScene = forwardRef<
 
   // Update sun position and shadow opacity
   useEffect(() => {
-    const timeOfDay = new Date(rawTimeOfDay);
-    setSunPosition(calculateSunPosition(timeOfDay));
-
-    const hours = timeOfDay.getHours();
-    setShadowOpacity(hours >= 6 && hours <= 18 ? 0.9 : 0.7);
-  }, [rawTimeOfDay, calculateSunPosition]);
+    // Use selectedPub lat/lng if available, else fallback to London
+    const latitude = selectedPub?.latitude ?? 51.5074;
+    const longitude = selectedPub?.longitude ?? -0.1278;
+    if (rawTimeOfDay) {
+      setSunPosition(calculateSunPosition(rawTimeOfDay, latitude, longitude));
+      setShadowOpacity(
+        SunPositionCalculator.getShadowOpacity(
+          rawTimeOfDay,
+          latitude,
+          longitude
+        )
+      );
+    }
+  }, [rawTimeOfDay, selectedPub, calculateSunPosition]);
 
   // Update white material when showWhiteTiles changes
   useEffect(() => {
@@ -402,6 +422,53 @@ const ShadowEnabledTilesScene = forwardRef<
         maxDistance={1000}
         onChange={handleCameraChange}
       />
+
+      {/* Debug helpers: Axes, Sun Arrow, Test Building Orientation */}
+      {debugHelpers && (
+        <>
+          {/* AxesHelper at origin (length 50) */}
+          <primitive object={new THREE.AxesHelper(50)} />
+
+          {/* Sun direction arrow from origin */}
+          <primitive
+            object={(() => {
+              // ArrowHelper(dir, origin, length, color)
+              const dir = new THREE.Vector3(...sunPosition).normalize();
+              return new THREE.ArrowHelper(
+                dir,
+                new THREE.Vector3(0, 0, 0),
+                80,
+                0xffff00
+              );
+            })()}
+          />
+
+          {/* Test building with orientation arrow (front = Z+ by default) */}
+          <group position={[0, 0, 0]}>
+            {/* Simple box as test building */}
+            <mesh position={[0, 5, 0]}>
+              <boxGeometry args={[10, 10, 10]} />
+              <meshStandardMaterial
+                color={0x8888ff}
+                wireframe
+                opacity={0.5}
+                transparent
+              />
+            </mesh>
+            {/* Orientation arrow: front (Z+) is green */}
+            <primitive
+              object={
+                new THREE.ArrowHelper(
+                  new THREE.Vector3(0, 0, 1), // Z+
+                  new THREE.Vector3(0, 10, 0), // Arrow starts at top center of box
+                  10,
+                  0x00ff00
+                )
+              }
+            />
+          </group>
+        </>
+      )}
     </>
   );
 });
