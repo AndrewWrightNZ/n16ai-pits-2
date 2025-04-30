@@ -10,16 +10,7 @@ import ViewSelectedArea from "./selectedArea";
 
 // Types
 import { PubArea } from "../../../_shared/types";
-
-// Define the area types that can be filtered
-export const AREA_TYPES = [
-  { key: "pavement", label: "Pavement" },
-  { key: "frontage-seating", label: "Frontage seating" },
-  { key: "terrace", label: "Terrace" },
-  { key: "terrace-waterfront", label: "Waterfront Terrace" },
-  { key: "beer-garden", label: "Beer garden" },
-  { key: "courtyard", label: "Courtyard" },
-];
+import { AREA_TYPES, formatAreaType } from "../_shared";
 
 // Define a type for the sortable keys
 type SortableKey = keyof Pick<
@@ -49,15 +40,6 @@ const AreasList = () => {
   const {
     data: { pubs = [] },
   } = usePubs();
-
-  //
-
-  // Helpers
-
-  const formatAreaType = (type: string) => {
-    const areaType = AREA_TYPES.find((a) => a.key === type);
-    return areaType?.label || type;
-  };
 
   // Augment areas with pub details
   const areasWithPubDetails = useMemo(() => {
@@ -167,7 +149,7 @@ const AreasList = () => {
       </div>
 
       {/* Areas Table */}
-      <div className="bg-white shadow-sm w-[90vw] mx-auto rounded-xl overflow-hidden">
+      <div className="bg-white shadow-sm w-[90vw] mx-auto rounded-xl overflow-scroll">
         {areasOfTypes.length > 0 && (
           <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
