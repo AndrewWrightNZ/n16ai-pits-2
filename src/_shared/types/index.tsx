@@ -82,3 +82,12 @@ export interface SunEvalReport {
     total_count: number;
   };
 }
+
+export interface SunEval {
+  id: number;
+  pub_id: number;
+  area_id: number;
+  date: string;
+  time: string;
+  pc_in_sun: number;
+}
