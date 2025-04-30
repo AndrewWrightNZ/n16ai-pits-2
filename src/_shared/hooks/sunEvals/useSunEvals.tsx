@@ -13,9 +13,11 @@ import { supabaseClient } from "../../hooks/useSupabase";
 interface SunEvalsData extends SunEvalsState {
   // Loading
   isLoadingSunEvalsForPubArea: boolean;
+  isLoadingSunEvalsForTimeslot: boolean;
 
   // SunEvals
   sunEvalsForPubArea: SunEval[];
+  sunEvalsForTimeslot: SunEval[];
 }
 
 interface SunEvalsOperations {}
@@ -37,7 +39,7 @@ const useSunEvals = (): SunEvalsResponse => {
   // Variables
   const { selectedPubArea } = pubAreasState || {};
 
-  console.log("selectedPubArea in evals hook -", { selectedPubArea });
+  const TIMESLOT_ID = 16;
 
   //
 
@@ -45,6 +47,11 @@ const useSunEvals = (): SunEvalsResponse => {
   const GET_SUN_EVALS_FOR_PUB_AREA_QUERY_KEY = [
     "getSunEvalsForPubArea",
     selectedPubArea?.id,
+  ];
+
+  const GET_SUN_EVALS_FOR_TIMESLOT_QUERY_KEY = [
+    "getSunEvalsForTimeslot",
+    TIMESLOT_ID,
   ];
 
   //
@@ -61,6 +68,17 @@ const useSunEvals = (): SunEvalsResponse => {
     return data;
   };
 
+  const fetchSunEvalsForTimeslot = async (): Promise<SunEval[]> => {
+    // Fetch all available pub labels
+    const { data, error } = await supabaseClient
+      .from("sun_eval_reg")
+      .select("*")
+      .eq("time", TIMESLOT_ID);
+
+    if (error) throw error;
+    return data;
+  };
+
   //
 
   // Queries
@@ -70,6 +88,14 @@ const useSunEvals = (): SunEvalsResponse => {
   } = useQuery({
     queryKey: GET_SUN_EVALS_FOR_PUB_AREA_QUERY_KEY,
     queryFn: fetchSunEvalsForPubArea,
+  });
+
+  const {
+    data: sunEvalsForTimeslot = [],
+    isLoading: isLoadingSunEvalsForTimeslot,
+  } = useQuery({
+    queryKey: GET_SUN_EVALS_FOR_TIMESLOT_QUERY_KEY,
+    queryFn: fetchSunEvalsForTimeslot,
   });
 
   //
@@ -82,9 +108,11 @@ const useSunEvals = (): SunEvalsResponse => {
 
       // Loading
       isLoadingSunEvalsForPubArea,
+      isLoadingSunEvalsForTimeslot,
 
       // Evals
       sunEvalsForPubArea,
+      sunEvalsForTimeslot,
     },
     operations: {
       // Update

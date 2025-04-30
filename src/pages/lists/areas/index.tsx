@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowUpDown, Check, Filter } from "lucide-react";
+import { ArrowUpDown, Check, Filter, Sun } from "lucide-react";
 
 // Hooks
 import usePubs from "../../finder/_shared/hooks/usePubs";
@@ -7,10 +7,13 @@ import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Components
 import ViewSelectedArea from "./selectedArea";
+import AreaTableRow from "./selectedArea/areaTableRow";
 
 // Types
 import { PubArea } from "../../../_shared/types";
-import { AREA_TYPES, formatAreaType } from "../_shared";
+
+// Helpers
+import { AREA_TYPES } from "../_shared";
 
 // Define a type for the sortable keys
 type SortableKey = keyof Pick<
@@ -155,13 +158,13 @@ const AreasList = () => {
             <thead className="bg-gray-50 sticky top-0">
               <tr>
                 {[
-                  { key: "pub_name", label: "Pub", width: "15%" },
-                  { key: "name", label: "Name", width: "15%" },
-                  { key: "type", label: "Type", width: "15%" },
-                  { key: "description", label: "Description", width: "25%" },
+                  { key: "pub_name", label: "Pub", width: "14%" },
+                  { key: "name", label: "Name", width: "14%" },
+                  { key: "type", label: "Type", width: "14%" },
+                  { key: "description", label: "Description", width: "24%" },
                   { key: "floor_area", label: "Floor Area", width: "10%" },
-                  { key: "latitude", label: "Latitude", width: "10%" },
-                  { key: "longitude", label: "Longitude", width: "10%" },
+                  { key: "latitude", label: "Latitude", width: "8%" },
+                  { key: "longitude", label: "Longitude", width: "8%" },
                 ].map(({ key, label, width }) => (
                   <th
                     key={key}
@@ -175,32 +178,23 @@ const AreasList = () => {
                     </div>
                   </th>
                 ))}
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 transition-colors"
+                  style={{ width: "10%" }}
+                >
+                  <Sun className="h-4 w-4 text-amber-500" />
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedAreas.map((area, index) => (
-                <tr
+                <AreaTableRow
                   key={area.id || index}
-                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedPubArea?.id === area.id ? "bg-blue-50" : ""}`}
-                  onClick={() => onSelectPubArea(area)}
-                >
-                  {[
-                    area.pub_name,
-                    area.name,
-                    area.type,
-                    area.description,
-                    area.floor_area?.toFixed(2),
-                    area.latitude?.toFixed(4),
-                    area.longitude?.toFixed(4),
-                  ].map((value, idx) => (
-                    <td
-                      key={idx}
-                      className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 truncate"
-                    >
-                      {idx === 2 ? formatAreaType(value) : value}
-                    </td>
-                  ))}
-                </tr>
+                  area={area}
+                  index={index}
+                  selectedPubArea={selectedPubArea}
+                  onSelectPubArea={onSelectPubArea}
+                />
               ))}
             </tbody>
           </table>
