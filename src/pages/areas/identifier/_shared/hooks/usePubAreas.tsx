@@ -201,11 +201,23 @@ const usePubAreas = (): PubAreasResponse => {
   };
 
   const fetchSimulationReadyPubs = async () => {
-    // Get pubs where the has_vision_masks_added is true
+    // Get today's date
+    const today = new Date();
+
+    // Calculate date 7 days ago
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    // Format sevenDaysAgo to DD-MM-YYYY format for comparison
+    const formattedSevenDaysAgo = `${String(sevenDaysAgo.getDate()).padStart(2, "0")}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, "0")}-${sevenDaysAgo.getFullYear()}`;
+
+    // Get pubs where has_vision_masks_added is true and last_processed_date is before 7 days ago
     const { data, error } = await supabaseClient
       .from("pub")
       .select()
-      .eq("has_vision_masks_added", true);
+      .eq("has_vision_masks_added", true)
+      .lt("last_checked", formattedSevenDaysAgo);
+
     if (error) throw error;
     return data;
   };
