@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowUpDown, Filter } from "lucide-react";
+import { ArrowUpDown, Check, Filter } from "lucide-react";
 
 // Hooks
 import usePubs from "../../finder/_shared/hooks/usePubs";
@@ -111,33 +111,38 @@ const AreasList = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-extrabold text-gray-900">Pub Areas</h1>
+    <div className="h-screen flex flex-col px-8 py-16">
+      <div className="flex flex-col bg-none w-4/5 mx-auto rounded-t-xl gap-6 mb-8">
+        <div className="flex justify-between items-center text-white">
+          <h1 className="text-5xl font-bold font-poppins">
+            London's Sunniest Pub Areas
+          </h1>
           <div className="flex items-center">
-            <Filter className="mr-2 text-gray-500" />
-            <span className="text-gray-600">
+            <Filter className="mr-2" />
+            <span className="">
               Filtered Areas: {areasOfTypes.length || "0"}
             </span>
           </div>
         </div>
 
         {/* Area Type Filters */}
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex w-full">
           {AREA_TYPES.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => onToggleAreaTypeFilter(key)}
               className={`
-                px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ease-in-out
+                px-4 py-2 flex flex-row items-center rounded-full text-sm font-medium transition-all duration-200 ease-in-out mr-2
                 ${
                   selectedAreaTypes?.includes(key)
-                    ? "bg-blue-500 text-white hover:bg-blue-600 shadow-md"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300 hover:shadow-sm"
+                    ? "bg-white text-blue-600 border-2 border-blue-600 hover:shadow-sm hover:opacity-60"
+                    : "bg-none text-white border-2 border-white hover:shadow-sm hover:opacity-60"
                 }
               `}
             >
+              {selectedAreaTypes?.includes(key) ? (
+                <Check className="mr-2" />
+              ) : null}
               {label}
             </button>
           ))}
@@ -145,7 +150,7 @@ const AreasList = () => {
       </div>
 
       {/* Areas Table */}
-      <div className="flex-grow overflow-auto">
+      <div className="bg-white shadow-sm w-4/5 mx-auto rounded-xl overflow-hidden">
         {areasOfTypes.length > 0 && (
           <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
