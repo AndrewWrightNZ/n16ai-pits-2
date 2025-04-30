@@ -5,6 +5,9 @@ import { ArrowUpDown, Check, Filter } from "lucide-react";
 import usePubs from "../../finder/_shared/hooks/usePubs";
 import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 
+// Components
+import ViewSelectedArea from "./selectedArea";
+
 // Types
 import { PubArea } from "../../../_shared/types";
 
@@ -39,8 +42,8 @@ type SortConfig = {
 const AreasList = () => {
   // Hooks
   const {
-    data: { areasOfTypes, selectedAreaTypes },
-    operations: { onToggleAreaTypeFilter },
+    data: { areasOfTypes, selectedAreaTypes, selectedPubArea },
+    operations: { onToggleAreaTypeFilter, onSelectPubArea },
   } = usePubAreas();
 
   const {
@@ -121,6 +124,11 @@ const AreasList = () => {
 
   return (
     <div className="h-screen flex flex-col px-8 py-16">
+      {selectedPubArea && (
+        <div className="bg-white shadow-md rounded-xl p-6 w-[90vw] mx-auto mb-8">
+          <ViewSelectedArea />
+        </div>
+      )}
       <div className="flex flex-col bg-none w-[90vw] mx-auto rounded-t-xl gap-6 mb-8">
         <div className="flex justify-between items-center text-white">
           <h1 className="text-5xl font-bold font-poppins">
@@ -191,7 +199,8 @@ const AreasList = () => {
               {sortedAreas.map((area, index) => (
                 <tr
                   key={area.id || index}
-                  className="hover:bg-gray-50 transition-colors"
+                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedPubArea?.id === area.id ? "bg-blue-50" : ""}`}
+                  onClick={() => onSelectPubArea(area)}
                 >
                   {[
                     area.pub_name,
