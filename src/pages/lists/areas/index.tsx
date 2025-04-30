@@ -47,6 +47,15 @@ const AreasList = () => {
     data: { pubs = [] },
   } = usePubs();
 
+  //
+
+  // Helpers
+
+  const formatAreaType = (type: string) => {
+    const areaType = AREA_TYPES.find((a) => a.key === type);
+    return areaType?.label || type;
+  };
+
   // Augment areas with pub details
   const areasWithPubDetails = useMemo(() => {
     return areasOfTypes.map((area) => {
@@ -112,7 +121,7 @@ const AreasList = () => {
 
   return (
     <div className="h-screen flex flex-col px-8 py-16">
-      <div className="flex flex-col bg-none w-4/5 mx-auto rounded-t-xl gap-6 mb-8">
+      <div className="flex flex-col bg-none w-[90vw] mx-auto rounded-t-xl gap-6 mb-8">
         <div className="flex justify-between items-center text-white">
           <h1 className="text-5xl font-bold font-poppins">
             London's Sunniest Pub Areas
@@ -132,7 +141,7 @@ const AreasList = () => {
               key={key}
               onClick={() => onToggleAreaTypeFilter(key)}
               className={`
-                px-4 py-2 flex flex-row items-center rounded-full text-sm font-medium transition-all duration-200 ease-in-out mr-2
+                px-4 py-2 flex fle rounded-full text-sm font-medium transition-all duration-200 ease-in-out mr-2
                 ${
                   selectedAreaTypes?.includes(key)
                     ? "bg-white text-blue-600 border-2 border-blue-600 hover:shadow-sm hover:opacity-60"
@@ -150,7 +159,7 @@ const AreasList = () => {
       </div>
 
       {/* Areas Table */}
-      <div className="bg-white shadow-sm w-4/5 mx-auto rounded-xl overflow-hidden">
+      <div className="bg-white shadow-sm w-[90vw] mx-auto rounded-xl overflow-hidden">
         {areasOfTypes.length > 0 && (
           <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
@@ -197,7 +206,7 @@ const AreasList = () => {
                       key={idx}
                       className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 truncate"
                     >
-                      {value}
+                      {idx === 2 ? formatAreaType(value) : value}
                     </td>
                   ))}
                 </tr>
