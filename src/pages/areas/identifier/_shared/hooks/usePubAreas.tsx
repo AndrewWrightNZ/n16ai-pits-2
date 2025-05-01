@@ -88,7 +88,7 @@ interface PubAreasData extends PubAreasState {
 
 interface PubAreasOperations {
   // Select pub
-  onSetSelectedPub: (pub: Pub) => void;
+  onSetSelectedPub: (pub: Pub | null) => void;
 
   // Add properties relevant to PubAreasOperations
   onUpdatePubAreaDetails: (newDetails: Partial<PubAreasState>) => void;
@@ -493,9 +493,9 @@ const usePubAreas = (): PubAreasResponse => {
     );
   };
 
-  const onSetSelectedPub = (pub: Pub) => {
+  const onSetSelectedPub = (pub: Pub | null) => {
     updatePubAreasState({
-      selectedPubId: pub.id,
+      selectedPubId: pub?.id || 0,
       name: "",
       description: "",
       type: "",

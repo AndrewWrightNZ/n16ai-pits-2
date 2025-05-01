@@ -7,6 +7,7 @@ import {
   formatAreaTypes,
   formatShortAddress,
 } from "../helpers";
+import usePubAreas from "../../../../areas/identifier/_shared/hooks/usePubAreas";
 
 interface ExpandablePubRowProps {
   pub: PubForTableDisplay;
@@ -21,12 +22,14 @@ const ExpandablePubRow = ({ pub, index }: ExpandablePubRowProps) => {
     data: { sunEvalsForTimeslot = [] },
   } = useSunEvals();
 
+  const {
+    operations: { onSetSelectedPub },
+  } = usePubAreas();
+
   // Get sunPC for pub
   const sunEvalsForPub = sunEvalsForTimeslot.filter(
     ({ pub_id }) => pub_id === pub.id
   );
-
-  console.log({ sunEvalsForPub });
 
   return (
     <tr key={pub.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
@@ -54,6 +57,14 @@ const ExpandablePubRow = ({ pub, index }: ExpandablePubRowProps) => {
             <Sun key={sunEval.id} className="h-4 w-4 mr-1 text-amber-500" />
           ))}
         </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+        <button
+          onClick={() => onSetSelectedPub(pub)}
+          className="text-blue-600 hover:text-blue-800"
+        >
+          View Details
+        </button>
       </td>
     </tr>
   );

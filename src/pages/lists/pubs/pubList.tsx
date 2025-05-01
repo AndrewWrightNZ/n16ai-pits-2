@@ -3,10 +3,12 @@ import { useMemo } from "react";
 // Hooks
 import usePubs from "../../finder/_shared/hooks/usePubs";
 import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
-import useSunEvals from "../../../_shared/hooks/sunEvals/useSunEvals";
 
 // Types
 import { PubArea, Pub } from "../../../_shared/types";
+
+// Components
+import PubDetail from "./pubDetail";
 import ExpandablePubRow from "./_shared/components/expandablePubRow";
 
 export interface PubForTableDisplay extends Pub {
@@ -19,16 +21,12 @@ export interface PubForTableDisplay extends Pub {
 const PitsOneHundredPubsList = () => {
   // Hooks
   const {
-    data: { areasOfTypes },
+    data: { areasOfTypes, selectedPub },
   } = usePubAreas();
 
   const {
     data: { uiReadyPubs: pubsWithAreaDetails = [] },
   } = usePubs();
-
-  const {
-    data: { sunEvalsForTimeslot = [] },
-  } = useSunEvals();
 
   // Add each areasOfTypes to the pubsWithAreaDetails and calculate total area
   const rankedPubs: PubForTableDisplay[] = useMemo(() => {
@@ -60,74 +58,84 @@ const PitsOneHundredPubsList = () => {
     );
   }, [pubsWithAreaDetails, areasOfTypes]);
 
-  console.log({ sunEvalsForTimeslot });
-
   return (
-    <div id="pubs-list" className="min-h-screen w-[90vw] mx-auto pt-16">
-      <div className="overflow-x-auto shadow-md rounded-lg w-full rounded-2xl bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50 whitespace-nowrap">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
-              >
-                Rank
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
-              >
-                Pub Name
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
-              >
-                Location
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
-              >
-                Postcode
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
-              >
-                Total Area (m²)
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Area Types
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Sunshine
-              </th>
-            </tr>
-          </thead>
-          <tbody className="whitespace-nowrap bg-white divide-y divide-gray-200">
-            {rankedPubs.map((pub, index) => (
-              <ExpandablePubRow key={pub.id} pub={pub} index={index} />
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <>
+      {selectedPub ? (
+        <PubDetail />
+      ) : (
+        <div id="pubs-list" className="min-h-screen w-[90vw] mx-auto pt-16">
+          <div className="overflow-x-auto shadow-md rounded-lg w-full rounded-2xl bg-white">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50 whitespace-nowrap">
+                <tr>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
+                  >
+                    Rank
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
+                  >
+                    Pub Name
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
+                  >
+                    Location
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
+                  >
+                    Postcode
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
+                  >
+                    Total Area (m²)
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Area Types
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Sunshine
+                  </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    View details
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="whitespace-nowrap bg-white divide-y divide-gray-200">
+                {rankedPubs.map((pub, index) => (
+                  <ExpandablePubRow key={pub.id} pub={pub} index={index} />
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      <div className="mt-6 text-sm text-gray-500">
-        <p>Total pubs displayed: {rankedPubs.length}</p>
-        <p className="mt-2">
-          Note: Area size is measured in square meters and represents the total
-          outdoor space available.
-        </p>
-      </div>
-    </div>
+          <div className="mt-6 text-sm text-gray-500">
+            <p>Total pubs displayed: {rankedPubs.length}</p>
+            <p className="mt-2">
+              Note: Area size is measured in square meters and represents the
+              total outdoor space available.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
