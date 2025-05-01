@@ -120,8 +120,11 @@ function Finder() {
         <Link to="/session" className="[&.active]:font-bold">
           Pub Sesh
         </Link>
-        <Link to="/areas-list" className="[&.active]:font-bold">
+        <Link to="/lists/areas" className="[&.active]:font-bold">
           Areas List
+        </Link>
+        <Link to="/lists/pubs" className="[&.active]:font-bold">
+          Pubs List
         </Link>
         <Link to="/areas/identifier" className="[&.active]:font-bold ml-4">
           Area identifier
