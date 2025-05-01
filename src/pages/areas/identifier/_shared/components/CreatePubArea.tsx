@@ -4,10 +4,10 @@ import { useEffect } from "react";
 import usePubAreas from "../hooks/usePubAreas";
 
 // Constants
-import { AREA_TYPES } from "../../../../lists/areas";
 
 // Types
 import { PubArea } from "../../../../../_shared/types";
+import { AREA_TYPES } from "../../../../lists/_shared";
 
 interface CreatePubAreaProps {
   cameraInfo: {
