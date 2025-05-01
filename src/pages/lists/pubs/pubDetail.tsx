@@ -18,7 +18,7 @@ export interface PubForDetailDisplay extends Pub {
 const PubDetail = () => {
   // Hooks
   const {
-    data: { selectedPub },
+    data: { selectedPub, areasForPub = [] },
     operations: { onSetSelectedPub },
   } = usePubAreas();
 
@@ -26,7 +26,52 @@ const PubDetail = () => {
     data: { sunEvalsForTimeslot = [] },
   } = useSunEvals();
 
-  console.log({ sunEvalsForTimeslot });
+  // Helper function to render sun evaluation for a specific area
+  const renderSunEvaluation = (areaId: number) => {
+    const sunEval = sunEvalsForTimeslot.find(
+      (sunEvalItem) => sunEvalItem.area_id === areaId
+    );
+
+    if (!sunEval) {
+      return <span className="text-gray-500">No data</span>;
+    }
+
+    // Determine sun rating based on percentage in sun
+    const sunPercentage = sunEval.pc_in_sun;
+
+    // Create a visual representation based on percentage
+    if (sunPercentage >= 75) {
+      return (
+        <div className="flex items-center">
+          <Sun className="h-5 w-5 text-amber-500" />
+          <Sun className="h-5 w-5 text-amber-500" />
+          <Sun className="h-5 w-5 text-amber-500" />
+          <span className="ml-2">{sunPercentage}% in sun</span>
+        </div>
+      );
+    } else if (sunPercentage >= 40) {
+      return (
+        <div className="flex items-center">
+          <Sun className="h-5 w-5 text-amber-500" />
+          <Sun className="h-5 w-5 text-amber-500" />
+          <span className="ml-2">{sunPercentage}% in sun</span>
+        </div>
+      );
+    } else if (sunPercentage > 0) {
+      return (
+        <div className="flex items-center">
+          <Sun className="h-5 w-5 text-amber-500" />
+          <span className="ml-2">{sunPercentage}% in sun</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center">
+          <span className="text-gray-500">0% in sun</span>
+        </div>
+      );
+    }
+  };
 
   if (!selectedPub) {
     return (
@@ -92,17 +137,69 @@ const PubDetail = () => {
             </h2>
             <div className="bg-gray-50 p-4 rounded-lg">
               <p className="text-gray-700 mb-2">
-                <span className="font-medium">Total Area:</span>1000m2
+                <span className="font-medium">Total Area:</span>{" "}
+                {areasForPub
+                  .reduce((total, area) => total + (area.floor_area || 0), 0)
+                  .toFixed(2)}
+                m²
               </p>
               <p className="text-gray-700 mb-2">
-                <span className="font-medium">Area Types:</span> "bar area"
+                <span className="font-medium">Area Types:</span>{" "}
+                {Array.from(new Set(areasForPub.map((area) => area.type))).join(
+                  ", "
+                ) || "None"}
               </p>
               <div className="flex items-center">
                 <span className="font-medium text-gray-700 mr-2">
                   Sunshine Rating:
                 </span>
                 <div className="flex flex-row items-center">
-                  <Sun className="h-5 w-5 mr-1 text-amber-500" />
+                  {sunEvalsForTimeslot.length > 0 ? (
+                    <>
+                      {/* Calculate average sun percentage across all areas */}
+                      {(() => {
+                        const pubAreas = areasForPub.map((area) => area.id);
+                        const relevantEvals = sunEvalsForTimeslot.filter(
+                          (sunEvalItem) =>
+                            pubAreas.includes(sunEvalItem.area_id)
+                        );
+
+                        if (relevantEvals.length === 0) {
+                          return (
+                            <span className="text-gray-500">
+                              No data available
+                            </span>
+                          );
+                        }
+
+                        const avgPercentage =
+                          relevantEvals.reduce(
+                            (sum, sunEvalItem) => sum + sunEvalItem.pc_in_sun,
+                            0
+                          ) / relevantEvals.length;
+
+                        // Display suns based on average percentage
+                        return (
+                          <div className="flex items-center">
+                            {avgPercentage >= 25 && (
+                              <Sun className="h-5 w-5 mr-1 text-amber-500" />
+                            )}
+                            {avgPercentage >= 50 && (
+                              <Sun className="h-5 w-5 mr-1 text-amber-500" />
+                            )}
+                            {avgPercentage >= 75 && (
+                              <Sun className="h-5 w-5 mr-1 text-amber-500" />
+                            )}
+                            <span className="ml-1">
+                              {avgPercentage.toFixed(1)}% average
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    <span className="text-gray-500">No data available</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -135,17 +232,42 @@ const PubDetail = () => {
                   >
                     Description
                   </th>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
+                  >
+                    Sun Evaluation
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td
-                    colSpan={3}
-                    className="px-6 py-4 text-sm text-gray-500 text-center"
-                  >
-                    No area data available
-                  </td>
-                </tr>
+                {areasForPub.length > 0 ? (
+                  areasForPub.map((area) => (
+                    <tr key={area.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {area.type}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {area.floor_area ? area.floor_area.toFixed(2) : "N/A"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {area.description || "No description available"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {renderSunEvaluation(area.id)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-6 py-4 text-sm text-gray-500 text-center"
+                    >
+                      No area data available
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
