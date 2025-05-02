@@ -14,10 +14,12 @@ interface SunEvalsData extends SunEvalsState {
   // Loading
   isLoadingSunEvalsForPubArea: boolean;
   isLoadingSunEvalsForTimeslot: boolean;
+  isLoadingSunEvalsForAllPubAreas: boolean;
 
   // SunEvals
   sunEvalsForPubArea: SunEval[];
   sunEvalsForTimeslot: SunEval[];
+  sunEvalsForAllPubAreas: SunEval[];
 }
 
 interface SunEvalsOperations {}
@@ -37,7 +39,7 @@ const useSunEvals = (): SunEvalsResponse => {
   //
 
   // Variables
-  const { selectedPubArea } = pubAreasState || {};
+  const { selectedPubArea, selectedPubId } = pubAreasState || {};
 
   const TIMESLOT_ID = 16;
 
@@ -47,6 +49,11 @@ const useSunEvals = (): SunEvalsResponse => {
   const GET_SUN_EVALS_FOR_PUB_AREA_QUERY_KEY = [
     "getSunEvalsForPubArea",
     selectedPubArea?.id,
+  ];
+
+  const GET_SUN_EVALS_FOR_ALL_PUB_AREAS_QUERY_KEY = [
+    "getSunEvalsForAllPubAreas",
+    selectedPubId,
   ];
 
   const GET_SUN_EVALS_FOR_TIMESLOT_QUERY_KEY = [
@@ -63,6 +70,17 @@ const useSunEvals = (): SunEvalsResponse => {
       .from("sun_eval_reg")
       .select("*")
       .eq("area_id", selectedPubArea?.id);
+
+    if (error) throw error;
+    return data;
+  };
+
+  const fetchSunEvalsForAllPubAreas = async (): Promise<SunEval[]> => {
+    // Fetch all available pub labels
+    const { data, error } = await supabaseClient
+      .from("sun_eval_reg")
+      .select("*")
+      .eq("pub_id", selectedPubId);
 
     if (error) throw error;
     return data;
@@ -91,6 +109,14 @@ const useSunEvals = (): SunEvalsResponse => {
   });
 
   const {
+    data: sunEvalsForAllPubAreas = [],
+    isLoading: isLoadingSunEvalsForAllPubAreas,
+  } = useQuery({
+    queryKey: GET_SUN_EVALS_FOR_ALL_PUB_AREAS_QUERY_KEY,
+    queryFn: fetchSunEvalsForAllPubAreas,
+  });
+
+  const {
     data: sunEvalsForTimeslot = [],
     isLoading: isLoadingSunEvalsForTimeslot,
   } = useQuery({
@@ -109,10 +135,12 @@ const useSunEvals = (): SunEvalsResponse => {
       // Loading
       isLoadingSunEvalsForPubArea,
       isLoadingSunEvalsForTimeslot,
+      isLoadingSunEvalsForAllPubAreas,
 
       // Evals
       sunEvalsForPubArea,
       sunEvalsForTimeslot,
+      sunEvalsForAllPubAreas,
     },
     operations: {
       // Update

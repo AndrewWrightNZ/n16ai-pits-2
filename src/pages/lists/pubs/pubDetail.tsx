@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 // Hooks
 import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 import useSunEvals from "../../../_shared/hooks/sunEvals/useSunEvals";
@@ -7,6 +9,7 @@ import { PubArea, Pub } from "../../../_shared/types";
 
 // Icons
 import { Sun } from "lucide-react";
+import { extractPostCodeFromAddress, renderSunRating } from "./_shared/helpers";
 
 export interface PubForDetailDisplay extends Pub {
   areas: PubArea[];
@@ -16,6 +19,8 @@ export interface PubForDetailDisplay extends Pub {
 }
 
 const PubDetail = () => {
+  //
+
   // Hooks
   const {
     data: { selectedPub, areasForPub = [] },
@@ -23,54 +28,102 @@ const PubDetail = () => {
   } = usePubAreas();
 
   const {
-    data: { sunEvalsForTimeslot = [] },
+    data: { sunEvalsForTimeslot = [], sunEvalsForAllPubAreas = [] },
   } = useSunEvals();
+
+  //
+
+  // State
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [hoveredSunEval, setHoveredSunEval] = useState<any | null>(null);
 
   // Helper function to render sun evaluation for a specific area
   const renderSunEvaluation = (areaId: number) => {
-    const sunEval = sunEvalsForTimeslot.find(
+    const sunEvalRightNow = sunEvalsForTimeslot.find(
       (sunEvalItem) => sunEvalItem.area_id === areaId
     );
 
-    if (!sunEval) {
+    const sunEvalsForAreaThroughtTheDay = sunEvalsForAllPubAreas.filter(
+      (sunEvalItem) => sunEvalItem.area_id === areaId
+    );
+
+    // Sort the evaluations by time to ensure proper order in visualization
+    const sortedEvals = [...sunEvalsForAreaThroughtTheDay].sort(
+      (a, b) => parseInt(a.time) - parseInt(b.time)
+    );
+
+    if (!sunEvalRightNow) {
       return <span className="text-gray-500">No data</span>;
     }
 
     // Determine sun rating based on percentage in sun
-    const sunPercentage = sunEval.pc_in_sun;
+    const sunPercentage = sunEvalRightNow.pc_in_sun || 0;
+    const currentTimeSlot = parseInt(sunEvalRightNow.time);
 
     // Create a visual representation based on percentage
-    if (sunPercentage >= 75) {
+
+    // Create the day timeline visualization
+    const renderDayTimeline = () => {
+      if (sortedEvals.length === 0) return null;
+
       return (
-        <div className="flex items-center">
-          <Sun className="h-5 w-5 text-amber-500" />
-          <Sun className="h-5 w-5 text-amber-500" />
-          <Sun className="h-5 w-5 text-amber-500" />
-          <span className="ml-2">{sunPercentage}% in sun</span>
+        <div className="flex flex-col mt-4 gap-4 w-full">
+          <div className="text-xs text-gray-500">Sun throughout the day:</div>
+          <div className="flex w-full h-6 bg-gray-100 rounded-md overflow-hidden relative">
+            {sortedEvals.map((sunEval, index) => {
+              const width = `${100 / sortedEvals.length}%`;
+              const opacity = sunEval.pc_in_sun / 100;
+              const isCurrentTime = parseInt(sunEval.time) === currentTimeSlot;
+
+              const isHovered = hoveredIndex === index;
+
+              return (
+                <div
+                  key={index}
+                  className={`h-full ${isHovered ? "border-2 border-blue-500" : ""} relative`}
+                  style={{
+                    width,
+                    backgroundColor: `rgba(251, 191, 36, ${opacity})`,
+                    position: "relative",
+                  }}
+                  onMouseEnter={() => {
+                    setHoveredIndex(index);
+                    setHoveredSunEval(sunEval);
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredIndex(null);
+                    setHoveredSunEval(null);
+                  }}
+                >
+                  {isCurrentTime && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex justify-between text-xs text-gray-500">
+            <span>12pm</span>
+            <span>5pm</span>
+            <span>9pm</span>
+          </div>
         </div>
       );
-    } else if (sunPercentage >= 40) {
-      return (
-        <div className="flex items-center">
-          <Sun className="h-5 w-5 text-amber-500" />
-          <Sun className="h-5 w-5 text-amber-500" />
-          <span className="ml-2">{sunPercentage}% in sun</span>
-        </div>
-      );
-    } else if (sunPercentage > 0) {
-      return (
-        <div className="flex items-center">
-          <Sun className="h-5 w-5 text-amber-500" />
-          <span className="ml-2">{sunPercentage}% in sun</span>
-        </div>
-      );
-    } else {
-      return (
-        <div className="flex items-center">
-          <span className="text-gray-500">0% in sun</span>
-        </div>
-      );
-    }
+    };
+
+    return (
+      <div>
+        {hoveredSunEval && hoveredIndex !== null
+          ? renderSunRating(
+              hoveredSunEval.pc_in_sun,
+              parseInt(hoveredSunEval.time)
+            )
+          : renderSunRating(sunPercentage)}
+        {renderDayTimeline()}
+      </div>
+    );
   };
 
   if (!selectedPub) {
@@ -122,7 +175,7 @@ const PubDetail = () => {
               </p>
               <p className="text-gray-700 mb-2">
                 <span className="font-medium">Postcode:</span>{" "}
-                {selectedPub.address_text}
+                {extractPostCodeFromAddress(selectedPub.address_text)}
               </p>
               <p className="text-gray-700">
                 <span className="font-medium">Coordinates:</span>{" "}
@@ -236,7 +289,7 @@ const PubDetail = () => {
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-800 uppercase tracking-wider"
                   >
-                    Sun Evaluation
+                    Sun right now
                   </th>
                 </tr>
               </thead>

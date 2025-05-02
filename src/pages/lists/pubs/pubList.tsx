@@ -10,6 +10,7 @@ import { PubArea, Pub } from "../../../_shared/types";
 // Components
 import PubDetail from "./pubDetail";
 import ExpandablePubRow from "./_shared/components/expandablePubRow";
+import { extractPostCodeFromAddress } from "./_shared/helpers";
 
 export interface PubForTableDisplay extends Pub {
   areas: PubArea[];
@@ -34,11 +35,7 @@ const PitsOneHundredPubsList = () => {
       const areas = areasOfTypes.filter(({ pub_id }) => pub_id === pub.id);
       const totalArea = areas.reduce((sum, area) => sum + area.floor_area, 0);
 
-      // Extract postcode from address
-      const postcode =
-        pub.address_text.match(
-          /([A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2})/
-        )?.[0] || "N/A";
+      const postcode = extractPostCodeFromAddress(pub.address_text);
 
       // Create array of unique area types
       const areaTypes = [...new Set(areas.map((area) => area.type))];
