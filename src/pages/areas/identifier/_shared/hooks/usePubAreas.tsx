@@ -61,12 +61,12 @@ interface SetPubAreasPresentPayload {
 }
 
 export interface PubAreaWithSunEval extends PubArea {
-  sunEval: SunEval | undefined;
+  sunEval: SunEval;
 }
 
 export interface PubWithAreaAndSunEval {
   pub: Pub;
-  areas: PubAreaWithSunEval[];
+  groupedSunEvals: (SunEval & { pubArea: PubArea })[];
 }
 
 interface PubAreasData extends PubAreasState {
@@ -323,29 +323,38 @@ const usePubAreas = (): PubAreasResponse => {
   const currentSimulationPubIndex =
     simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
 
-  // For each pub, attach its areas
+  // First, assign pub areas to each sun evaluation
+  const sunEvalsWithPubAreas = sunEvalsForTimeslot
+    .map((sunEval) => {
+      const pubArea = allAvailableAreas.find(
+        (area) => area.id === sunEval.area_id
+      );
+      return pubArea ? { ...sunEval, pubArea } : null;
+    })
+    .filter((item): item is SunEval & { pubArea: PubArea } => item !== null);
 
-  const pubsWithAreas = pubsInMapBounds.map((pub) => {
-    return {
-      pub,
-      areas: allAvailableAreas.filter((area) => area.pub_id === pub.id),
-    };
-  });
+  // Then, group sun evaluations by pub
+  const sunEvalsByPub = sunEvalsWithPubAreas.reduce(
+    (acc, sunEvalWithArea) => {
+      const pubId = sunEvalWithArea.pubArea.pub_id;
+      if (!acc[pubId]) {
+        acc[pubId] = [];
+      }
+      acc[pubId].push(sunEvalWithArea);
+      return acc;
+    },
+    {} as Record<number, (SunEval & { pubArea: PubArea })[]>
+  );
 
-  const pubsWithAreasAndSunEvals =
-    pubsWithAreas.map((pub) => {
+  // Create array of objects with pub and its sun evaluations
+  const pubsWithAreasAndSunEvals = pubsInMapBounds
+    .map((pub) => {
       return {
-        ...pub,
-        areas: pub.areas.map((area) => {
-          return {
-            ...area,
-            sunEval: sunEvalsForTimeslot.find(
-              (sunEval) => sunEval.area_id === area.id
-            ),
-          };
-        }),
+        pub,
+        groupedSunEvals: sunEvalsByPub[pub.id] || [],
       };
-    }) || [];
+    })
+    .filter((pub) => pub.groupedSunEvals.length > 0);
 
   //
 

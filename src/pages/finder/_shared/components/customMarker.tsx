@@ -4,9 +4,6 @@ import { Marker, OverlayView } from "@react-google-maps/api";
 
 import beerEmoji from "/beer.png";
 
-// Types
-import { Pub } from "../../../../_shared/types";
-
 // Hooks
 import usePubs from "../hooks/usePubs";
 import usePubAreas, {
@@ -116,6 +113,9 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
   //
   // Variables
   const { id: pubId, name, latitude, longitude } = pubWithAreas?.pub || {};
+  const { groupedSunEvals = [] } = pubWithAreas || {};
+
+  const areaSunValues = groupedSunEvals.map((area) => area.pc_in_sun || 0);
 
   //
   // Hooks
@@ -200,11 +200,19 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               onMouseLeave={handleMouseLeave}
               onClick={handleClick}
             >
-              <img
+              <div className="flex items-center">
+                {areaSunValues.map((sunValue) => (
+                  <p key={sunValue} className="text-xs font-bold mr-2">
+                    {sunValue}%
+                  </p>
+                ))}
+              </div>
+              {/* <img
                 src={markerEmoji}
                 alt="Sun or no sun emoji"
                 className="h-[15px] w-[15px] ml-[2.5px]"
-              />
+              /> */}
+
               <MarkerNameText>
                 {potentiallyTruncatedName}
                 <ChevronRight size={16} />
