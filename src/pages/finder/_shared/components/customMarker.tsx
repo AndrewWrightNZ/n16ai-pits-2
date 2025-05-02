@@ -89,6 +89,8 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
     Math.max(max, current)
   );
 
+  // We'll use auto height instead of calculating a specific height
+
   //
   // Handlers
   const navigate = useNavigate();
@@ -132,59 +134,83 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
         getPixelPositionOffset={getPixelPositionOffset}
       >
         <div
-          className={`flex relative translate-y-0 ml-10 w-[35px] h-[30px] rounded-[20px]`}
+          className={`flex relative translate-y-0 ml-10 rounded-[20px] overflow-hidden ${!isPubHovered ? fn.getSunCircleClassFromPercentage(topSunValue) : ""}`}
           style={{
             zIndex: isPubHovered ? 9999999999 : 1,
             opacity: isPubHidden ? 0.3 : 1,
-            transition: "all ease-in-out 0.1s",
-            cursor: "pointer",
+            cursor: isPubHovered ? "pointer" : "pointer",
+            width: isPubHovered ? "250px" : "30px",
+            height: isPubHovered ? "auto" : "30px",
+            minHeight: isPubHovered ? "100px" : "30px",
+            maxHeight: isPubHovered ? "300px" : "30px",
+            backgroundColor: isPubHovered ? "white" : "",
+            transition:
+              "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
+            border: isPubHovered ? "1px solid #1e293b" : "1px solid #1e293b", // slate-800
+            boxShadow: isPubHovered
+              ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+              : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            padding: isPubHovered ? "16px" : "0",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: isPubHovered ? "start" : "center",
+            alignItems: isPubHovered ? "start" : "center",
           }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onClick={handleClick}
         >
-          {isPubHovered ? (
-            <div
-              className={`flex flex-col absolute justify-start items-start gap-6 w-[250px] bg-white text-slate-800 rounded-[20px] p-4 h-[150px] border border-slate-800 shadow-xl left-0 top-0 hover:cursor-pointer`}
-              onMouseLeave={handleMouseLeave}
-              onClick={handleClick}
-            >
+          {/* Content that appears with delay on hover */}
+          <div
+            style={{
+              opacity: isPubHovered ? 1 : 0,
+              transition: "opacity 0.4s ease",
+              transitionDelay: isPubHovered ? "0.3s" : "0s",
+              pointerEvents: isPubHovered ? "auto" : "none",
+              marginTop: isPubHovered ? "0" : "-100%",
+              width: "100%",
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div
+                className={`h-[25px] w-[25px] rounded-full ${fn.getSunCircleClassFromPercentage(topSunValue)}`}
+                aria-label={`Sun indicator: ${topSunValue}%`}
+                style={{
+                  position: "relative",
+                  top: "auto",
+                  left: "auto",
+                }}
+              />
               <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {potentiallyTruncatedName}
                 <ChevronRight size={16} />
               </span>
-
-              <div className="flex flex-col items-start gap-2">
-                {groupedSunEvals.map((sunValue, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-row justify-start items-center"
-                  >
-                    <div
-                      className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
-                      aria-label={`Sun indicator: ${sunValue.pc_in_sun}%`}
-                    />
-
-                    <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                      {sunValue.pc_in_sun}%
-                    </p>
-
-                    <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                      {formatAreaType(sunValue.pubArea.type)}
-                    </p>
-                  </div>
-                ))}
-              </div>
             </div>
-          ) : (
-            <StandardMarkerInternals
-              onMouseEnter={handleMouseEnter}
-              onClick={handleClick}
-              className={fn.getSunCircleClassFromPercentage(topSunValue)}
-            >
-              <div
-                className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(topSunValue)}`}
-                aria-label={`Sun indicator: ${topSunValue}%`}
-              />
-            </StandardMarkerInternals>
-          )}
+
+            <div className="flex flex-col items-start gap-2 mt-6">
+              {groupedSunEvals.map((sunValue, index) => (
+                <div
+                  key={index}
+                  className="flex flex-row justify-start items-center gap-2"
+                >
+                  <div
+                    className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
+                    aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
+                  />
+
+                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                    {sunValue.pc_in_sun.toFixed(0)}%
+                  </p>
+
+                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                    {formatAreaType(sunValue.pubArea.type)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </OverlayView>
     </>
