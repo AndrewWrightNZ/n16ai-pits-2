@@ -2,12 +2,16 @@ import { useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
+import beerEmoji from "/beer.png";
+
 // Types
 import { Pub } from "../../../../_shared/types";
 
 // Hooks
 import usePubs from "../hooks/usePubs";
-import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
+import usePubAreas, {
+  PubWithAreaAndSunEval,
+} from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Utils
 import * as fn from "../../../../_shared/utils";
@@ -100,8 +104,7 @@ export const MarkerNameText: React.FC<{ children: React.ReactNode }> = ({
 };
 
 interface CustomMarkerProps {
-  pubDetails: Pub;
-  filterName: string;
+  pubWithAreas: PubWithAreaAndSunEval;
 }
 
 const getPixelPositionOffset = (width: number, height: number) => ({
@@ -109,10 +112,10 @@ const getPixelPositionOffset = (width: number, height: number) => ({
   y: -(height / 2),
 });
 
-const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
+const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
   //
   // Variables
-  const { id: pubId, name, latitude, longitude } = pubDetails || {};
+  const { id: pubId, name, latitude, longitude } = pubWithAreas?.pub || {};
 
   //
   // Hooks
@@ -132,13 +135,13 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
 
   const isPubHidden = hoveredPubId && !isPubHovered && !isPubSelected;
 
-  const { eval: currentSunEval = "full_sun" } = {};
+  // const markerEmoji = fn.selectCorrectEmoji({
+  //   isPubSelected,
+  //   currentSunEval,
+  //   filterName,
+  // });
 
-  const markerEmoji = fn.selectCorrectEmoji({
-    isPubSelected,
-    currentSunEval,
-    filterName,
-  });
+  const markerEmoji = beerEmoji;
 
   const potentiallyTruncatedName = fn.truncateString(name, 20);
 

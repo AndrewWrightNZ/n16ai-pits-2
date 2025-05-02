@@ -18,7 +18,6 @@ const AVAILABLE_FILTERS = ["full_sun", "partial_sun", "no_sun"];
 //
 
 // Types
-
 interface PubsData extends PubState {
   // Loading
   isLoading: boolean;
@@ -27,6 +26,8 @@ interface PubsData extends PubState {
   // Pubs
   pubs: Pub[];
   uiReadyPubs: Pub[];
+  pubsInMapBounds: Pub[];
+
   selectedPub: Pub | null;
   pubsInTheSun: Pub[];
   pubsPartiallyInTheSun: Pub[];
@@ -95,6 +96,8 @@ const usePubs = (): HookShape => {
   };
 
   const fetchUIReadyPubs = async () => {
+    //
+
     // Get pubs where the has_areas_measured is true
     const { data, error } = await supabaseClient
       .from("pub")
@@ -262,6 +265,8 @@ const usePubs = (): HookShape => {
       pubsInTheSun,
       pubsPartiallyInTheSun,
       pubsNotInTheSun,
+
+      pubsInMapBounds,
 
       // Map bounds
       mapBounds,

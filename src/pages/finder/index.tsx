@@ -1,15 +1,13 @@
-import { Filter } from "lucide-react";
 import { Helmet } from "react-helmet";
-import { Link } from "@tanstack/react-router";
-import { GoogleMap } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import { useState, useEffect, useCallback } from "react";
 
 // Hooks
 import usePubs from "./_shared/hooks/usePubs";
-import usePubAreas from "../areas/identifier/_shared/hooks/usePubAreas";
+// import usePubAreas from "../areas/identifier/_shared/hooks/usePubAreas";
 
 // Components
-import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
+import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import RenderPubsOfType from "./_shared/components/renderPubsOfType";
 
 // Default center (London)
@@ -19,20 +17,25 @@ const defaultCenter = {
 };
 
 function Finder() {
-  // State for Google Maps
-  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
-  const [center, setCenter] = useState(defaultCenter);
-  const [showFilterModal, setShowFilterModal] = useState(false);
+  //
 
-  // Hooks from your existing code
+  // State
+  const [center, setCenter] = useState(defaultCenter);
+  const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
+  const [userLocation, setUserLocation] =
+    useState<google.maps.LatLngLiteral | null>(null);
+
+  //
+
+  // Hooks
   const {
-    data: { uiReadyPubs = [], pubsInTheSun = [], selectedPub = null },
+    data: { selectedPub = null },
     operations: { onSetMapBounds },
   } = usePubs();
 
-  const {
-    data: { selectedAreaTypes = [] },
-  } = usePubAreas();
+  // const {
+  //   data: { selectedAreaTypes = [] },
+  // } = usePubAreas();
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -66,6 +69,7 @@ function Finder() {
             lng: position.coords.longitude,
           };
           setCenter(userLocation);
+          setUserLocation(userLocation);
           if (mapInstance) {
             mapInstance.panTo(userLocation);
             mapInstance.setZoom(15); // Zoom in when finding user location
@@ -82,6 +86,11 @@ function Finder() {
       alert("Geolocation is not supported by your browser.");
     }
   }, [mapInstance]);
+
+  // Effect to automatically get user location on component mount
+  useEffect(() => {
+    handleFindMyLocation();
+  }, []);
 
   // Effect to center map on selected pub
   useEffect(() => {
@@ -107,29 +116,45 @@ function Finder() {
         />
       </Helmet>
 
-      <main className="w-full flex flex-col items-center">
-        <div className="w-full h-[100vh] rounded-lg overflow-hidden shadow-lg relative">
-          <GoogleMap
-            mapContainerStyle={{
-              width: "100%",
-              height: "100%",
-            }}
-            center={center}
-            zoom={13}
-            onLoad={onMapLoad}
-            onBoundsChanged={onBoundsChanged}
-            options={{
-              gestureHandling: "greedy",
-              styles: [],
-              mapTypeControl: true,
-              streetViewControl: true,
-              zoomControl: true,
-              fullscreenControl: true,
-            }}
-          >
-            {/* <RenderPubsOfType filterName="full_sun" /> */}
-          </GoogleMap>
-        </div>
+      <main className="w-full h-[100vh] rounded-lg overflow-hidden shadow-lg relative">
+        <GoogleMap
+          mapContainerStyle={{
+            width: "100%",
+            height: "100%",
+          }}
+          center={center}
+          zoom={15}
+          onLoad={onMapLoad}
+          onBoundsChanged={onBoundsChanged}
+          options={{
+            gestureHandling: "greedy",
+            styles: [],
+            mapTypeControl: true,
+            streetViewControl: true,
+            zoomControl: true,
+            fullscreenControl: true,
+          }}
+        >
+          <PubInTheSunMapHeader />
+          <RenderPubsOfType />
+          {userLocation && (
+            <Marker
+              position={userLocation}
+              icon={{
+                path: "M0,0",
+                fillOpacity: 0,
+                strokeOpacity: 0,
+                scale: 0,
+                labelOrigin: new google.maps.Point(0, 0),
+              }}
+              label={{
+                text: "🤠",
+                fontSize: "24px",
+                className: "marker-label",
+              }}
+            />
+          )}
+        </GoogleMap>
       </main>
     </>
   );

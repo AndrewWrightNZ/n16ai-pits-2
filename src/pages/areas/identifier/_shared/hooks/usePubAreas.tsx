@@ -15,7 +15,10 @@ import {
   SimpleCameraPosition,
   Pub,
   PubArea,
+  SunEval,
 } from "../../../../../_shared/types";
+import usePubs from "../../../../finder/_shared/hooks/usePubs";
+import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 
 // Types
 
@@ -57,6 +60,15 @@ interface SetPubAreasPresentPayload {
   pub_id: number;
 }
 
+export interface PubAreaWithSunEval extends PubArea {
+  sunEval: SunEval | undefined;
+}
+
+export interface PubWithAreaAndSunEval {
+  pub: Pub;
+  areas: PubAreaWithSunEval[];
+}
+
 interface PubAreasData extends PubAreasState {
   // Loading
   isSavingNewPubArea: boolean;
@@ -84,6 +96,9 @@ interface PubAreasData extends PubAreasState {
   // Simulation
   currentSimulationPubIndex: number;
   simulationReadyPubs: Pub[];
+
+  // Pubs with areas
+  pubsWithAreasAndSunEvals: PubWithAreaAndSunEval[];
 }
 
 interface PubAreasOperations {
@@ -128,6 +143,12 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
+  const {
+    data: { pubsInMapBounds = [] },
+  } = usePubs();
+  const {
+    data: { sunEvalsForTimeslot = [] },
+  } = useSunEvals();
 
   //
 
@@ -145,6 +166,8 @@ const usePubAreas = (): PubAreasResponse => {
     selectedAreaTypes = [],
     selectedPubArea,
   } = pubAreasState;
+
+  //
 
   // Query functions
   const fetchAreasForPub = async (): Promise<PubArea[]> => {
@@ -300,7 +323,31 @@ const usePubAreas = (): PubAreasResponse => {
   const currentSimulationPubIndex =
     simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
 
-  console.log("simulationReadyPubs", { simulationReadyPubs });
+  // For each pub, attach its areas
+
+  const pubsWithAreas = pubsInMapBounds.map((pub) => {
+    return {
+      pub,
+      areas: allAvailableAreas.filter((area) => area.pub_id === pub.id),
+    };
+  });
+
+  const pubsWithAreasAndSunEvals =
+    pubsWithAreas.map((pub) => {
+      return {
+        ...pub,
+        areas: pub.areas.map((area) => {
+          return {
+            ...area,
+            sunEval: sunEvalsForTimeslot.find(
+              (sunEval) => sunEval.area_id === area.id
+            ),
+          };
+        }),
+      };
+    }) || [];
+
+  //
 
   // Mutations
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
@@ -650,6 +697,9 @@ const usePubAreas = (): PubAreasResponse => {
       // Simulation
       currentSimulationPubIndex,
       simulationReadyPubs,
+
+      // Pubs with areas
+      pubsWithAreasAndSunEvals,
     },
     operations: {
       // Select pub

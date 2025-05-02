@@ -35,8 +35,6 @@ const AreaTableRow = ({
 
   const { pc_in_sun } = sunEval || {};
 
-  console.log({ sunEval, pc_in_sun });
-
   return (
     <tr
       key={area.id || index}
