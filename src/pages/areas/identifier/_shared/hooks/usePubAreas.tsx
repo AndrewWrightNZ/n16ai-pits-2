@@ -88,7 +88,7 @@ interface PubAreasData extends PubAreasState {
 
 interface PubAreasOperations {
   // Select pub
-  onSetSelectedPub: (pub: Pub) => void;
+  onSetSelectedPub: (pub: Pub | null) => void;
 
   // Add properties relevant to PubAreasOperations
   onUpdatePubAreaDetails: (newDetails: Partial<PubAreasState>) => void;
@@ -208,18 +208,24 @@ const usePubAreas = (): PubAreasResponse => {
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 7);
 
-    // Format sevenDaysAgo to DD-MM-YYYY format for comparison
-    const formattedSevenDaysAgo = `${String(sevenDaysAgo.getDate()).padStart(2, "0")}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, "0")}-${sevenDaysAgo.getFullYear()}`;
-
-    // Get pubs where has_vision_masks_added is true and last_processed_date is before 7 days ago
+    // Fetch records with has_vision_masks_added = true
     const { data, error } = await supabaseClient
       .from("pub")
       .select()
-      .eq("has_vision_masks_added", true)
-      .lt("last_checked", formattedSevenDaysAgo);
+      .eq("has_vision_masks_added", true);
 
     if (error) throw error;
-    return data;
+
+    // Filter records based on last_checked date
+    return data.filter((pub) => {
+      if (!pub.last_checked) return false;
+
+      // Parse the date in DD-MM-YYYY format
+      const [day, month, year] = pub.last_checked.split("-").map(Number);
+      const lastCheckedDate = new Date(year, month - 1, day); // Month is 0-indexed in JS Date
+
+      return lastCheckedDate < sevenDaysAgo;
+    });
   };
 
   // Queries
@@ -293,6 +299,8 @@ const usePubAreas = (): PubAreasResponse => {
   // Variables
   const currentSimulationPubIndex =
     simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
+
+  console.log("simulationReadyPubs", { simulationReadyPubs });
 
   // Mutations
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
@@ -493,9 +501,9 @@ const usePubAreas = (): PubAreasResponse => {
     );
   };
 
-  const onSetSelectedPub = (pub: Pub) => {
+  const onSetSelectedPub = (pub: Pub | null) => {
     updatePubAreasState({
-      selectedPubId: pub.id,
+      selectedPubId: pub?.id || 0,
       name: "",
       description: "",
       type: "",

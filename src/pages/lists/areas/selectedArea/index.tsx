@@ -1,4 +1,4 @@
-import { MapPin, Info, Square, X, Sun } from "lucide-react";
+import { MapPin, Info, Square, X, Sun, Clock } from "lucide-react";
 
 // Hooks
 import usePubs from "../../../finder/_shared/hooks/usePubs";
@@ -118,6 +118,87 @@ const ViewSelectedArea = () => {
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
+              {/* Sun intensity timeline bar */}
+              {validSunEvals.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <div className="text-xs text-gray-600 font-medium">
+                      Sun intensity throughout the day
+                    </div>
+                  </div>
+                  <div className="h-8 bg-gray-200 rounded-md overflow-hidden flex relative">
+                    {validSunEvals
+                      .sort((a, b) => Number(a.time) - Number(b.time))
+                      .map((sunData, index, array) => {
+                        // Calculate segment width based on time distribution
+                        const segmentWidth = 100 / array.length;
+
+                        // Determine opacity based on sun intensity percentage
+                        const intensity = Number(sunData.pc_in_sun) / 100;
+
+                        // Use a single golden-yellow color with varying opacity
+                        // Base color: rgb(250, 200, 50) - a warm golden yellow
+                        // Minimum opacity: 0.15 (so even low values are visible)
+                        // Maximum opacity: 0.95
+                        const opacity = 0.15 + intensity * 0.8;
+                        const color = `rgba(250, 200, 50, ${opacity.toFixed(2)})`;
+
+                        return (
+                          <div
+                            key={`timeline-${sunData.id}`}
+                            className="h-full relative cursor-pointer"
+                            style={{
+                              width: `${segmentWidth}%`,
+                              backgroundColor: color,
+                              position: "relative",
+                            }}
+                            onMouseEnter={(e) => {
+                              // Create and position tooltip
+                              const tooltip = document.createElement("div");
+                              tooltip.className = "sun-tooltip";
+                              tooltip.textContent = `${formatTimeLabel(Number(sunData.time))}: ${sunData.pc_in_sun.toFixed(1)}% in sun`;
+                              tooltip.style.position = "absolute";
+                              tooltip.style.backgroundColor =
+                                "rgba(0, 0, 0, 0.8)";
+                              tooltip.style.color = "white";
+                              tooltip.style.padding = "4px 8px";
+                              tooltip.style.borderRadius = "4px";
+                              tooltip.style.fontSize = "12px";
+                              tooltip.style.zIndex = "50";
+                              tooltip.style.whiteSpace = "nowrap";
+                              tooltip.style.pointerEvents = "none";
+
+                              // Append to body and position
+                              document.body.appendChild(tooltip);
+                              const rect =
+                                e.currentTarget.getBoundingClientRect();
+                              tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
+                              tooltip.style.top = `${rect.top - tooltip.offsetHeight - 5}px`;
+                            }}
+                            onMouseLeave={() => {
+                              // Remove all tooltips
+                              document
+                                .querySelectorAll(".sun-tooltip")
+                                .forEach((el) => el.remove());
+                            }}
+                          >
+                            {index % 2 === 0 && (
+                              <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                                {formatTimeLabel(Number(sunData.time))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                  <div className="flex justify-between mt-6 text-xs text-gray-500">
+                    <span>Low Sun Intensity</span>
+                    <span>High Sun Intensity</span>
+                  </div>
+                </div>
+              )}
+
               {/* Horizontal bar chart - rotated 90 degrees */}
               <div className="space-y-3">
                 {/* Y-axis label */}

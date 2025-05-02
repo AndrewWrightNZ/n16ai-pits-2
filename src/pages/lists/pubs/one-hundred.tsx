@@ -8,7 +8,7 @@ import { ChevronDown } from "lucide-react";
 import sunLogo from "../../../assets/bigBoldSun.svg";
 
 // Components
-import PitsOneHundredPubsList from "./pubsList";
+import PitsOneHundredPubsList from "./pubList";
 
 const OneHundred = () => {
   // State to track sun visibility
@@ -112,7 +112,7 @@ const OneHundred = () => {
       <main>
         {/* Main container with transition for minimizing */}
         <div
-          className={`flex flex-col items-center justify-start transition-all duration-1000 ease-in-out h-[90vh] bg-[#2962FF] font-poppins overflow-hidden relative`}
+          className={`flex flex-col items-center justify-start transition-all duration-1000 ease-in-out h-[85vh] bg-[#2962FF] font-poppins overflow-hidden relative`}
         >
           {/* Sun Image - positioned with responsive adjustments */}
           <div

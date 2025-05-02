@@ -17,10 +17,11 @@ import { Route as SceneImport } from './routes/scene'
 import { Route as PubLabelsImport } from './routes/pub-labels'
 import { Route as OneHundredImport } from './routes/one-hundred'
 import { Route as FinderImport } from './routes/finder'
-import { Route as AreasListImport } from './routes/areas-list'
 import { Route as AdminImport } from './routes/admin'
 import { Route as AboutImport } from './routes/about'
 import { Route as IndexImport } from './routes/index'
+import { Route as ListsPubsImport } from './routes/lists/pubs'
+import { Route as ListsAreasImport } from './routes/lists/areas'
 import { Route as AreasSizerImport } from './routes/areas/sizer'
 import { Route as AreasSimulatorImport } from './routes/areas/simulator'
 import { Route as AreasIdentifierImport } from './routes/areas/identifier'
@@ -63,12 +64,6 @@ const FinderRoute = FinderImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const AreasListRoute = AreasListImport.update({
-  id: '/areas-list',
-  path: '/areas-list',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const AdminRoute = AdminImport.update({
   id: '/admin',
   path: '/admin',
@@ -84,6 +79,18 @@ const AboutRoute = AboutImport.update({
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ListsPubsRoute = ListsPubsImport.update({
+  id: '/lists/pubs',
+  path: '/lists/pubs',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ListsAreasRoute = ListsAreasImport.update({
+  id: '/lists/areas',
+  path: '/lists/areas',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -128,13 +135,6 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminImport
-      parentRoute: typeof rootRoute
-    }
-    '/areas-list': {
-      id: '/areas-list'
-      path: '/areas-list'
-      fullPath: '/areas-list'
-      preLoaderRoute: typeof AreasListImport
       parentRoute: typeof rootRoute
     }
     '/finder': {
@@ -200,6 +200,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AreasSizerImport
       parentRoute: typeof rootRoute
     }
+    '/lists/areas': {
+      id: '/lists/areas'
+      path: '/lists/areas'
+      fullPath: '/lists/areas'
+      preLoaderRoute: typeof ListsAreasImport
+      parentRoute: typeof rootRoute
+    }
+    '/lists/pubs': {
+      id: '/lists/pubs'
+      path: '/lists/pubs'
+      fullPath: '/lists/pubs'
+      preLoaderRoute: typeof ListsPubsImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -209,7 +223,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
   '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
@@ -219,13 +232,14 @@ export interface FileRoutesByFullPath {
   '/areas/identifier': typeof AreasIdentifierRoute
   '/areas/simulator': typeof AreasSimulatorRoute
   '/areas/sizer': typeof AreasSizerRoute
+  '/lists/areas': typeof ListsAreasRoute
+  '/lists/pubs': typeof ListsPubsRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
   '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
@@ -235,6 +249,8 @@ export interface FileRoutesByTo {
   '/areas/identifier': typeof AreasIdentifierRoute
   '/areas/simulator': typeof AreasSimulatorRoute
   '/areas/sizer': typeof AreasSizerRoute
+  '/lists/areas': typeof ListsAreasRoute
+  '/lists/pubs': typeof ListsPubsRoute
 }
 
 export interface FileRoutesById {
@@ -242,7 +258,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
-  '/areas-list': typeof AreasListRoute
   '/finder': typeof FinderRoute
   '/one-hundred': typeof OneHundredRoute
   '/pub-labels': typeof PubLabelsRoute
@@ -252,6 +267,8 @@ export interface FileRoutesById {
   '/areas/identifier': typeof AreasIdentifierRoute
   '/areas/simulator': typeof AreasSimulatorRoute
   '/areas/sizer': typeof AreasSizerRoute
+  '/lists/areas': typeof ListsAreasRoute
+  '/lists/pubs': typeof ListsPubsRoute
 }
 
 export interface FileRouteTypes {
@@ -260,7 +277,6 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
-    | '/areas-list'
     | '/finder'
     | '/one-hundred'
     | '/pub-labels'
@@ -270,12 +286,13 @@ export interface FileRouteTypes {
     | '/areas/identifier'
     | '/areas/simulator'
     | '/areas/sizer'
+    | '/lists/areas'
+    | '/lists/pubs'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
     | '/admin'
-    | '/areas-list'
     | '/finder'
     | '/one-hundred'
     | '/pub-labels'
@@ -285,12 +302,13 @@ export interface FileRouteTypes {
     | '/areas/identifier'
     | '/areas/simulator'
     | '/areas/sizer'
+    | '/lists/areas'
+    | '/lists/pubs'
   id:
     | '__root__'
     | '/'
     | '/about'
     | '/admin'
-    | '/areas-list'
     | '/finder'
     | '/one-hundred'
     | '/pub-labels'
@@ -300,6 +318,8 @@ export interface FileRouteTypes {
     | '/areas/identifier'
     | '/areas/simulator'
     | '/areas/sizer'
+    | '/lists/areas'
+    | '/lists/pubs'
   fileRoutesById: FileRoutesById
 }
 
@@ -307,7 +327,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
-  AreasListRoute: typeof AreasListRoute
   FinderRoute: typeof FinderRoute
   OneHundredRoute: typeof OneHundredRoute
   PubLabelsRoute: typeof PubLabelsRoute
@@ -317,13 +336,14 @@ export interface RootRouteChildren {
   AreasIdentifierRoute: typeof AreasIdentifierRoute
   AreasSimulatorRoute: typeof AreasSimulatorRoute
   AreasSizerRoute: typeof AreasSizerRoute
+  ListsAreasRoute: typeof ListsAreasRoute
+  ListsPubsRoute: typeof ListsPubsRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
-  AreasListRoute: AreasListRoute,
   FinderRoute: FinderRoute,
   OneHundredRoute: OneHundredRoute,
   PubLabelsRoute: PubLabelsRoute,
@@ -333,6 +353,8 @@ const rootRouteChildren: RootRouteChildren = {
   AreasIdentifierRoute: AreasIdentifierRoute,
   AreasSimulatorRoute: AreasSimulatorRoute,
   AreasSizerRoute: AreasSizerRoute,
+  ListsAreasRoute: ListsAreasRoute,
+  ListsPubsRoute: ListsPubsRoute,
 }
 
 export const routeTree = rootRoute
@@ -348,7 +370,6 @@ export const routeTree = rootRoute
         "/",
         "/about",
         "/admin",
-        "/areas-list",
         "/finder",
         "/one-hundred",
         "/pub-labels",
@@ -357,7 +378,9 @@ export const routeTree = rootRoute
         "/vision-mask",
         "/areas/identifier",
         "/areas/simulator",
-        "/areas/sizer"
+        "/areas/sizer",
+        "/lists/areas",
+        "/lists/pubs"
       ]
     },
     "/": {
@@ -368,9 +391,6 @@ export const routeTree = rootRoute
     },
     "/admin": {
       "filePath": "admin.tsx"
-    },
-    "/areas-list": {
-      "filePath": "areas-list.tsx"
     },
     "/finder": {
       "filePath": "finder.tsx"
@@ -398,6 +418,12 @@ export const routeTree = rootRoute
     },
     "/areas/sizer": {
       "filePath": "areas/sizer.tsx"
+    },
+    "/lists/areas": {
+      "filePath": "lists/areas.tsx"
+    },
+    "/lists/pubs": {
+      "filePath": "lists/pubs.tsx"
     }
   }
 }
