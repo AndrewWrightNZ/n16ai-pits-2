@@ -196,31 +196,22 @@ export function selectCorrectEmoji({
   return markerEmoji;
 }
 
+export function getSunCircleClassFromPercentage(percentage: number) {
+  if (percentage >= 75) {
+    return "bg-amber-300"; // Bright yellow circle for high sun percentage
+    // } else if (percentage >= 50) {
+    //   return "bg-yellow-200"; // Light yellow circle for medium sun percentage
+  } else {
+    return "bg-gray-200"; // Gray circle for low sun percentage
+  }
+}
+
 export const truncateString = (inputString: string, maxLength: number) => {
   if (inputString.length > maxLength) {
     return `${inputString.slice(0, maxLength)}...`;
   }
 
   return inputString;
-};
-
-//
-
-// Filtering
-
-export const countPubsBySunEvaluation = (
-  pubs: Pub[],
-  rawSunEvaluationsByTimeStamp: SunEvaluation[],
-  targetEvaluation: "full_sun" | "partial_sun" | "no_sun"
-): number => {
-  return pubs.filter((pub) => {
-    const sunEvalsForPub = rawSunEvaluationsByTimeStamp.filter(
-      ({ pub_id }) => pub_id === pub.id
-    );
-    return sunEvalsForPub.some(
-      ({ eval: sunEval }) => sunEval === targetEvaluation
-    );
-  }).length;
 };
 
 export const filterPubsBySunEvaluation = (
