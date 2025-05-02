@@ -3,6 +3,14 @@ import * as THREE from "three";
 // Types
 import { PolygonCoordinate } from "../../pages/areas/identifier/_shared/hooks/usePubAreas";
 
+// Define a type for the partial pub data returned from Supabase
+export type PartialPub = Pick<
+  Pub,
+  "id" | "name" | "latitude" | "longitude" | "address_text"
+> & {
+  created_at: string;
+};
+
 export interface Pub {
   id: number;
   name: string;
@@ -10,7 +18,6 @@ export interface Pub {
   latitude: number;
   longitude: number;
   camera_details: CameraPosition;
-  vision_mask_points: number[];
 
   // Areas
   has_areas_added: boolean;

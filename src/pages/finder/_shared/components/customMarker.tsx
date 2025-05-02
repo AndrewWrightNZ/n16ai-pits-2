@@ -2,12 +2,11 @@ import { useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
-// Types
-import { Pub } from "../../../../_shared/types";
-
 // Hooks
 import usePubs from "../hooks/usePubs";
-import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
+import usePubAreas, {
+  PubWithAreaAndSunEval,
+} from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Utils
 import * as fn from "../../../../_shared/utils";
@@ -17,31 +16,9 @@ import React from "react";
 
 // Icons
 import { ChevronRight } from "lucide-react";
+import { formatAreaType } from "../../../lists/_shared";
 
-interface MarkerWrapperProps {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-  className?: string;
-  sx?: any; // For compatibility with previous code
-}
-
-export const ExpandedMarkerWrapper: React.FC<MarkerWrapperProps> = ({
-  children,
-  style,
-  className = "",
-  sx = {},
-}) => {
-  return (
-    <div
-      className={`flex relative translate-y-0 ml-10 w-[35px] h-[30px] rounded-[20px] ${className}`}
-      style={{ ...style, ...sx }}
-    >
-      {children}
-    </div>
-  );
-};
-
-interface MarkerInternalsProps {
+export interface MarkerInternalsProps {
   children: React.ReactNode;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
@@ -59,7 +36,7 @@ export const StandardMarkerInternals: React.FC<MarkerInternalsProps> = ({
 }) => {
   return (
     <div
-      className={`flex relative justify-start items-center w-[30px] h-[30px] bg-white rounded-[20px] p-[5px] left-0 top-0 border border-gray-500 shadow-lg ${className}`}
+      className={`flex relative justify-start items-center w-[30px] h-[30px] bg-amber-300 rounded-[20px] p-[5px] left-0 top-0 border border-slate-800 shadow-lg ${className}`}
       onMouseEnter={onMouseEnter}
       onClick={onClick}
       style={style}
@@ -69,39 +46,8 @@ export const StandardMarkerInternals: React.FC<MarkerInternalsProps> = ({
   );
 };
 
-export const ExpandedMarkerInternals: React.FC<MarkerInternalsProps> = ({
-  children,
-  onMouseLeave,
-  onClick,
-  style,
-  className = "",
-}) => {
-  return (
-    <div
-      className={`flex absolute justify-start items-center w-fit bg-white rounded-[20px] p-[5px] h-[30px] border border-gray-500 shadow-xl left-0 top-0 hover:cursor-pointer ${className}`}
-      onMouseLeave={onMouseLeave}
-      onClick={onClick}
-      style={style}
-    >
-      {children}
-    </div>
-  );
-};
-
-// Also convert the MarkerNameText component
-export const MarkerNameText: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  return (
-    <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-      {children}
-    </span>
-  );
-};
-
 interface CustomMarkerProps {
-  pubDetails: Pub;
-  filterName: string;
+  pubWithAreas: PubWithAreaAndSunEval;
 }
 
 const getPixelPositionOffset = (width: number, height: number) => ({
@@ -109,10 +55,15 @@ const getPixelPositionOffset = (width: number, height: number) => ({
   y: -(height / 2),
 });
 
-const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
+const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
   //
   // Variables
-  const { id: pubId, name, latitude, longitude } = pubDetails || {};
+  const { id: pubId, name, latitude, longitude } = pubWithAreas?.pub || {};
+  const { groupedSunEvals = [] } = pubWithAreas || {};
+
+  console.log({ groupedSunEvals });
+
+  const areaSunValues = groupedSunEvals.map((area) => area.pc_in_sun || 0);
 
   //
   // Hooks
@@ -132,15 +83,13 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
 
   const isPubHidden = hoveredPubId && !isPubHovered && !isPubSelected;
 
-  const { eval: currentSunEval = "full_sun" } = {};
-
-  const markerEmoji = fn.selectCorrectEmoji({
-    isPubSelected,
-    currentSunEval,
-    filterName,
-  });
-
   const potentiallyTruncatedName = fn.truncateString(name, 20);
+
+  const topSunValue = areaSunValues.reduce((max, current) =>
+    Math.max(max, current)
+  );
+
+  // We'll use auto height instead of calculating a specific height
 
   //
   // Handlers
@@ -184,42 +133,85 @@ const CustomMarker = ({ pubDetails, filterName }: CustomMarkerProps) => {
         mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
         getPixelPositionOffset={getPixelPositionOffset}
       >
-        <ExpandedMarkerWrapper
-          sx={{
+        <div
+          className={`flex relative translate-y-0 ml-10 rounded-[20px] overflow-hidden ${!isPubHovered ? fn.getSunCircleClassFromPercentage(topSunValue) : ""}`}
+          style={{
             zIndex: isPubHovered ? 9999999999 : 1,
             opacity: isPubHidden ? 0.3 : 1,
-            transition: "all ease-in-out 0.1s",
-            cursor: "pointer",
+            cursor: isPubHovered ? "pointer" : "pointer",
+            width: isPubHovered ? "250px" : "30px",
+            height: isPubHovered ? "auto" : "30px",
+            minHeight: isPubHovered ? "100px" : "30px",
+            maxHeight: isPubHovered ? "300px" : "30px",
+            backgroundColor: isPubHovered ? "white" : "",
+            transition:
+              "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
+            border: isPubHovered ? "1px solid #1e293b" : "1px solid #1e293b", // slate-800
+            boxShadow: isPubHovered
+              ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+              : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+            padding: isPubHovered ? "16px" : "0",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: isPubHovered ? "start" : "center",
+            alignItems: isPubHovered ? "start" : "center",
           }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onClick={handleClick}
         >
-          {isPubHovered ? (
-            <ExpandedMarkerInternals
-              onMouseLeave={handleMouseLeave}
-              onClick={handleClick}
-            >
-              <img
-                src={markerEmoji}
-                alt="Sun or no sun emoji"
-                className="h-[15px] w-[15px] ml-[2.5px]"
+          {/* Content that appears with delay on hover */}
+          <div
+            style={{
+              opacity: isPubHovered ? 1 : 0,
+              transition: "opacity 0.4s ease",
+              transitionDelay: isPubHovered ? "0.3s" : "0s",
+              pointerEvents: isPubHovered ? "auto" : "none",
+              marginTop: isPubHovered ? "0" : "-100%",
+              width: "100%",
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            <div className="flex flex-row items-center gap-2">
+              <div
+                className={`h-[25px] w-[25px] rounded-full ${fn.getSunCircleClassFromPercentage(topSunValue)}`}
+                aria-label={`Sun indicator: ${topSunValue}%`}
+                style={{
+                  position: "relative",
+                  top: "auto",
+                  left: "auto",
+                }}
               />
-              <MarkerNameText>
+              <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {potentiallyTruncatedName}
                 <ChevronRight size={16} />
-              </MarkerNameText>
-            </ExpandedMarkerInternals>
-          ) : (
-            <StandardMarkerInternals
-              onMouseEnter={handleMouseEnter}
-              onClick={handleClick}
-            >
-              <img
-                src={markerEmoji}
-                alt="Sun or no sun emoji"
-                className="h-[15px] w-[15px] ml-[2.5px]"
-              />
-            </StandardMarkerInternals>
-          )}
-        </ExpandedMarkerWrapper>
+              </span>
+            </div>
+
+            <div className="flex flex-col items-start gap-2 mt-6">
+              {groupedSunEvals.map((sunValue, index) => (
+                <div
+                  key={index}
+                  className="flex flex-row justify-start items-center gap-2"
+                >
+                  <div
+                    className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
+                    aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
+                  />
+
+                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                    {sunValue.pc_in_sun.toFixed(0)}%
+                  </p>
+
+                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                    {formatAreaType(sunValue.pubArea.type)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </OverlayView>
     </>
   );

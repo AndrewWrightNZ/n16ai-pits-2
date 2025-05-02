@@ -15,7 +15,10 @@ import {
   SimpleCameraPosition,
   Pub,
   PubArea,
+  SunEval,
 } from "../../../../../_shared/types";
+import usePubs from "../../../../finder/_shared/hooks/usePubs";
+import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 
 // Types
 
@@ -57,6 +60,15 @@ interface SetPubAreasPresentPayload {
   pub_id: number;
 }
 
+export interface PubAreaWithSunEval extends PubArea {
+  sunEval: SunEval;
+}
+
+export interface PubWithAreaAndSunEval {
+  pub: Pub;
+  groupedSunEvals: (SunEval & { pubArea: PubArea })[];
+}
+
 interface PubAreasData extends PubAreasState {
   // Loading
   isSavingNewPubArea: boolean;
@@ -84,6 +96,9 @@ interface PubAreasData extends PubAreasState {
   // Simulation
   currentSimulationPubIndex: number;
   simulationReadyPubs: Pub[];
+
+  // Pubs with areas
+  pubsWithAreasAndSunEvals: PubWithAreaAndSunEval[];
 }
 
 interface PubAreasOperations {
@@ -128,6 +143,12 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
+  const {
+    data: { pubsInMapBounds = [] },
+  } = usePubs();
+  const {
+    data: { sunEvalsForTimeslot = [] },
+  } = useSunEvals();
 
   //
 
@@ -145,6 +166,8 @@ const usePubAreas = (): PubAreasResponse => {
     selectedAreaTypes = [],
     selectedPubArea,
   } = pubAreasState;
+
+  //
 
   // Query functions
   const fetchAreasForPub = async (): Promise<PubArea[]> => {
@@ -300,7 +323,40 @@ const usePubAreas = (): PubAreasResponse => {
   const currentSimulationPubIndex =
     simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
 
-  console.log("simulationReadyPubs", { simulationReadyPubs });
+  // First, assign pub areas to each sun evaluation
+  const sunEvalsWithPubAreas = sunEvalsForTimeslot
+    .map((sunEval) => {
+      const pubArea = allAvailableAreas.find(
+        (area) => area.id === sunEval.area_id
+      );
+      return pubArea ? { ...sunEval, pubArea } : null;
+    })
+    .filter((item): item is SunEval & { pubArea: PubArea } => item !== null);
+
+  // Then, group sun evaluations by pub
+  const sunEvalsByPub = sunEvalsWithPubAreas.reduce(
+    (acc, sunEvalWithArea) => {
+      const pubId = sunEvalWithArea.pubArea.pub_id;
+      if (!acc[pubId]) {
+        acc[pubId] = [];
+      }
+      acc[pubId].push(sunEvalWithArea);
+      return acc;
+    },
+    {} as Record<number, (SunEval & { pubArea: PubArea })[]>
+  );
+
+  // Create array of objects with pub and its sun evaluations
+  const pubsWithAreasAndSunEvals = pubsInMapBounds
+    .map((pub) => {
+      return {
+        pub,
+        groupedSunEvals: sunEvalsByPub[pub.id] || [],
+      };
+    })
+    .filter((pub) => pub.groupedSunEvals.length > 0);
+
+  //
 
   // Mutations
   const { mutate: saveNewPubArea, isPending: isSavingNewPubArea } = useMutation(
@@ -650,6 +706,9 @@ const usePubAreas = (): PubAreasResponse => {
       // Simulation
       currentSimulationPubIndex,
       simulationReadyPubs,
+
+      // Pubs with areas
+      pubsWithAreasAndSunEvals,
     },
     operations: {
       // Select pub

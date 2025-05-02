@@ -1,50 +1,18 @@
-// Hooks
-import usePubs from "../hooks/usePubs";
-
-// Types
-import { Pub } from "../../../../_shared/types";
-
 // Components
 import CustomMarker from "./customMarker";
+import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
-interface RenderPubsOfTypeProps {
-  filterName: string;
-}
-
-const RenderPubsOfType = ({ filterName }: RenderPubsOfTypeProps) => {
+const RenderPubsOfType = () => {
   //
   // Hooks
   const {
-    data: {
-      uiReadyPubs = [],
-      // pubsInTheSun = [],
-      // pubsPartiallyInTheSun = [],
-      // pubsNotInTheSun = [],
-    },
-  } = usePubs();
-
-  //
-  // Variables
-  let pubsToRender: Pub[] = [];
-
-  switch (filterName) {
-    case "full_sun":
-      pubsToRender = uiReadyPubs;
-      break;
-    case "partial_sun":
-      pubsToRender = [];
-      break;
-    case "no_sun":
-      pubsToRender = [];
-      break;
-    default:
-      pubsToRender = [];
-  }
+    data: { pubsWithAreasAndSunEvals },
+  } = usePubAreas();
 
   return (
     <>
-      {pubsToRender?.map((pub) => (
-        <CustomMarker key={pub.id} pubDetails={pub} filterName={filterName} />
+      {pubsWithAreasAndSunEvals?.map((pubWithAreas) => (
+        <CustomMarker key={pubWithAreas.pub.id} pubWithAreas={pubWithAreas} />
       ))}
     </>
   );
