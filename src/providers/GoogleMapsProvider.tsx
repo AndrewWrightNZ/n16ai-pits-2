@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { LoadScript } from "@react-google-maps/api";
+import { APIProvider } from "@vis.gl/react-google-maps";
 
 interface GoogleMapsProviderProps {
   children: ReactNode;
@@ -8,11 +8,7 @@ interface GoogleMapsProviderProps {
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
-  return (
-    <LoadScript googleMapsApiKey={apiKey}>
-      {children}
-    </LoadScript>
-  );
+  return <APIProvider apiKey={apiKey}>{children}</APIProvider>;
 }
 
 export default GoogleMapsProvider;

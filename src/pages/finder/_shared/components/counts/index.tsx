@@ -83,6 +83,11 @@ const PubCounts = () => {
     <div
       ref={containerRef}
       className={`flex flex-row items-center justify-end fixed top-[20px] right-[8px] transition-all duration-300 bg-none ${isCollapsed ? "hover-trigger" : ""}`}
+      style={{
+        zIndex: 1000,
+        position: "fixed",
+        pointerEvents: "auto",
+      }}
       onMouseEnter={() => isCollapsed && setIsCollapsed(false)}
       onMouseLeave={() => setTimeout(() => setIsCollapsed(true), 1000)}
     >

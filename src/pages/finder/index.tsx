@@ -1,10 +1,12 @@
 import { Helmet } from "react-helmet";
-import { GoogleMap, Marker } from "@react-google-maps/api";
+import { Map, useMap, AdvancedMarker } from "@vis.gl/react-google-maps";
 import { useState, useEffect, useCallback } from "react";
+
+// Providers
+import GoogleMapsProvider from "../../providers/GoogleMapsProvider";
 
 // Hooks
 import usePubs from "./_shared/hooks/usePubs";
-// import usePubAreas from "../areas/identifier/_shared/hooks/usePubAreas";
 
 // Components
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
@@ -17,6 +19,9 @@ const defaultCenter = {
   lat: 51.5074,
   lng: -0.1278,
 };
+
+// Map ID for Advanced Markers
+const MAP_ID = "1f450011d145e0c4";
 
 function Finder() {
   //
@@ -35,31 +40,36 @@ function Finder() {
     operations: { onSetMapBounds },
   } = usePubs();
 
-  // const {
-  //   data: { selectedAreaTypes = [] },
-  // } = usePubAreas();
+  // MapBoundsHandler component to handle bounds changes
+  const MapBoundsHandler = () => {
+    const map = useMap();
 
-  // Handle map load
-  const onMapLoad = useCallback((map: google.maps.Map) => {
-    setMapInstance(map);
-  }, []);
+    useEffect(() => {
+      if (!map || !onSetMapBounds) return;
 
-  // Handle map bounds change
-  const onBoundsChanged = useCallback(() => {
-    if (mapInstance) {
-      const bounds = mapInstance.getBounds();
-      if (bounds && onSetMapBounds) {
-        const ne = bounds.getNorthEast();
-        const sw = bounds.getSouthWest();
-        onSetMapBounds({
-          north: ne.lat(),
-          east: ne.lng(),
-          south: sw.lat(),
-          west: sw.lng(),
-        });
-      }
-    }
-  }, [mapInstance, onSetMapBounds]);
+      setMapInstance(map);
+
+      const boundsChangedListener = map.addListener("bounds_changed", () => {
+        const bounds = map.getBounds();
+        if (bounds) {
+          const ne = bounds.getNorthEast();
+          const sw = bounds.getSouthWest();
+          onSetMapBounds({
+            north: ne.lat(),
+            east: ne.lng(),
+            south: sw.lat(),
+            west: sw.lng(),
+          });
+        }
+      });
+
+      return () => {
+        google.maps.event.removeListener(boundsChangedListener);
+      };
+    }, [map]);
+
+    return null;
+  };
 
   // Handle user location detection
   const handleFindMyLocation = useCallback(() => {
@@ -119,46 +129,33 @@ function Finder() {
       </Helmet>
 
       <main className="w-full h-[100vh] rounded-lg overflow-hidden shadow-lg relative">
-        <GoogleMap
-          mapContainerStyle={{
-            width: "100%",
-            height: "100%",
-          }}
-          center={center}
-          zoom={15}
-          onLoad={onMapLoad}
-          onBoundsChanged={onBoundsChanged}
-          options={{
-            gestureHandling: "greedy",
-            styles: [],
-            mapTypeControl: true,
-            streetViewControl: true,
-            zoomControl: true,
-            fullscreenControl: true,
-          }}
-        >
-          <PubInTheSunMapHeader />
-          <PubCounts />
-          <RenderPubsOfType />
-          {userLocation && (
-            <Marker
-              position={userLocation}
-              icon={{
-                path: "M0,0",
-                fillOpacity: 0,
-                strokeOpacity: 0,
-                scale: 0,
-                labelOrigin: new google.maps.Point(0, 0),
-              }}
-              label={{
-                text: "🤠",
-                fontSize: "24px",
-                className: "marker-label",
-              }}
-            />
-          )}
-          <TimeSlider />
-        </GoogleMap>
+        <GoogleMapsProvider>
+          <Map
+            style={{
+              width: "100%",
+              height: "100%",
+            }}
+            defaultCenter={center}
+            defaultZoom={15}
+            gestureHandling="greedy"
+            mapTypeControl={true}
+            streetViewControl={true}
+            zoomControl={true}
+            fullscreenControl={true}
+            mapId={MAP_ID}
+          >
+            <MapBoundsHandler />
+            <PubInTheSunMapHeader />
+            <PubCounts />
+            <RenderPubsOfType />
+            {userLocation && (
+              <AdvancedMarker position={userLocation}>
+                <div style={{ fontSize: "24px" }}>🤠</div>
+              </AdvancedMarker>
+            )}
+            <TimeSlider />
+          </Map>
+        </GoogleMapsProvider>
       </main>
     </>
   );
