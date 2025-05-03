@@ -13,14 +13,74 @@ interface ShowPubAreasProps {
   pubAreas: SimplePubAreaWithSunPc[];
 }
 
-const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
-  //
+// Reusable component for displaying sun indicator
+const SunIndicator = ({ pcInSun }: { pcInSun: number }) => {
+  const sunCircleClass = fn.getSunCircleClassFromPercentage(pcInSun);
+  const isSunHalfMarker = sunCircleClass === "sun-half-marker";
 
+  return (
+    <div
+      className={`h-[15px] w-[15px] ml-[2px] rounded-full ${sunCircleClass}`}
+      style={{
+        ...(isSunHalfMarker && {
+          background: "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+          transform: "rotate(45deg)",
+        }),
+      }}
+      aria-label={`Sun indicator: ${pcInSun.toFixed(0)}%`}
+    />
+  );
+};
+
+// Reusable component for displaying area information
+const AreaInfo = ({ area }: { area: SimplePubAreaWithSunPc }) => {
+  return (
+    <div className="flex flex-row justify-start items-center gap-2">
+      <SunIndicator pcInSun={area.pc_in_sun} />
+
+      <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
+        {area.pc_in_sun.toFixed(0)}%
+        <span className="font-normal ml-1">sun</span>
+      </p>
+
+      <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+        {formatAreaType(area.type)}
+      </p>
+
+      <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+        {area.floor_area.toFixed(0)}m<sup>2</sup>
+      </p>
+    </div>
+  );
+};
+
+// Component to display a list of areas with a title
+const AreaList = ({
+  title,
+  areas,
+  className = "",
+}: {
+  title: string;
+  areas: SimplePubAreaWithSunPc[];
+  className?: string;
+}) => {
+  if (areas.length === 0) return null;
+
+  return (
+    <>
+      <p className={className}>{title}</p>
+      {areas.map((area, index) => (
+        <AreaInfo key={index} area={area} />
+      ))}
+    </>
+  );
+};
+
+const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
   // Hooks
   const {
     data: { selectedAreaTypes = [] },
   } = usePubAreas();
-  //
 
   // Variables
   const filteredSunEvals = pubAreas.filter((area) =>
@@ -33,15 +93,15 @@ const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
 
   const moreThanOneArea = filteredSunEvals.length > 1;
 
-  let bestArea = null;
+  let bestArea: SimplePubAreaWithSunPc | null = null;
+  let otherAreas: SimplePubAreaWithSunPc[] = [];
 
   if (moreThanOneArea) {
     bestArea = pubAreas.reduce((prev, current) => {
       return prev.pc_in_sun > current.pc_in_sun ? prev : current;
     });
+    otherAreas = pubAreas.filter((area) => area !== bestArea);
   }
-
-  const otherAreas = pubAreas.filter((area) => area !== bestArea);
 
   return (
     <div className="flex flex-col items-start gap-2 mt-6">
@@ -52,141 +112,19 @@ const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
             className="flex flex-row justify-start items-center gap-2"
             style={{ fontFamily: "Poppins, sans-serif !important" }}
           >
-            <div
-              className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(bestArea?.pc_in_sun || 0)}`}
-              style={{
-                ...(fn.getSunCircleClassFromPercentage(
-                  bestArea?.pc_in_sun || 0
-                ) === "sun-half-marker" && {
-                  background:
-                    "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
-                  transform: "rotate(45deg)",
-                }),
-              }}
-              aria-label={`Sun indicator: ${bestArea?.pc_in_sun.toFixed(0)}%`}
-            />
-
-            <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
-              {bestArea.pc_in_sun.toFixed(0)}%
-              <span className="font-normal ml-1">sun</span>
-            </p>
-
-            <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-              {formatAreaType(bestArea.type)}
-            </p>
-            <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-              {bestArea.floor_area.toFixed(0)}m<sup>2</sup>
-            </p>
+            <AreaInfo area={bestArea} />
           </div>
 
-          <p className="mt-2">Other areas:</p>
-          {otherAreas.map((area, index) => (
-            <div
-              key={index}
-              className="flex flex-row justify-start items-center gap-2"
-            >
-              <div
-                className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(area.pc_in_sun)}`}
-                style={{
-                  ...(fn.getSunCircleClassFromPercentage(area.pc_in_sun) ===
-                    "sun-half-marker" && {
-                    background:
-                      "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
-                    transform: "rotate(45deg)",
-                  }),
-                }}
-                aria-label={`Sun indicator: ${area.pc_in_sun.toFixed(0)}%`}
-              />
-
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
-                {area.pc_in_sun.toFixed(0)}%
-                <span className="font-normal ml-1">sun</span>
-              </p>
-
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                {formatAreaType(area.type)}
-              </p>
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                {area.floor_area.toFixed(0)}m<sup>2</sup>
-              </p>
-            </div>
-          ))}
+          <AreaList title="Other areas:" areas={otherAreas} className="mt-2" />
         </>
       ) : (
         <>
-          {filteredSunEvals?.length > 0 && <p className="">Type of area:</p>}
-          {filteredSunEvals.map((sunValue, index) => (
-            <div
-              key={index}
-              className="flex flex-row justify-start items-center gap-2"
-            >
-              <div
-                className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
-                style={{
-                  ...(fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun) ===
-                    "sun-half-marker" && {
-                    background:
-                      "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
-                    transform: "rotate(45deg)",
-                  }),
-                }}
-                aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
-              />
-
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
-                {sunValue.pc_in_sun.toFixed(0)}%
-                <span className="font-normal ml-1">sun</span>
-              </p>
-
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                {formatAreaType(sunValue.type)}
-              </p>
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                {sunValue.floor_area.toFixed(0)}m<sup>2</sup>
-              </p>
-            </div>
-          ))}
-
-          <>
-            {filteredOutSunEvals.length > 0 && (
-              <p className={filteredSunEvals?.length > 0 ? "mt-2" : ""}>
-                Other areas:
-              </p>
-            )}
-            {filteredOutSunEvals.map((sunValue, index) => (
-              <div
-                key={index}
-                className="flex flex-row justify-start items-center gap-2"
-              >
-                <div
-                  className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
-                  style={{
-                    ...(fn.getSunCircleClassFromPercentage(
-                      sunValue.pc_in_sun
-                    ) === "sun-half-marker" && {
-                      background:
-                        "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
-                      transform: "rotate(45deg)",
-                    }),
-                  }}
-                  aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
-                />
-
-                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
-                  {sunValue.pc_in_sun.toFixed(0)}%
-                  <span className="font-normal ml-1">sun</span>
-                </p>
-
-                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                  {formatAreaType(sunValue.type)}
-                </p>
-
-                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                  {sunValue.floor_area.toFixed(0)}m<sup>2</sup>
-                </p>
-              </div>
-            ))}
-          </>
+          <AreaList title="Type of area:" areas={filteredSunEvals} />
+          <AreaList
+            title="Other areas:"
+            areas={filteredOutSunEvals}
+            className={filteredSunEvals?.length > 0 ? "mt-2" : ""}
+          />
         </>
       )}
 
