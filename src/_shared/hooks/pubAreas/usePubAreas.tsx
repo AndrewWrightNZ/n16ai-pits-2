@@ -1,20 +1,21 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+// Types
 import { Pub, PubArea, SimpleCameraPosition, SunEval } from "../../types";
+
+// Context
 import {
   PubAreasState,
   usePubAreasContext,
 } from "../../providers/PubAreasProvider";
+
+// Hooks
 import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
-import useSunEvals from "../sunEvals/useSunEvals";
 
 import { supabaseClient } from "../../../_shared/hooks/useSupabase";
 
-// Hooks
-
-// Providers
-
-// Types
+// Interfaces
 interface SaveVisionMaskPayload {
   pubAreaId: number;
   visionMaskPoints: { x: number; y: number }[];
@@ -88,9 +89,6 @@ interface PubAreasData extends PubAreasState {
   // Simulation
   currentSimulationPubIndex: number;
   simulationReadyPubs: Pub[];
-
-  // Pubs with areas
-  pubsWithAreasAndSunEvals: PubWithAreaAndSunEval[];
 }
 
 interface PubAreasOperations {
@@ -138,14 +136,6 @@ const usePubAreas = (): PubAreasResponse => {
   const {
     data: { pubsInMapBounds = [] },
   } = usePubs();
-  const {
-    data: {
-      sunEvalsForTimeslot = [],
-
-      // Sun quality
-      sunQualitySelected = [],
-    },
-  } = useSunEvals();
 
   //
 
@@ -297,64 +287,6 @@ const usePubAreas = (): PubAreasResponse => {
   // Variables
   const currentSimulationPubIndex =
     simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
-
-  // First, assign pub areas to each sun evaluation
-  const sunEvalsWithPubAreas = sunEvalsForTimeslot
-    .map((sunEval) => {
-      const pubArea = allAvailableAreas.find(
-        (area) => area.id === sunEval.area_id
-      );
-      return pubArea ? { ...sunEval, pubArea } : null;
-    })
-    .filter((item): item is SunEval & { pubArea: PubArea } => item !== null);
-
-  // Then, group sun evaluations by pub
-  const sunEvalsByPub = sunEvalsWithPubAreas.reduce(
-    (acc, sunEvalWithArea) => {
-      const pubId = sunEvalWithArea.pubArea.pub_id;
-      if (!acc[pubId]) {
-        acc[pubId] = [];
-      }
-      acc[pubId].push(sunEvalWithArea);
-      return acc;
-    },
-    {} as Record<number, (SunEval & { pubArea: PubArea })[]>
-  );
-
-  // Create array of objects with pub and its sun evaluations
-  const rawPubsWithAreasAndSunEvals = pubsInMapBounds
-    .map((pub) => {
-      return {
-        pub,
-        groupedSunEvals: sunEvalsByPub[pub.id] || [],
-      };
-    })
-    .filter((pub) => pub.groupedSunEvals.length > 0);
-
-  // Filter by selected sun quality (maintaining existing functionality)
-  let pubsWithAreasAndSunEvals = [];
-
-  if (sunQualitySelected.length === 0) {
-    // If no filters selected, show all pubs
-    pubsWithAreasAndSunEvals = [] as PubWithAreaAndSunEval[];
-  } else {
-    // Filter pubs based on selected sun qualities
-    pubsWithAreasAndSunEvals = rawPubsWithAreasAndSunEvals.filter((pub) => {
-      // Check if the pub matches any of the selected sun qualities
-      return sunQualitySelected.some((quality) => {
-        if (quality === "good") {
-          return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75);
-        } else if (quality === "some") {
-          return pub.groupedSunEvals.some(
-            (sunEval) => sunEval.pc_in_sun > 50 && sunEval.pc_in_sun <= 75
-          );
-        } else if (quality === "no") {
-          return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun < 50);
-        }
-        return false;
-      });
-    });
-  }
 
   //
 
@@ -709,9 +641,6 @@ const usePubAreas = (): PubAreasResponse => {
       // Simulation
       currentSimulationPubIndex,
       simulationReadyPubs,
-
-      // Pubs with areas
-      pubsWithAreasAndSunEvals,
     },
     operations: {
       // Select pub
