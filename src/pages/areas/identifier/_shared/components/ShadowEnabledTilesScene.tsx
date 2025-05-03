@@ -58,6 +58,7 @@ const ShadowEnabledTilesScene = forwardRef<
   // State
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [shadowOpacity, setShadowOpacity] = useState(0.9);
+  const [northOffset, setNorthOffset] = useState(0); // Offset angle in radians
   const [sunPosition, setSunPosition] = useState<[number, number, number]>([
     100, 100, 50,
   ]);
@@ -104,19 +105,26 @@ const ShadowEnabledTilesScene = forwardRef<
     }
   }, [allowShadows, showWhiteTiles, onSetShowWhiteTiles]);
 
-  // Calculate sun position based on time of day
-  const calculateSunPosition = useCallback((timeOfDay: Date) => {
-    const hours = timeOfDay.getHours();
-    const minutes = timeOfDay.getMinutes();
-    const timeInHours = hours + minutes / 60;
-    const angle = ((timeInHours - 6) / 12) * Math.PI;
-    const radius = 200;
-    const height = 100;
-    const x = Math.cos(angle) * radius;
-    const z = Math.sin(angle) * radius;
-    const y = Math.sin(angle) * height + height;
-    return [x, y, z] as [number, number, number];
-  }, []);
+  // Calculate sun position based on time of day with north offset adjustment
+  const calculateSunPosition = useCallback(
+    (timeOfDay: Date) => {
+      const hours = timeOfDay.getHours();
+      const minutes = timeOfDay.getMinutes();
+      const timeInHours = hours + minutes / 60;
+      const angle = ((timeInHours - 6) / 12) * Math.PI;
+
+      // Apply the north offset to the angle
+      const adjustedAngle = angle + northOffset;
+
+      const radius = 200;
+      const height = 100;
+      const x = Math.cos(adjustedAngle) * radius;
+      const z = Math.sin(adjustedAngle) * radius;
+      const y = Math.sin(angle) * height + height; // Keep vertical position based on original angle
+      return [x, y, z] as [number, number, number];
+    },
+    [northOffset]
+  );
 
   const {
     data: { selectedPub },
@@ -131,6 +139,30 @@ const ShadowEnabledTilesScene = forwardRef<
   useEffect(() => {
     cameraRef.current = camera;
   }, [camera]);
+
+  // Handle keyboard events for adjusting north offset
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Adjust north offset with W/S keys
+      if (event.key.toLowerCase() === "w") {
+        console.log("W pressed");
+        setNorthOffset((prev) => prev + 0.1); // Increase by 0.1 radians (approx. 5.7 degrees)
+      } else if (event.key.toLowerCase() === "s") {
+        console.log("S pressed");
+        setNorthOffset((prev) => prev - 0.1); // Decrease by 0.1 radians
+      }
+    };
+
+    // Add event listener
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Remove event listener on cleanup
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  console.log("North offset: ", northOffset);
 
   // Callback for handling camera movement events
   const handleCameraChange = useCallback(() => {
