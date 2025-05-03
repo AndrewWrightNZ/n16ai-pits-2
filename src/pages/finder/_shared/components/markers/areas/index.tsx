@@ -7,6 +7,7 @@ import { formatAreaType } from "../../../../../lists/_shared";
 
 // Assets
 import sunLogo from "../../../../../../assets/biggerBolderSun.svg";
+import usePubAreas from "../../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 interface ShowPubAreasProps {
   sunEvals: (SunEval & { pubArea: PubArea })[];
@@ -14,8 +15,22 @@ interface ShowPubAreasProps {
 const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
   //
 
+  // Hooks
+  const {
+    data: { selectedAreaTypes = [] },
+  } = usePubAreas();
+  //
+
   // Variables
-  const moreThanOneArea = sunEvals.length > 1;
+  const filteredSunEvals = sunEvals.filter((area) =>
+    selectedAreaTypes.includes(area.pubArea.type)
+  );
+
+  const filteredOutSunEvals = sunEvals.filter(
+    (area) => !selectedAreaTypes.includes(area.pubArea.type)
+  );
+
+  const moreThanOneArea = filteredSunEvals.length > 1;
 
   let bestArea = null;
 
@@ -93,7 +108,7 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
       ) : (
         <>
           <p className="">Type of area:</p>
-          {sunEvals.map((sunValue, index) => (
+          {filteredSunEvals.map((sunValue, index) => (
             <div
               key={index}
               className="flex flex-row justify-start items-center gap-2"
@@ -121,6 +136,41 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
               </p>
             </div>
           ))}
+
+          <>
+            {filteredOutSunEvals.length > 0 && (
+              <p className="mt-2">Other areas:</p>
+            )}
+            {filteredOutSunEvals.map((sunValue, index) => (
+              <div
+                key={index}
+                className="flex flex-row justify-start items-center gap-2"
+              >
+                <div
+                  className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
+                  style={{
+                    ...(fn.getSunCircleClassFromPercentage(
+                      sunValue.pc_in_sun
+                    ) === "sun-half-marker" && {
+                      background:
+                        "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                      transform: "rotate(45deg)",
+                    }),
+                  }}
+                  aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
+                />
+
+                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-16">
+                  {sunValue.pc_in_sun.toFixed(0)}%
+                  <span className="font-normal ml-1">in sun</span>
+                </p>
+
+                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                  {formatAreaType(sunValue.pubArea.type)}
+                </p>
+              </div>
+            ))}
+          </>
         </>
       )}
 
