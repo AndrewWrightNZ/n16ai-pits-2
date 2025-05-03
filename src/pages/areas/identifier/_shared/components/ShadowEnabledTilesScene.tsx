@@ -64,6 +64,8 @@ const ShadowEnabledTilesScene = forwardRef<
     100, 100, 50,
   ]);
 
+  const allowFineTunedControls = false;
+
   // Refs for service instances
   const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
   const cameraPositionerRef = useRef<CameraPositioner | null>(null);
@@ -170,6 +172,8 @@ const ShadowEnabledTilesScene = forwardRef<
   // Handle keyboard events for adjusting north offset and height offset
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!allowFineTunedControls) return;
+
       // Adjust north offset with W/S keys
       if (event.key.toLowerCase() === "w") {
         console.log("W pressed");
