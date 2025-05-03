@@ -1,7 +1,7 @@
 import * as THREE from "three";
+import { PolygonCoordinate } from "../hooks/pubAreas/usePubAreas";
 
 // Types
-import { PolygonCoordinate } from "../../pages/areas/identifier/_shared/hooks/usePubAreas";
 
 // Define a type for the partial pub data returned from Supabase
 export type PartialPub = Pick<

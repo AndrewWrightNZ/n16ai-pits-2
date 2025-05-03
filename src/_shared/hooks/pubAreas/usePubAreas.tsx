@@ -1,27 +1,18 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-// Hooks
-import { supabaseClient } from "../../../../../_shared/hooks/useSupabase";
+// Types
+import { Pub, PubArea, SimpleCameraPosition, SunEval } from "../../types";
 
-// Providers
+// Context
 import {
   PubAreasState,
   usePubAreasContext,
-} from "../providers/PubAreasProvider";
+} from "../../providers/PubAreasProvider";
 
-// Types
-import {
-  SimpleCameraPosition,
-  Pub,
-  PubArea,
-  SunEval,
-} from "../../../../../_shared/types";
-import usePubs from "../../../../finder/_shared/hooks/usePubs";
-import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
+import { supabaseClient } from "../../../_shared/hooks/useSupabase";
 
-// Types
-
+// Interfaces
 interface SaveVisionMaskPayload {
   pubAreaId: number;
   visionMaskPoints: { x: number; y: number }[];
@@ -80,25 +71,17 @@ interface PubAreasData extends PubAreasState {
   isSavingFloorArea: boolean;
   isSettingPubAreasPresent: boolean;
   isSettingPubAreasMeasured: boolean;
-  isLoadingAreasOfTypes: boolean;
 
   // Selected pub
   selectedPub: Pub | null;
 
   // Areas
   areasForPub: PubArea[];
-  areasOfTypes: PubArea[];
   allAvailableAreas: PubArea[];
-
-  // Filters
-  availableAreaTypes: string[];
 
   // Simulation
   currentSimulationPubIndex: number;
   simulationReadyPubs: Pub[];
-
-  // Pubs with areas
-  pubsWithAreasAndSunEvals: PubWithAreaAndSunEval[];
 }
 
 interface PubAreasOperations {
@@ -143,17 +126,6 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
-  const {
-    data: { pubsInMapBounds = [] },
-  } = usePubs();
-  const {
-    data: {
-      sunEvalsForTimeslot = [],
-
-      // Sun quality
-      sunQualitySelected = [],
-    },
-  } = useSunEvals();
 
   //
 
@@ -181,17 +153,6 @@ const usePubAreas = (): PubAreasResponse => {
       .from("pub_area")
       .select()
       .eq("pub_id", selectedPubId);
-
-    if (error) throw error;
-    return data;
-  };
-
-  const fetchAreasOfType = async (): Promise<PubArea[]> => {
-    // Fetch pub areas where the type matches any of the selected area types
-    const { data, error } = await supabaseClient
-      .from("pub_area")
-      .select()
-      .in("type", selectedAreaTypes);
 
     if (error) throw error;
     return data;
@@ -266,11 +227,6 @@ const usePubAreas = (): PubAreasResponse => {
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
   const GET_ALL_AVAILABLE_AREAS_QUERY_KEY = ["getAllAvailableAreas"];
 
-  const GET_PUB_AREAS_OF_TYPES_QUERY_KEY = [
-    "getPubAreasOfTypes",
-    ...selectedAreaTypes,
-  ];
-
   const {
     data: areasForPub = [],
     isLoading: isLoadingAreasForPub,
@@ -298,12 +254,6 @@ const usePubAreas = (): PubAreasResponse => {
     }
   }, [selectedPubId, areasForPub]);
 
-  const { data: areasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
-    useQuery({
-      queryKey: GET_PUB_AREAS_OF_TYPES_QUERY_KEY,
-      queryFn: fetchAreasOfType,
-    });
-
   const {
     data: allAvailableAreas = [],
     isLoading: isLoadingAllAvailableAreas,
@@ -327,66 +277,6 @@ const usePubAreas = (): PubAreasResponse => {
   // Variables
   const currentSimulationPubIndex =
     simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
-
-  // First, assign pub areas to each sun evaluation
-  const sunEvalsWithPubAreas = sunEvalsForTimeslot
-    .map((sunEval) => {
-      const pubArea = allAvailableAreas.find(
-        (area) => area.id === sunEval.area_id
-      );
-      return pubArea ? { ...sunEval, pubArea } : null;
-    })
-    .filter((item): item is SunEval & { pubArea: PubArea } => item !== null);
-
-  // Then, group sun evaluations by pub
-  const sunEvalsByPub = sunEvalsWithPubAreas.reduce(
-    (acc, sunEvalWithArea) => {
-      const pubId = sunEvalWithArea.pubArea.pub_id;
-      if (!acc[pubId]) {
-        acc[pubId] = [];
-      }
-      acc[pubId].push(sunEvalWithArea);
-      return acc;
-    },
-    {} as Record<number, (SunEval & { pubArea: PubArea })[]>
-  );
-
-  // Create array of objects with pub and its sun evaluations
-  const rawPubsWithAreasAndSunEvals = pubsInMapBounds
-    .map((pub) => {
-      return {
-        pub,
-        groupedSunEvals: sunEvalsByPub[pub.id] || [],
-      };
-    })
-    .filter((pub) => pub.groupedSunEvals.length > 0);
-
-  //
-
-  // Filter by selected sun quality
-  let pubsWithAreasAndSunEvals = [];
-
-  if (sunQualitySelected.length === 0) {
-    // If no filters selected, show all pubs
-    pubsWithAreasAndSunEvals = [] as PubWithAreaAndSunEval[];
-  } else {
-    // Filter pubs based on selected sun qualities
-    pubsWithAreasAndSunEvals = rawPubsWithAreasAndSunEvals.filter((pub) => {
-      // Check if the pub matches any of the selected sun qualities
-      return sunQualitySelected.some((quality) => {
-        if (quality === "good") {
-          return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75);
-        } else if (quality === "some") {
-          return pub.groupedSunEvals.some(
-            (sunEval) => sunEval.pc_in_sun > 50 && sunEval.pc_in_sun <= 75
-          );
-        } else if (quality === "no") {
-          return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun < 50);
-        }
-        return false;
-      });
-    });
-  }
 
   //
 
@@ -479,19 +369,6 @@ const usePubAreas = (): PubAreasResponse => {
         return data;
       },
     }
-  );
-
-  //
-
-  // Variables
-  const availableAreaTypes = allAvailableAreas.reduce(
-    (acc: string[], area: PubArea) => {
-      if (!acc.includes(area.type)) {
-        acc.push(area.type);
-      }
-      return acc;
-    },
-    []
   );
 
   //
@@ -721,7 +598,6 @@ const usePubAreas = (): PubAreasResponse => {
       isSavingFloorArea,
       isSettingPubAreasPresent,
       isSettingPubAreasMeasured,
-      isLoadingAreasOfTypes,
       isSavingVisionMask,
 
       // Pub
@@ -729,18 +605,11 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Areas
       areasForPub,
-      areasOfTypes,
       allAvailableAreas,
-
-      // Filters
-      availableAreaTypes,
 
       // Simulation
       currentSimulationPubIndex,
       simulationReadyPubs,
-
-      // Pubs with areas
-      pubsWithAreasAndSunEvals,
     },
     operations: {
       // Select pub

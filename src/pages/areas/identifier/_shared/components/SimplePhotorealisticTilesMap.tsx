@@ -8,7 +8,7 @@ import { Canvas } from "@react-three/fiber";
 import { useRef, useState, useEffect } from "react";
 
 // Hooks
-import usePubAreas from "../hooks/usePubAreas";
+
 import useMapSettings from "../../../../scene/_shared/hooks/useMapSettings";
 import { useDaylightLighting } from "../../../../scene/_shared/hooks/useDaylightLighting";
 
@@ -25,6 +25,7 @@ import EnhancedMemoryMonitor from "../../../../scene/_shared/components/Enhanced
 
 // Types
 import { Pub } from "../../../../../_shared/types";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Types
 

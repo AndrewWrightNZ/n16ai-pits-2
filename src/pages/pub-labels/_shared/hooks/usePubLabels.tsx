@@ -8,10 +8,10 @@ import {
 
 // Hooks
 import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
-import { usePubAreasContext } from "../../../areas/identifier/_shared/providers/PubAreasProvider";
 
 // Types
 import { Pub, PubLabel } from "../../../../_shared/types";
+import { usePubAreasContext } from "../../../../_shared/providers/PubAreasProvider";
 
 interface SetPubLabelsAddedPayload {
   pub_id: number;

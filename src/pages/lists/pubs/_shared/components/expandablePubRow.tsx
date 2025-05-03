@@ -7,7 +7,7 @@ import {
   formatAreaTypes,
   formatShortAddress,
 } from "../helpers";
-import usePubAreas from "../../../../areas/identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 interface ExpandablePubRowProps {
   pub: PubForTableDisplay;

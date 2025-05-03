@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 
 // Context
 import { SunEvalsState, useSunEvalsContext } from "../../providers/useSunEvals";
-import { usePubAreasContext } from "../../../pages/areas/identifier/_shared/providers/PubAreasProvider";
 
 // Types
 import { SunEval } from "../../types";
@@ -12,6 +11,7 @@ import { supabaseClient } from "../../hooks/useSupabase";
 
 // Helpers
 import { getCurrentTimeSlot } from "../../utils";
+import { usePubAreasContext } from "../../providers/PubAreasProvider";
 
 interface SunEvalsData extends SunEvalsState {
   // Loading
@@ -23,11 +23,6 @@ interface SunEvalsData extends SunEvalsState {
   sunEvalsForPubArea: SunEval[];
   sunEvalsForTimeslot: SunEval[];
   sunEvalsForAllPubAreas: SunEval[];
-
-  // Pub counts
-  pubsAbove50Percent: number;
-  pubsAbove75Percent: number;
-  pubsBelow50Percent: number;
 }
 
 interface SunEvalsOperations {
@@ -140,41 +135,6 @@ const useSunEvals = (): SunEvalsResponse => {
 
   //
 
-  // Variables
-  const pubsWithSunEvals = sunEvalsForTimeslot.reduce(
-    (acc, sunEval) => {
-      if (!acc[sunEval.pub_id]) {
-        acc[sunEval.pub_id] = [];
-      }
-      acc[sunEval.pub_id].push(sunEval);
-      return acc;
-    },
-    {} as Record<string, SunEval[]>
-  );
-
-  // Convert the object to an array for easier iteration
-  const pubsArray = Object.entries(pubsWithSunEvals).map(
-    ([pubId, sunEvals]) => ({
-      pubId,
-      sunEvals,
-    })
-  );
-
-  // Count pubs with at least one area where sun percentage is above thresholds
-  const pubsAbove50Percent = pubsArray.filter((pub) =>
-    pub.sunEvals.some((sunEval) => sunEval.pc_in_sun > 50)
-  ).length;
-
-  const pubsAbove75Percent = pubsArray.filter((pub) =>
-    pub.sunEvals.some((sunEval) => sunEval.pc_in_sun > 75)
-  ).length;
-
-  const pubsBelow50Percent = pubsArray.filter((pub) =>
-    pub.sunEvals.some((sunEval) => sunEval.pc_in_sun < 50)
-  ).length;
-
-  //
-
   // Handlers
   const onChangeSunEvalsState = (newState: Partial<SunEvalsState>) => {
     updateSunEvalsState(newState);
@@ -207,11 +167,6 @@ const useSunEvals = (): SunEvalsResponse => {
       sunEvalsForPubArea,
       sunEvalsForTimeslot,
       sunEvalsForAllPubAreas,
-
-      // Pub counts
-      pubsAbove50Percent,
-      pubsAbove75Percent,
-      pubsBelow50Percent,
     },
     operations: {
       // Filters

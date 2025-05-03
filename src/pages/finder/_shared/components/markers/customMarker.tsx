@@ -1,52 +1,23 @@
-import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useState, useEffect } from "react";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
 // Assets
-import sunLogo from "../../../../assets/biggerBolderSun.svg";
+import sunLogo from "../../../../../assets/biggerBolderSun.svg";
 
 // Hooks
-import usePubs from "../hooks/usePubs";
-import usePubAreas, {
-  PubWithAreaAndSunEval,
-} from "../../../areas/identifier/_shared/hooks/usePubAreas";
+import usePubs from "../../hooks/usePubs";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Utils
-import * as fn from "../../../../_shared/utils";
+import * as fn from "../../../../../_shared/utils";
 
 // Components
 import ShowPubAreas from "./areas";
-
-export interface MarkerInternalsProps {
-  children: React.ReactNode;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
-  onClick?: () => void;
-  style?: React.CSSProperties;
-  className?: string;
-}
-
-export const StandardMarkerInternals: React.FC<MarkerInternalsProps> = ({
-  children,
-  onMouseEnter,
-  onClick,
-  style,
-  className = "",
-}) => {
-  return (
-    <div
-      className={`flex relative justify-start items-center w-[30px] h-[30px] bg-amber-300 rounded-[20px] p-[5px] left-0 top-0 border border-slate-800 shadow-lg ${className}`}
-      onMouseEnter={onMouseEnter}
-      onClick={onClick}
-      style={style}
-    >
-      {children}
-    </div>
-  );
-};
+import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 
 interface CustomMarkerProps {
-  pubWithAreas: PubWithAreaAndSunEval;
+  mapMarker: MapReadyMarker;
 }
 
 const getPixelPositionOffset = (width: number, height: number) => ({
@@ -54,13 +25,11 @@ const getPixelPositionOffset = (width: number, height: number) => ({
   y: -(height / 2),
 });
 
-const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
+const CustomMarker = ({ mapMarker }: CustomMarkerProps) => {
   //
   // Variables
-  const { id: pubId, name, latitude, longitude } = pubWithAreas?.pub || {};
-  const { groupedSunEvals = [] } = pubWithAreas || {};
-
-  const areaSunValues = groupedSunEvals.map((area) => area.pc_in_sun || 0);
+  const { bestSunPercent = 0, pubAreas = [], pub } = mapMarker || {};
+  const { id: pubId, name, latitude, longitude } = pub || {};
 
   //
   // Hooks
@@ -81,10 +50,6 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
   const isPubHidden = hoveredPubId && !isPubHovered && !isPubSelected;
 
   const potentiallyTruncatedName = fn.truncateString(name, 20);
-
-  const topSunValue = areaSunValues.reduce((max, current) =>
-    Math.max(max, current)
-  );
 
   // We'll use auto height instead of calculating a specific height
 
@@ -159,7 +124,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
         getPixelPositionOffset={getPixelPositionOffset}
       >
         <div
-          className={`flex relative fade-in-out translate-y-0 ml-10 rounded-[20px] overflow-hidden ${!isPubHovered ? fn.getSunCircleClassFromPercentage(topSunValue) : ""}`}
+          className={`flex relative fade-in-out translate-y-0 ml-10 rounded-[20px] overflow-hidden ${!isPubHovered ? fn.getSunCircleClassFromPercentage(bestSunPercent) : ""}`}
           style={{
             zIndex: isPubHovered ? 9999999999 : 1,
             opacity: isPubHidden ? 0.3 : 1,
@@ -171,7 +136,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
             backgroundColor: isPubHovered || wasRecentlyHovered ? "white" : "",
             ...(!isPubHovered &&
               !wasRecentlyHovered &&
-              fn.getSunCircleClassFromPercentage(topSunValue) ===
+              fn.getSunCircleClassFromPercentage(bestSunPercent) ===
                 "sun-half-marker" && {
                 background:
                   "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
@@ -219,9 +184,9 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
                   WebkitMaskImage: `url(${sunLogo})`,
                   maskSize: "contain",
                   WebkitMaskSize: "contain",
-                  ...(topSunValue >= 75
+                  ...(bestSunPercent >= 75
                     ? { backgroundColor: "#FFCC00" }
-                    : topSunValue >= 50
+                    : bestSunPercent >= 50
                       ? {
                           background:
                             "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
@@ -240,7 +205,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               </p>
             </div>
 
-            <ShowPubAreas sunEvals={groupedSunEvals} />
+            <ShowPubAreas pubAreas={pubAreas} />
           </div>
         </div>
       </OverlayView>

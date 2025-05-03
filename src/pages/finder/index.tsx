@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback } from "react";
 
 // Hooks
 import usePubs from "./_shared/hooks/usePubs";
-// import usePubAreas from "../areas/identifier/_shared/hooks/usePubAreas";
 
 // Components
-import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
-import RenderPubsOfType from "./_shared/components/renderPubsOfType";
-import TimeSlider from "./_shared/components/timeSlider";
 import PubCounts from "./_shared/components/counts";
+import TimeSlider from "./_shared/components/timeSlider";
+import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
+import RenderFilteredMarkers from "./_shared/components/markers";
+import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 
 // Default center (London)
 const defaultCenter = {
@@ -34,10 +34,6 @@ function Finder() {
     data: { selectedPub = null },
     operations: { onSetMapBounds },
   } = usePubs();
-
-  // const {
-  //   data: { selectedAreaTypes = [] },
-  // } = usePubAreas();
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -139,7 +135,8 @@ function Finder() {
         >
           <PubInTheSunMapHeader />
           <PubCounts />
-          <RenderPubsOfType />
+          <AreaTypeFilter />
+          <RenderFilteredMarkers />
           {userLocation && (
             <Marker
               position={userLocation}

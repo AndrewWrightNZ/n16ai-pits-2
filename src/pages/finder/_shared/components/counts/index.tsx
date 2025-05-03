@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 
 // Hooks
 import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
+import useMapMarkers from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 
 const PubCounts = () => {
   // State for collapse/expand functionality
@@ -12,38 +13,37 @@ const PubCounts = () => {
 
   // Hooks
   const {
-    data: {
-      sunQualitySelected = [],
-      pubsAbove50Percent,
-      pubsAbove75Percent,
-      pubsBelow50Percent,
-    },
+    data: { sunQualitySelected = [] },
     operations: { onSunQualityFilterClick },
   } = useSunEvals();
+
+  const {
+    data: { goodSunCount, someSunCount, noSunCount },
+  } = useMapMarkers();
 
   // Calculate total count of displayed pubs
   const totalDisplayedPubs =
     sunQualitySelected.length > 0
       ? sunQualitySelected.reduce((total, id) => {
-          if (id === "good") return total + pubsAbove75Percent;
-          if (id === "some") return total + pubsAbove50Percent;
-          if (id === "no") return total + pubsBelow50Percent;
+          if (id === "good") return total + goodSunCount;
+          if (id === "some") return total + someSunCount;
+          if (id === "no") return total + noSunCount;
           return total;
         }, 0)
-      : pubsAbove75Percent + pubsAbove50Percent + pubsBelow50Percent;
+      : goodSunCount + someSunCount + noSunCount;
 
   // Filter definitions
   const filters = [
     {
       id: "good",
       label: "Good Sun",
-      count: pubsAbove75Percent,
+      count: goodSunCount,
       icon: <div className="w-[20px] h-[20px] bg-[#FFCC00] rounded-full" />,
     },
     {
       id: "some",
       label: "Some Sun",
-      count: pubsAbove50Percent,
+      count: someSunCount,
       icon: (
         <div
           className="w-[20px] h-[20px] rounded-full"
@@ -57,7 +57,7 @@ const PubCounts = () => {
     {
       id: "no",
       label: "No Sun",
-      count: pubsBelow50Percent,
+      count: noSunCount,
       icon: <div className="w-[20px] h-[20px] bg-[#99a1af] rounded-full" />,
     },
   ];

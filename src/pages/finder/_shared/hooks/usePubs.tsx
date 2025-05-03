@@ -29,14 +29,6 @@ interface PubsData extends PubState {
   pubsInMapBounds: Pub[];
 
   selectedPub: Pub | null;
-  pubsInTheSun: Pub[];
-  pubsPartiallyInTheSun: Pub[];
-  pubsNotInTheSun: Pub[];
-
-  // Counts
-  pubsInTheSunCount: number;
-  pubsPartiallyInTheSunCount: number;
-  pubsNotInTheSunCount: number;
 
   // Filters
   availableFilters: string[];
@@ -102,7 +94,7 @@ const usePubs = (): HookShape => {
     const { data, error } = await supabaseClient
       .from("pub")
       .select()
-      .eq("has_areas_measured", true);
+      .eq("has_vision_masks_added", true);
     if (error) throw error;
     return data;
   };
@@ -135,24 +127,6 @@ const usePubs = (): HookShape => {
 
   //
 
-  // Get Counts of Pubs in the Sun
-  const pubsInTheSunCount = useMemo(() => {
-    if (!isAllDataLoaded) return 0;
-    return uiReadyPubs.length;
-  }, [uiReadyPubs, selectedFilters, isAllDataLoaded]);
-
-  const pubsPartiallyInTheSunCount = useMemo(() => {
-    if (!isAllDataLoaded) return 0;
-    return uiReadyPubs.length;
-  }, [uiReadyPubs, isAllDataLoaded]);
-
-  const pubsNotInTheSunCount = useMemo(() => {
-    if (!isAllDataLoaded) return 0;
-    return uiReadyPubs.length;
-  }, [uiReadyPubs, isAllDataLoaded]);
-
-  //
-
   // Filter by which pubs are in view
   const pubsInMapBounds = useMemo(() => {
     if (!isAllDataLoaded) return [];
@@ -169,21 +143,6 @@ const usePubs = (): HookShape => {
       );
     });
   }, [uiReadyPubs, mapBounds, isAllDataLoaded]);
-
-  const pubsInTheSun = useMemo(() => {
-    if (!isAllDataLoaded) return [];
-    return pubsInMapBounds;
-  }, [pubsInMapBounds, isAllDataLoaded]);
-
-  const pubsPartiallyInTheSun = useMemo(() => {
-    if (!isAllDataLoaded) return [];
-    return pubsInMapBounds;
-  }, [pubsInMapBounds, isAllDataLoaded]);
-
-  const pubsNotInTheSun = useMemo(() => {
-    if (!isAllDataLoaded) return [];
-    return pubsInMapBounds;
-  }, [pubsInMapBounds, isAllDataLoaded]);
 
   //
 
@@ -257,14 +216,6 @@ const usePubs = (): HookShape => {
       selectedPub,
       selectedPubId,
       hoveredPubId,
-
-      pubsInTheSunCount,
-      pubsPartiallyInTheSunCount,
-      pubsNotInTheSunCount,
-
-      pubsInTheSun,
-      pubsPartiallyInTheSun,
-      pubsNotInTheSun,
 
       pubsInMapBounds,
 

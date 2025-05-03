@@ -7,11 +7,9 @@ import { Check, ChevronLeft, ChevronRight, Circle } from "lucide-react";
 // Components
 import SimplePhotorealisticTilesMap from "../identifier/_shared/components/SimplePhotorealisticTilesMap";
 
-// Hooks
-import usePubAreas from "../identifier/_shared/hooks/usePubAreas";
-
 // Constants
 import { CANVAS_HEIGHT, CANVAS_WIDTH } from "../simulator";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 const PubAreaVisionMask = () => {
   //

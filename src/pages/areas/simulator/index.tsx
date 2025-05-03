@@ -4,7 +4,7 @@ import { useRef, useEffect } from "react";
 import SimplePhotorealisticTilesMap from "../identifier/_shared/components/SimplePhotorealisticTilesMap";
 
 // Hooks
-import usePubAreas from "../identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 import useMapSettings from "../../scene/_shared/hooks/useMapSettings";
 
 // Icons
