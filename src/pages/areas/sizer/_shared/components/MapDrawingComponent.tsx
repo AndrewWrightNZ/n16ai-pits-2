@@ -5,10 +5,28 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { Loader } from "@googlemaps/js-api-loader";
 
 // API key from environment variables
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+// Declare Google Maps types to avoid TypeScript errors
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
+
+// Add script to load Google Maps API
+const loadGoogleMapsScript = () => {
+  const script = document.createElement("script");
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry&callback=Function.prototype`;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
+  return new Promise<void>((resolve) => {
+    script.onload = () => resolve();
+  });
+};
 
 interface PolygonCoordinate {
   lat: number;
@@ -59,11 +77,11 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
     // Calculate area for a polygon
     const calculateArea = useCallback(
       (shape: google.maps.Polygon): number => {
-        if (!shape || !window.google) return 0;
+        if (!shape || !window.google || !window.google.maps) return 0;
 
         try {
           const path = shape.getPath();
-          const area = google.maps.geometry.spherical.computeArea(path);
+          const area = window.google.maps.geometry.spherical.computeArea(path);
 
           if (onAreaChange && isMountedRef.current) {
             onAreaChange(area);
@@ -120,10 +138,19 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
 
     // Set center position (without any side effects)
     const setCenter = useCallback((lat: number, lng: number) => {
-      if (!mapInstanceRef.current) return;
+      if (!mapInstanceRef.current) {
+        console.warn("Map instance not available for setCenter");
+        return;
+      }
 
       try {
-        mapInstanceRef.current.setCenter({ lat, lng });
+        // Force a small delay to ensure the map is fully initialized
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setCenter({ lat, lng });
+            console.log(`Map centered at lat: ${lat}, lng: ${lng}`);
+          }
+        }, 50);
       } catch (error) {
         console.error("Error setting center:", error);
       }
@@ -131,10 +158,19 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
 
     // Set zoom level (without any side effects)
     const setZoom = useCallback((zoom: number) => {
-      if (!mapInstanceRef.current) return;
+      if (!mapInstanceRef.current) {
+        console.warn("Map instance not available for setZoom");
+        return;
+      }
 
       try {
-        mapInstanceRef.current.setZoom(zoom);
+        // Force a small delay to ensure the map is fully initialized
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.setZoom(zoom);
+            console.log(`Map zoom set to: ${zoom}`);
+          }
+        }, 50);
       } catch (error) {
         console.error("Error setting zoom:", error);
       }
@@ -150,22 +186,31 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
         if (!mapRef.current) return;
 
         try {
-          // Load the Maps JavaScript API
-          const loader = new Loader({
-            apiKey: GOOGLE_MAPS_API_KEY,
-            version: "weekly",
-            libraries: ["drawing", "geometry"],
-          });
+          // Load Google Maps script if not already loaded
+          if (!window.google || !window.google.maps) {
+            await loadGoogleMapsScript();
 
-          await loader.load();
+            // Wait for the script to fully initialize
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            if (!window.google || !window.google.maps) {
+              throw new Error("Google Maps API failed to load");
+            }
+          }
+
+          // Check if the drawing library is loaded properly
+          if (!window.google.maps.drawing) {
+            console.error("Google Maps drawing library not loaded");
+            throw new Error("Google Maps drawing library not loaded");
+          }
 
           if (!isMountedRef.current || !mapRef.current) return;
 
           // Create the map
-          const map = new google.maps.Map(mapRef.current, {
+          const map = new window.google.maps.Map(mapRef.current, {
             center: initialCenter,
             zoom: initialZoom,
-            mapTypeId: google.maps.MapTypeId.HYBRID,
+            mapTypeId: window.google.maps.MapTypeId.HYBRID,
             streetViewControl: false,
             tilt: 0, // Disable 45-degree tilt
             styles: [
@@ -184,12 +229,12 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
           mapInstanceRef.current = map;
 
           // Create drawing manager
-          const drawingManager = new google.maps.drawing.DrawingManager({
-            drawingMode: google.maps.drawing.OverlayType.POLYGON,
+          const drawingManager = new window.google.maps.drawing.DrawingManager({
+            drawingMode: window.google.maps.drawing.OverlayType.POLYGON,
             drawingControl: true,
             drawingControlOptions: {
-              position: google.maps.ControlPosition.TOP_CENTER,
-              drawingModes: [google.maps.drawing.OverlayType.POLYGON],
+              position: window.google.maps.ControlPosition.TOP_CENTER,
+              drawingModes: [window.google.maps.drawing.OverlayType.POLYGON],
             },
             polygonOptions: {
               fillColor: "#4285F4",
@@ -205,7 +250,7 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
           drawingManagerRef.current = drawingManager;
 
           // Handle shape drawing completion
-          google.maps.event.addListener(
+          window.google.maps.event.addListener(
             drawingManager,
             "overlaycomplete",
             (event: any) => {
@@ -214,7 +259,9 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
               // Switch out of drawing mode
               drawingManager.setDrawingMode(null);
 
-              if (event.type === google.maps.drawing.OverlayType.POLYGON) {
+              if (
+                event.type === window.google.maps.drawing.OverlayType.POLYGON
+              ) {
                 // Clear previous shape
                 if (shapeRef.current) {
                   shapeRef.current.setMap(null);
@@ -251,17 +298,17 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
                 };
 
                 // Listen for shape editing events
-                google.maps.event.addListener(
+                window.google.maps.event.addListener(
                   path,
                   "set_at",
                   pathUpdateHandler
                 );
-                google.maps.event.addListener(
+                window.google.maps.event.addListener(
                   path,
                   "insert_at",
                   pathUpdateHandler
                 );
-                google.maps.event.addListener(
+                window.google.maps.event.addListener(
                   path,
                   "remove_at",
                   pathUpdateHandler
@@ -279,6 +326,25 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
           }
         } catch (error) {
           console.error("Error initializing map:", error);
+
+          // Display error in the map container
+          if (mapRef.current) {
+            const errorDiv = document.createElement("div");
+            errorDiv.style.padding = "20px";
+            errorDiv.style.color = "red";
+            errorDiv.style.backgroundColor = "#f8f8f8";
+            errorDiv.style.border = "1px solid #ddd";
+            errorDiv.style.borderRadius = "5px";
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : "Failed to initialize map";
+            errorDiv.innerHTML = `<h3>Map Error</h3><p>${errorMessage}</p><p>Please check your API key and network connection.</p>`;
+
+            // Clear the map container and append the error message
+            mapRef.current.innerHTML = "";
+            mapRef.current.appendChild(errorDiv);
+          }
         }
       };
 
@@ -314,7 +380,12 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
         getShapeCoordinates,
         calculateCurrentArea: () =>
           shapeRef.current ? calculateArea(shapeRef.current) : 0,
-        isMapReady: !!mapInstanceRef.current,
+        // More reliable map ready check
+        isMapReady: !!(
+          mapInstanceRef.current &&
+          window.google &&
+          window.google.maps
+        ),
         getMap: () => mapInstanceRef.current,
         setCenter,
         setZoom,

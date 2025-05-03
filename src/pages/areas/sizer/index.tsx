@@ -71,7 +71,27 @@ const PubAreaSizer: React.FC = () => {
     setIsPendingAreaUpdate(false);
     setShowStaticMap(false);
 
+    // Set the selected pub
     onSetSelectedPub(pub);
+    
+    // Try to center the map immediately
+    if (mapRef.current) {
+      // Clear existing shape
+      mapRef.current.clearShape();
+      
+      // Position the map at the pub location - even if isMapReady is false
+      // The enhanced setCenter method in MapDrawingComponent will handle this safely
+      mapRef.current.setCenter(pub.latitude, pub.longitude);
+      mapRef.current.setZoom(19);
+      
+      // Also schedule another attempt after a short delay to ensure it happens
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.setCenter(pub.latitude, pub.longitude);
+          mapRef.current.setZoom(19);
+        }
+      }, 100);
+    }
   };
 
   // Handle saved area selection
@@ -93,7 +113,7 @@ const PubAreaSizer: React.FC = () => {
     // Find the selected area
     const selectedArea = areasForPub.find((area) => area.id === areaId);
 
-    if (selectedArea && mapRef.current && mapRef.current.isMapReady) {
+    if (selectedArea && mapRef.current) {
       // Center the map on the area location
       mapRef.current.setCenter(selectedArea.latitude, selectedArea.longitude);
       mapRef.current.setZoom(20);
@@ -106,30 +126,26 @@ const PubAreaSizer: React.FC = () => {
       if (mapRef.current && mapRef.current.isMapReady) {
         setIsMapReady(true);
         clearInterval(checkMapReady);
+        
+        // If we have a selected pub, center the map on it once it's ready
+        if (selectedPub) {
+          mapRef.current.setCenter(selectedPub.latitude, selectedPub.longitude);
+          mapRef.current.setZoom(19);
+        }
       }
-    }, 500);
+    }, 300); // Reduced interval for more responsive checks
 
     return () => clearInterval(checkMapReady);
-  }, []);
+  }, [selectedPub]);
 
-  // Handle selected pub changes
+  // We still need to use isMapReady in other parts of the component
+  // For example, when determining if we can show certain UI elements
   useEffect(() => {
-    if (selectedPub && mapRef.current && isMapReady) {
-      // Reset states
-      setSelectedAreaId(null);
-      setCurrentPolygon(null);
-      setArea(0);
-      setIsPendingAreaUpdate(false);
-      setShowStaticMap(false);
-
-      // Clear existing shape
-      mapRef.current.clearShape();
-
-      // Position the map at the pub location
-      mapRef.current.setCenter(selectedPub.latitude, selectedPub.longitude);
-      mapRef.current.setZoom(19);
+    if (isMapReady && selectedPub) {
+      // This ensures we have the latest state when the map becomes ready
+      console.log('Map is ready and pub is selected');
     }
-  }, [selectedPub, isMapReady]);
+  }, [isMapReady, selectedPub]);
 
   // Clear the current area
   const clearArea = (): void => {
