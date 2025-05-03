@@ -12,11 +12,7 @@ import usePubAreas, {
 import * as fn from "../../../../_shared/utils";
 
 // Components
-import React from "react";
-
-// Icons
-import { ChevronRight } from "lucide-react";
-import { formatAreaType } from "../../../lists/_shared";
+import ShowPubAreas from "./areas";
 
 export interface MarkerInternalsProps {
   children: React.ReactNode;
@@ -60,8 +56,6 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
   // Variables
   const { id: pubId, name, latitude, longitude } = pubWithAreas?.pub || {};
   const { groupedSunEvals = [] } = pubWithAreas || {};
-
-  console.log({ groupedSunEvals });
 
   const areaSunValues = groupedSunEvals.map((area) => area.pc_in_sun || 0);
 
@@ -146,7 +140,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
             backgroundColor: isPubHovered ? "white" : "",
             transition:
               "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
-            border: isPubHovered ? "1px solid #1e293b" : "1px solid #1e293b", // slate-800
+            border: isPubHovered ? "1px solid #d3d3d3" : "1px solid #1e293b", // slate-800
             boxShadow: isPubHovered
               ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
               : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
@@ -185,31 +179,10 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               />
               <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {potentiallyTruncatedName}
-                <ChevronRight size={16} />
               </span>
             </div>
 
-            <div className="flex flex-col items-start gap-2 mt-6">
-              {groupedSunEvals.map((sunValue, index) => (
-                <div
-                  key={index}
-                  className="flex flex-row justify-start items-center gap-2"
-                >
-                  <div
-                    className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
-                    aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
-                  />
-
-                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                    {sunValue.pc_in_sun.toFixed(0)}%
-                  </p>
-
-                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                    {formatAreaType(sunValue.pubArea.type)}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <ShowPubAreas sunEvals={groupedSunEvals} />
           </div>
         </div>
       </OverlayView>
