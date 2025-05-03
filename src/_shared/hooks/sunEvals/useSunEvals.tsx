@@ -9,6 +9,7 @@ import { SunEval } from "../../types";
 
 // Hooks
 import { supabaseClient } from "../../hooks/useSupabase";
+import { getCurrentTimeSlot } from "../../utils";
 
 interface SunEvalsData extends SunEvalsState {
   // Loading
@@ -22,7 +23,11 @@ interface SunEvalsData extends SunEvalsState {
   sunEvalsForAllPubAreas: SunEval[];
 }
 
-interface SunEvalsOperations {}
+interface SunEvalsOperations {
+  // Updates
+  onChangeSunEvalsState: (newState: Partial<SunEvalsState>) => void;
+  onSeedCurrentTimeSlot: () => void;
+}
 
 interface SunEvalsResponse {
   data: SunEvalsData;
@@ -33,15 +38,14 @@ const useSunEvals = (): SunEvalsResponse => {
   //
 
   // Context
-  const { sunEvalsState } = useSunEvalsContext();
+  const { sunEvalsState, updateSunEvalsState } = useSunEvalsContext();
   const { pubAreasState } = usePubAreasContext();
 
   //
 
   // Variables
+  const { selectedTimeslot } = sunEvalsState || {};
   const { selectedPubArea, selectedPubId } = pubAreasState || {};
-
-  const TIMESLOT_ID = 16;
 
   //
 
@@ -58,7 +62,7 @@ const useSunEvals = (): SunEvalsResponse => {
 
   const GET_SUN_EVALS_FOR_TIMESLOT_QUERY_KEY = [
     "getSunEvalsForTimeslot",
-    TIMESLOT_ID,
+    selectedTimeslot,
   ];
 
   //
@@ -91,7 +95,7 @@ const useSunEvals = (): SunEvalsResponse => {
     const { data, error } = await supabaseClient
       .from("sun_eval_reg")
       .select("*")
-      .eq("time", TIMESLOT_ID);
+      .eq("time", selectedTimeslot);
 
     if (error) throw error;
     return data;
@@ -128,6 +132,15 @@ const useSunEvals = (): SunEvalsResponse => {
 
   // Handlers
 
+  const onChangeSunEvalsState = (newState: Partial<SunEvalsState>) => {
+    updateSunEvalsState(newState);
+  };
+
+  const onSeedCurrentTimeSlot = () => {
+    const currentTimeSlot = getCurrentTimeSlot();
+    onChangeSunEvalsState({ selectedTimeslot: currentTimeSlot });
+  };
+
   return {
     data: {
       ...sunEvalsState,
@@ -144,6 +157,8 @@ const useSunEvals = (): SunEvalsResponse => {
     },
     operations: {
       // Update
+      onChangeSunEvalsState,
+      onSeedCurrentTimeSlot,
     },
   };
 };

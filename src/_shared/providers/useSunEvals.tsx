@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 
 export interface SunEvalsState {
   // Sun evals details
+  selectedTimeslot: number | null;
 
   // Timestamp for localStorage
   timestamp: number;
@@ -20,6 +21,7 @@ const LOCAL_STORAGE_KEY = "sunEvalsState";
 
 const defaultState: SunEvalsState = {
   // Sun evals details
+  selectedTimeslot: null,
 
   // Timestamp for localStorage
   timestamp: Date.now(),

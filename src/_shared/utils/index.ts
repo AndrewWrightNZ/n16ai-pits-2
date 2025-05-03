@@ -248,3 +248,61 @@ export const encryptString = (inputString: string) => {
 
   return encryptedBase64;
 };
+
+//
+
+// Timeslots
+
+/**
+ * Maps the current time to an integer index where:
+ * - 12:00pm (noon) = 0
+ * - 12:15pm = 1
+ * - 12:30pm = 2
+ * - And so on in 15-minute increments until 9:00pm
+ *
+ * @returns The time slot index (0-36) or -1 if outside the 12pm-9pm range
+ */
+export const getCurrentTimeSlot = (): number => {
+  const currentTime = new Date();
+
+  const hours = currentTime.getHours();
+  const minutes = currentTime.getMinutes();
+
+  // Convert to 12-hour format for calculation
+  // 12pm (noon) = 12, 1pm = 13, 2pm = 14, ..., 9pm = 21
+
+  // If time is before noon (12pm) or after 9pm, return -1
+  if (hours < 12 || hours > 21 || (hours === 21 && minutes > 0)) {
+    return 0;
+  }
+
+  // Calculate slots since noon (12pm)
+  // Each hour has 4 slots (15-min increments)
+  const hoursSinceNoon = hours - 12;
+  const slotsByHour = hoursSinceNoon * 4;
+
+  // Calculate which 15-minute slot within the current hour
+  const slotInCurrentHour = Math.floor(minutes / 15);
+
+  // Combine to get the total slot number
+  const timeSlot = slotsByHour + slotInCurrentHour;
+
+  return timeSlot;
+};
+
+/**
+ * Gets the formatted time string (HH-MM) for the current time
+ *
+ * @returns Formatted time string (e.g., "14-30" for 2:30pm)
+ */
+export const getFormattedTimeString = () => {
+  const currentTime = new Date();
+
+  const hours = currentTime.getHours();
+  const minutes = currentTime.getMinutes();
+
+  const formattedHours = hours.toString().padStart(2, "0");
+  const formattedMinutes = minutes.toString().padStart(2, "0");
+
+  return `${formattedHours}-${formattedMinutes}`;
+};
