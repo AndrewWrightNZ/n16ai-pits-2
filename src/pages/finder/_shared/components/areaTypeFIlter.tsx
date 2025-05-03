@@ -60,8 +60,6 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
     totalDisplayedAreas += filter.count;
   }
 
-  console.log("totalDisplayedAreas", { totalDisplayedAreas });
-
   return (
     <div
       ref={containerRef}

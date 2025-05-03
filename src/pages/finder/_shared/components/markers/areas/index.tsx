@@ -1,6 +1,3 @@
-// Types
-import { PubArea, SunEval } from "../../../../../../_shared/types";
-
 // Utils
 import * as fn from "../../../../../../_shared/utils";
 import { formatAreaType } from "../../../../../lists/_shared";
@@ -9,10 +6,14 @@ import { formatAreaType } from "../../../../../lists/_shared";
 import sunLogo from "../../../../../../assets/biggerBolderSun.svg";
 import usePubAreas from "../../../../../../_shared/hooks/pubAreas/usePubAreas";
 
+// Types
+import { SimplePubAreaWithSunPc } from "../../../../../../_shared/hooks/mapMarkers/useMapMarkers";
+
 interface ShowPubAreasProps {
-  sunEvals: (SunEval & { pubArea: PubArea })[];
+  pubAreas: SimplePubAreaWithSunPc[];
 }
-const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
+
+const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
   //
 
   // Hooks
@@ -22,12 +23,12 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
   //
 
   // Variables
-  const filteredSunEvals = sunEvals.filter((area) =>
-    selectedAreaTypes.includes(area.pubArea.type)
+  const filteredSunEvals = pubAreas.filter((area) =>
+    selectedAreaTypes.includes(area.type)
   );
 
-  const filteredOutSunEvals = sunEvals.filter(
-    (area) => !selectedAreaTypes.includes(area.pubArea.type)
+  const filteredOutSunEvals = pubAreas.filter(
+    (area) => !selectedAreaTypes.includes(area.type)
   );
 
   const moreThanOneArea = filteredSunEvals.length > 1;
@@ -35,12 +36,12 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
   let bestArea = null;
 
   if (moreThanOneArea) {
-    bestArea = sunEvals.reduce((prev, current) => {
+    bestArea = pubAreas.reduce((prev, current) => {
       return prev.pc_in_sun > current.pc_in_sun ? prev : current;
     });
   }
 
-  const otherAreas = sunEvals.filter((area) => area !== bestArea);
+  const otherAreas = pubAreas.filter((area) => area !== bestArea);
 
   return (
     <div className="flex flex-col items-start gap-2 mt-6">
@@ -71,7 +72,7 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
             </p>
 
             <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-              {formatAreaType(bestArea.pubArea.type)}
+              {formatAreaType(bestArea.type)}
             </p>
           </div>
 
@@ -100,14 +101,14 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
               </p>
 
               <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                {formatAreaType(area.pubArea.type)}
+                {formatAreaType(area.type)}
               </p>
             </div>
           ))}
         </>
       ) : (
         <>
-          <p className="">Type of area:</p>
+          {filteredSunEvals?.length > 0 && <p className="">Type of area:</p>}
           {filteredSunEvals.map((sunValue, index) => (
             <div
               key={index}
@@ -132,14 +133,16 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
               </p>
 
               <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                {formatAreaType(sunValue.pubArea.type)}
+                {formatAreaType(sunValue.type)}
               </p>
             </div>
           ))}
 
           <>
             {filteredOutSunEvals.length > 0 && (
-              <p className="mt-2">Other areas:</p>
+              <p className={filteredSunEvals?.length > 0 ? "mt-2" : ""}>
+                Other areas:
+              </p>
             )}
             {filteredOutSunEvals.map((sunValue, index) => (
               <div
@@ -166,7 +169,7 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
                 </p>
 
                 <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                  {formatAreaType(sunValue.pubArea.type)}
+                  {formatAreaType(sunValue.type)}
                 </p>
               </div>
             ))}

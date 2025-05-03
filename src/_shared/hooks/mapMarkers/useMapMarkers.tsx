@@ -6,18 +6,20 @@ import usePubAreas, { PubWithAreaAndSunEval } from "../pubAreas/usePubAreas";
 import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
 import useSunEvals from "../sunEvals/useSunEvals";
 
-interface MapReadyMarker {
+export interface SimplePubAreaWithSunPc {
+  id: number;
+  type: string;
+  pc_in_sun: number;
+}
+
+export interface MapReadyMarker {
   pub: {
     id: number;
     name: string;
     latitude: number;
     longitude: number;
   };
-  pubAreas: {
-    id: number;
-    type: string;
-    pc_in_sun: number;
-  }[];
+  pubAreas: SimplePubAreaWithSunPc[];
   bestSunPercent: number;
 }
 
@@ -33,6 +35,7 @@ interface MapMarkersResponse {
 
     // Map ready markers
     mapReadyMarkers: MapReadyMarker[];
+    filteredBySunQualityMarkers: MapReadyMarker[];
 
     //
 
@@ -65,7 +68,7 @@ const useMapMarkers = (): MapMarkersResponse => {
   } = usePubAreas();
 
   const {
-    data: { sunEvalsForTimeslot = [] },
+    data: { sunEvalsForTimeslot = [], sunQualitySelected = [] },
   } = useSunEvals();
 
   //
@@ -123,7 +126,40 @@ const useMapMarkers = (): MapMarkersResponse => {
     return acc;
   }, 0);
 
-  console.log("mapReadyMarkers", { mapReadyMarkers });
+  let filteredBySunQualityMarkers: MapReadyMarker[] = [];
+
+  if (sunQualitySelected.includes("good")) {
+    const goodSunMarkers = mapReadyMarkers.filter((marker) => {
+      return marker.bestSunPercent >= 75;
+    });
+
+    filteredBySunQualityMarkers = [
+      ...filteredBySunQualityMarkers,
+      ...goodSunMarkers,
+    ];
+  }
+
+  if (sunQualitySelected.includes("some")) {
+    const someSunMarkers = mapReadyMarkers.filter((marker) => {
+      return marker.bestSunPercent >= 50 && marker.bestSunPercent < 75;
+    });
+
+    filteredBySunQualityMarkers = [
+      ...filteredBySunQualityMarkers,
+      ...someSunMarkers,
+    ];
+  }
+
+  if (sunQualitySelected.includes("no")) {
+    const noSunMarkers = mapReadyMarkers.filter((marker) => {
+      return marker.bestSunPercent < 50;
+    });
+
+    filteredBySunQualityMarkers = [
+      ...filteredBySunQualityMarkers,
+      ...noSunMarkers,
+    ];
+  }
 
   return {
     data: {
@@ -143,6 +179,9 @@ const useMapMarkers = (): MapMarkersResponse => {
 
       // Map ready markers
       mapReadyMarkers,
+
+      // Filtered by sun quality
+      filteredBySunQualityMarkers,
     },
   };
 };

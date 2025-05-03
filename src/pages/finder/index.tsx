@@ -8,11 +8,9 @@ import usePubs from "./_shared/hooks/usePubs";
 // Components
 import PubCounts from "./_shared/components/counts";
 import TimeSlider from "./_shared/components/timeSlider";
-import CustomMarker from "./_shared/components/markers/customMarker";
-import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
-import usePubAreas from "../../_shared/hooks/pubAreas/usePubAreas";
-import useMapMarkers from "../../_shared/hooks/mapMarkers/useMapMarkers";
+import RenderFilteredMarkers from "./_shared/components/markers";
+import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 
 // Default center (London)
 const defaultCenter = {
@@ -36,16 +34,6 @@ function Finder() {
     data: { selectedPub = null },
     operations: { onSetMapBounds },
   } = usePubs();
-
-  const {
-    data: { pubsWithAreasAndSunEvals },
-  } = usePubAreas();
-
-  const {
-    data: { totalPubsInView = [] },
-  } = useMapMarkers();
-
-  console.log("totalPubsInView", totalPubsInView);
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -148,12 +136,7 @@ function Finder() {
           <PubInTheSunMapHeader />
           <PubCounts />
           <AreaTypeFilter />
-          {pubsWithAreasAndSunEvals?.map((pubWithAreas) => (
-            <CustomMarker
-              key={pubWithAreas.pub.id}
-              pubWithAreas={pubWithAreas}
-            />
-          ))}
+          <RenderFilteredMarkers />
           {userLocation && (
             <Marker
               position={userLocation}
