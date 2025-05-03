@@ -114,7 +114,7 @@ const TimeSlider = () => {
         {/* Left div (15% width) with time display */}
         <div className="w-[10%] flex flex-col justify-center">
           <div className="text-sm text-white mb-2">Today</div>
-          <div className="font-bold text-white">
+          <div className="font-black text-white">
             {formatTimeSlot(sliderValue)}
           </div>
         </div>
