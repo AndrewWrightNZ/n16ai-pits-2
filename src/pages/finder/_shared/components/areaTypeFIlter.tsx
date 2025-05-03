@@ -22,7 +22,7 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
     data: {
       availableAreaTypes = [],
       selectedAreaTypes = [],
-      areasOfTypes = [],
+      areasWhichAreCurrentlyInView = [],
     },
     operations: { onSelectAreaType },
   } = usePubAreas();
@@ -40,7 +40,8 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
   const filters = availableAreaTypes.map((type) => ({
     id: type,
     label: formatAreaType(type),
-    count: areasOfTypes.filter((area) => area.type === type).length,
+    count: areasWhichAreCurrentlyInView.filter((area) => area.type === type)
+      .length,
     icon: getIconForAreaType(type),
   }));
 
@@ -53,7 +54,7 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
   const filtersToShow = selectedFilters.length > 0 ? selectedFilters : filters;
 
   // Calculate total count of displayed areas
-  const totalDisplayedAreas = areasOfTypes.length;
+  const totalDisplayedAreas = areasWhichAreCurrentlyInView.length;
 
   return (
     <div

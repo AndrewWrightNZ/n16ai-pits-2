@@ -80,14 +80,13 @@ interface PubAreasData extends PubAreasState {
   isSavingFloorArea: boolean;
   isSettingPubAreasPresent: boolean;
   isSettingPubAreasMeasured: boolean;
-  isLoadingAreasOfTypes: boolean;
 
   // Selected pub
   selectedPub: Pub | null;
 
   // Areas
   areasForPub: PubArea[];
-  areasOfTypes: PubArea[];
+  areasWhichAreCurrentlyInView: PubArea[];
   allAvailableAreas: PubArea[];
 
   // Filters
@@ -191,17 +190,6 @@ const usePubAreas = (): PubAreasResponse => {
     return data;
   };
 
-  const fetchAreasOfType = async (): Promise<PubArea[]> => {
-    // Fetch pub areas where the type matches any of the selected area types
-    const { data, error } = await supabaseClient
-      .from("pub_area")
-      .select()
-      .in("type", selectedAreaTypes);
-
-    if (error) throw error;
-    return data;
-  };
-
   const fetchAllAvailableAreas = async (): Promise<PubArea[]> => {
     // Fetch all available pub areas
     const { data, error } = await supabaseClient.from("pub_area").select();
@@ -271,11 +259,6 @@ const usePubAreas = (): PubAreasResponse => {
   const GET_PUB_BY_ID_QUERY_KEY = ["pubById", selectedPubId];
   const GET_ALL_AVAILABLE_AREAS_QUERY_KEY = ["getAllAvailableAreas"];
 
-  const GET_PUB_AREAS_OF_TYPES_QUERY_KEY = [
-    "getPubAreasOfTypes",
-    ...selectedAreaTypes,
-  ];
-
   const {
     data: areasForPub = [],
     isLoading: isLoadingAreasForPub,
@@ -303,14 +286,8 @@ const usePubAreas = (): PubAreasResponse => {
     }
   }, [selectedPubId, areasForPub]);
 
-  const { data: rawAreasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
-    useQuery({
-      queryKey: GET_PUB_AREAS_OF_TYPES_QUERY_KEY,
-      queryFn: fetchAreasOfType,
-    });
-
   const {
-    data: allAvailableAreas = [],
+    data: rawAllAvailableAreas = [],
     isLoading: isLoadingAllAvailableAreas,
   } = useQuery({
     queryKey: GET_ALL_AVAILABLE_AREAS_QUERY_KEY,
@@ -336,7 +313,7 @@ const usePubAreas = (): PubAreasResponse => {
   // First, assign pub areas to each sun evaluation
   const sunEvalsWithPubAreas = sunEvalsForTimeslot
     .map((sunEval) => {
-      const pubArea = allAvailableAreas.find(
+      const pubArea = rawAllAvailableAreas.find(
         (area) => area.id === sunEval.area_id
       );
       return pubArea ? { ...sunEval, pubArea } : null;
@@ -419,42 +396,15 @@ const usePubAreas = (): PubAreasResponse => {
 
   //
 
-  // Filter by selected area types
-  let pubsWithAreasAndSunEvalsByAreaType: PubWithAreaAndSunEval[] = [];
-
-  if (selectedAreaTypes.length === 0) {
-    // If no filters selected, show all pubs
-    pubsWithAreasAndSunEvalsByAreaType = [];
-  } else {
-    // Filter pubs based on selected area types
-    pubsWithAreasAndSunEvals = pubsWithAreasAndSunEvals.filter((pub) => {
-      // Check if the pub matches any of the selected area types
-      return selectedAreaTypes.some((areaType) => {
-        return pub.groupedSunEvals.some(
-          ({ pubArea }) => pubArea.type === areaType
-        );
-      });
-    });
-  }
-
-  //
-
-  // Filter by selcted types
-
-  console.log("rawAreasOfTypes: ", { rawAreasOfTypes });
-
-  const areasOfTypes = rawAreasOfTypes.filter((area) => {
-    return selectedAreaTypes.includes(area.type);
-  });
-
-  //
-
   // Filter by pubs which are in view
-  const areasWhichAreCurrentlyInView = areasOfTypes.filter((area) => {
+  const areasWhichAreCurrentlyInView = rawAllAvailableAreas.filter((area) => {
     //
 
     // Check if the area's pub_id is in the pubsWithAreasAndSunEvals array
-    return pubsWithAreasAndSunEvals.some((pub) => pub.pub.id === area.pub_id);
+    return (
+      pubsWithAreasAndSunEvals.some((pub) => pub.pub.id === area.pub_id) &&
+      selectedAreaTypes.includes(area.type)
+    );
   });
 
   //
@@ -553,7 +503,7 @@ const usePubAreas = (): PubAreasResponse => {
   //
 
   // Variables
-  const availableAreaTypes = allAvailableAreas.reduce(
+  const availableAreaTypes = rawAllAvailableAreas.reduce(
     (acc: string[], area: PubArea) => {
       if (!acc.includes(area.type)) {
         acc.push(area.type);
@@ -562,6 +512,10 @@ const usePubAreas = (): PubAreasResponse => {
     },
     []
   );
+
+  const allAvailableAreas = rawAllAvailableAreas.filter((area) => {
+    return pubsInMapBounds.some((pub) => pub.id === area.pub_id);
+  });
 
   //
 
@@ -790,7 +744,6 @@ const usePubAreas = (): PubAreasResponse => {
       isSavingFloorArea,
       isSettingPubAreasPresent,
       isSettingPubAreasMeasured,
-      isLoadingAreasOfTypes,
       isSavingVisionMask,
 
       // Pub
@@ -798,7 +751,7 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Areas
       areasForPub,
-      areasOfTypes: areasWhichAreCurrentlyInView,
+      areasWhichAreCurrentlyInView,
       allAvailableAreas,
 
       // Filters
