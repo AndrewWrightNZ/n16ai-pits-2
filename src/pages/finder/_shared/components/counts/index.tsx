@@ -19,7 +19,7 @@ const FilterButton = ({
 }: FilterButtonProps) => {
   return (
     <button
-      className={`flex cursor-pointer flex-row items-center justify-end bg-white rounded-[20px] border-2 p-4 gap-2 ${isSelected ? "border-slate-800 opacity-100" : "border-slate-400 opacity-80"}`}
+      className={`flex cursor-pointer flex-row items-center justify-end bg-white rounded-[30px] border-2 p-4 gap-2 ${isSelected ? "border-slate-800 opacity-100" : "border-slate-400 opacity-80"}`}
       onClick={() => onClick(id)}
     >
       {icon}
@@ -37,8 +37,6 @@ const PubCounts = () => {
   const [filtersSelected, setFiltersSelected] = useState<string[]>([]);
 
   // Handlers
-  console.log({ filtersSelected });
-
   const handleFilterClick = (filter: string) => {
     setFiltersSelected((prev) => {
       if (prev.includes(filter)) {
@@ -80,7 +78,7 @@ const PubCounts = () => {
   ];
 
   return (
-    <div className="flex flex-row items-center justify-end fixed top-[8px] right-[8px] w-1/2 bg-none gap-4">
+    <div className="flex flex-row items-center justify-end fixed top-[20px] right-[8px] w-1/2 bg-none gap-4">
       {filters.map((filter) => (
         <FilterButton
           key={filter.id}
