@@ -191,6 +191,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
             flexDirection: "column",
             justifyContent: isPubHovered ? "start" : "center",
             alignItems: isPubHovered ? "start" : "center",
+            fontFamily: "Poppins, sans-serif !important",
           }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -207,6 +208,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               width: "100%",
               height: "100%",
               overflow: "hidden",
+              fontFamily: "Poppins, sans-serif !important",
             }}
           >
             <div className="flex flex-row items-center gap-2 color-[#FFCC00]">
@@ -230,9 +232,12 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
                 aria-label="Sun"
               />
 
-              <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+              <p
+                className="text-[0.8rem] font-poppins font-black text-black-800 mx-1 flex items-center whitespace-nowrap"
+                style={{ fontFamily: "Poppins !important" }}
+              >
                 {potentiallyTruncatedName}
-              </span>
+              </p>
             </div>
 
             <ShowPubAreas sunEvals={groupedSunEvals} />
