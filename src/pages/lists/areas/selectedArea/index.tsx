@@ -3,10 +3,10 @@ import { MapPin, Info, Square, X, Sun, Clock } from "lucide-react";
 // Hooks
 import usePubs from "../../../finder/_shared/hooks/usePubs";
 import useSunEvals from "../../../../_shared/hooks/sunEvals/useSunEvals";
-import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Helpers
 import { formatAreaType, formatTimeLabel } from "../../_shared";
+import usePubAreas from "../../../../_shared/hooks/pubAreas/usePubAreas";
 
 const ViewSelectedArea = () => {
   // Hooks

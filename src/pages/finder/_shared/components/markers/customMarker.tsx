@@ -7,15 +7,15 @@ import sunLogo from "../../../../../assets/biggerBolderSun.svg";
 
 // Hooks
 import usePubs from "../../hooks/usePubs";
-import usePubAreas, {
-  PubWithAreaAndSunEval,
-} from "../../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Utils
 import * as fn from "../../../../../_shared/utils";
 
 // Components
 import ShowPubAreas from "./areas";
+import usePubAreas, {
+  PubWithAreaAndSunEval,
+} from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 interface CustomMarkerProps {
   pubWithAreas: PubWithAreaAndSunEval;

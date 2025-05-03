@@ -4,7 +4,7 @@ import React, { useMemo, useEffect } from "react";
 import { PubArea } from "../../../../../_shared/types";
 
 // Hooks
-import usePubAreas from "../../../identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Helpers
 import {

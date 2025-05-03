@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 
 // Context
 import { SunEvalsState, useSunEvalsContext } from "../../providers/useSunEvals";
-import { usePubAreasContext } from "../../../pages/areas/identifier/_shared/providers/PubAreasProvider";
 
 // Types
 import { SunEval } from "../../types";
@@ -12,6 +11,7 @@ import { supabaseClient } from "../../hooks/useSupabase";
 
 // Helpers
 import { getCurrentTimeSlot } from "../../utils";
+import { usePubAreasContext } from "../../providers/PubAreasProvider";
 
 interface SunEvalsData extends SunEvalsState {
   // Loading

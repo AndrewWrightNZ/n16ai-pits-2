@@ -11,7 +11,7 @@ import PubList from "./_shared/components/SelectPubFromList";
 // Hooks
 import usePubAreas, {
   PolygonCoordinate,
-} from "../identifier/_shared/hooks/usePubAreas";
+} from "../../../_shared/hooks/pubAreas/usePubAreas";
 import usePubs from "../../finder/_shared/hooks/usePubs";
 
 // Types

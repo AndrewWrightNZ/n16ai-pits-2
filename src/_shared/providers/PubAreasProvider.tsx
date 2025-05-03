@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { PubArea } from "../types";
 
 // Types
-import { PubArea } from "../../../../../_shared/types";
 
 export interface PubAreasState {
   // Area details

@@ -3,7 +3,6 @@ import { ArrowUpDown, Check, Filter, Sun } from "lucide-react";
 
 // Hooks
 import usePubs from "../../finder/_shared/hooks/usePubs";
-import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Components
 import ViewSelectedArea from "./selectedArea";
@@ -14,6 +13,7 @@ import { PubArea } from "../../../_shared/types";
 
 // Helpers
 import { AREA_TYPES } from "../_shared";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Define a type for the sortable keys
 type SortableKey = keyof Pick<
@@ -36,7 +36,7 @@ type SortConfig = {
 const AreasList = () => {
   // Hooks
   const {
-    data: { areasOfTypes, selectedAreaTypes, selectedPubArea },
+    data: { allAvailableAreas, selectedAreaTypes, selectedPubArea },
     operations: { onToggleAreaTypeFilter, onSelectPubArea },
   } = usePubAreas();
 
@@ -46,14 +46,14 @@ const AreasList = () => {
 
   // Augment areas with pub details
   const areasWithPubDetails = useMemo(() => {
-    return areasOfTypes.map((area) => {
+    return allAvailableAreas.map((area) => {
       const pub = pubs.find((p) => p.id === area.pub_id);
       return {
         ...area,
         pub_name: pub?.name || "Unknown Pub",
       };
     });
-  }, [areasOfTypes, pubs]);
+  }, [allAvailableAreas, pubs]);
 
   // State for sorting with proper typing
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -122,7 +122,7 @@ const AreasList = () => {
           <div className="flex items-center">
             <Filter className="mr-2" />
             <span className="">
-              Filtered Areas: {areasOfTypes.length || "0"}
+              Filtered Areas: {allAvailableAreas.length || "0"}
             </span>
           </div>
         </div>
@@ -153,7 +153,7 @@ const AreasList = () => {
 
       {/* Areas Table */}
       <div className="bg-white shadow-sm w-[90vw] mx-auto rounded-xl overflow-scroll">
-        {areasOfTypes.length > 0 && (
+        {allAvailableAreas.length > 0 && (
           <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
@@ -200,7 +200,7 @@ const AreasList = () => {
           </table>
         )}
 
-        {areasOfTypes.length === 0 && (
+        {allAvailableAreas.length === 0 && (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
             <p className="text-xl text-gray-600">No areas found</p>
             <p className="text-sm text-gray-500 mt-2">

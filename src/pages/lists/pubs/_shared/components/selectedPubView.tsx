@@ -1,4 +1,4 @@
-import usePubAreas from "../../../../areas/identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 const SelectedPubView = () => {
   //

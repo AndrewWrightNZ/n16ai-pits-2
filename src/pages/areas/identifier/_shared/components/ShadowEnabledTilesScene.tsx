@@ -19,7 +19,7 @@ import CameraPositioner from "../../../../scene/_shared/services/cameraPositione
 import { memoryManager } from "../../../../scene/_shared/services/MemoryManagementService";
 
 // Hooks
-import usePubAreas from "../hooks/usePubAreas";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 import useMapSettings from "../../../../scene/_shared/hooks/useMapSettings";
 
 // Components

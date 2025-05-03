@@ -2,7 +2,6 @@ import { useMemo } from "react";
 
 // Hooks
 import usePubs from "../../finder/_shared/hooks/usePubs";
-import usePubAreas from "../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Types
 import { PubArea, Pub } from "../../../_shared/types";
@@ -11,6 +10,7 @@ import { PubArea, Pub } from "../../../_shared/types";
 import PubDetail from "./pubDetail";
 import ExpandablePubRow from "./_shared/components/expandablePubRow";
 import { extractPostCodeFromAddress } from "./_shared/helpers";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 export interface PubForTableDisplay extends Pub {
   areas: PubArea[];
@@ -22,7 +22,7 @@ export interface PubForTableDisplay extends Pub {
 const PitsOneHundredPubsList = () => {
   // Hooks
   const {
-    data: { areasOfTypes, selectedPub },
+    data: { allAvailableAreas, selectedPub },
   } = usePubAreas();
 
   const {
@@ -32,7 +32,7 @@ const PitsOneHundredPubsList = () => {
   // Add each areasOfTypes to the pubsWithAreaDetails and calculate total area
   const rankedPubs: PubForTableDisplay[] = useMemo(() => {
     const pubsWithAreasAndTotals = pubsWithAreaDetails.map((pub) => {
-      const areas = areasOfTypes.filter(({ pub_id }) => pub_id === pub.id);
+      const areas = allAvailableAreas.filter(({ pub_id }) => pub_id === pub.id);
       const totalArea = areas.reduce((sum, area) => sum + area.floor_area, 0);
 
       const postcode = extractPostCodeFromAddress(pub.address_text);
@@ -53,7 +53,7 @@ const PitsOneHundredPubsList = () => {
     return [...pubsWithAreasAndTotals].sort(
       (a, b) => b.totalArea - a.totalArea
     );
-  }, [pubsWithAreaDetails, areasOfTypes]);
+  }, [pubsWithAreaDetails, allAvailableAreas]);
 
   return (
     <>

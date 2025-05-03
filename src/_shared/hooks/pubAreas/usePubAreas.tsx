@@ -1,24 +1,20 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-// Hooks
-import { supabaseClient } from "../../../../../_shared/hooks/useSupabase";
-
-// Providers
+import { Pub, PubArea, SimpleCameraPosition, SunEval } from "../../types";
 import {
   PubAreasState,
   usePubAreasContext,
-} from "../providers/PubAreasProvider";
+} from "../../providers/PubAreasProvider";
+import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
+import useSunEvals from "../sunEvals/useSunEvals";
+
+import { supabaseClient } from "../../../_shared/hooks/useSupabase";
+
+// Hooks
+
+// Providers
 
 // Types
-import {
-  SimpleCameraPosition,
-  Pub,
-  PubArea,
-  SunEval,
-} from "../../../../../_shared/types";
-import usePubs from "../../../../finder/_shared/hooks/usePubs";
-import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 
 // Types
 

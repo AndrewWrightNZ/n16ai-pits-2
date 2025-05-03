@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 
 // Hooks
 import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
-import usePubAreas from "../../../../areas/identifier/_shared/hooks/usePubAreas";
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 const PubCounts = () => {
   // State for collapse/expand functionality

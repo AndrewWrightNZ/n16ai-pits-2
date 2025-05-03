@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 
 // Hooks
-import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Constants
 import { formatAreaType } from "../../../lists/_shared";
@@ -9,6 +8,7 @@ import { formatAreaType } from "../../../lists/_shared";
 // Components
 import { AreaTypeFilterButton } from "./AreaTypeFilterButton";
 import { getIconForAreaType } from "../helpers";
+import usePubAreas from "../../../../_shared/hooks/pubAreas/usePubAreas";
 
 interface AreaTypeFilterProps {}
 
