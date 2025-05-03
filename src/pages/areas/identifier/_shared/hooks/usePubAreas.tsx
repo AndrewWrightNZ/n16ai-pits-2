@@ -99,6 +99,11 @@ interface PubAreasData extends PubAreasState {
 
   // Pubs with areas
   pubsWithAreasAndSunEvals: PubWithAreaAndSunEval[];
+
+  // Categorized pubs by sun evaluation
+  pubsWithSunEvalAbove75: PubWithAreaAndSunEval[];
+  pubsWithSunEvalAbove50Below75: PubWithAreaAndSunEval[];
+  pubsWithoutSunEvalAbove50Percent: PubWithAreaAndSunEval[];
 }
 
 interface PubAreasOperations {
@@ -298,7 +303,7 @@ const usePubAreas = (): PubAreasResponse => {
     }
   }, [selectedPubId, areasForPub]);
 
-  const { data: areasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
+  const { data: rawAreasOfTypes = [], isLoading: isLoadingAreasOfTypes } =
     useQuery({
       queryKey: GET_PUB_AREAS_OF_TYPES_QUERY_KEY,
       queryFn: fetchAreasOfType,
@@ -363,7 +368,31 @@ const usePubAreas = (): PubAreasResponse => {
 
   //
 
-  // Filter by selected sun quality
+  // Categorize pubs based on sun evaluation percentages
+  // 1. Pubs with at least one sun eval above 75%
+  const pubsWithSunEvalAbove75 = rawPubsWithAreasAndSunEvals.filter((pub) => {
+    return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75);
+  });
+
+  // 2. Pubs with at least one sun eval above 50% but none above 75%
+  const pubsWithSunEvalAbove50Below75 = rawPubsWithAreasAndSunEvals.filter(
+    (pub) => {
+      return (
+        pub.groupedSunEvals.some(
+          (sunEval) => sunEval.pc_in_sun > 50 && sunEval.pc_in_sun <= 75
+        ) && !pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75)
+      );
+    }
+  );
+
+  // 3. Pubs with no sun evals above 50%s
+  const pubsWithoutSunEvalAbove50Percent = rawPubsWithAreasAndSunEvals.filter(
+    (pub) => {
+      return !pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 50);
+    }
+  );
+
+  // Filter by selected sun quality (maintaining existing functionality)
   let pubsWithAreasAndSunEvals = [];
 
   if (sunQualitySelected.length === 0) {
@@ -387,6 +416,46 @@ const usePubAreas = (): PubAreasResponse => {
       });
     });
   }
+
+  //
+
+  // Filter by selected area types
+  let pubsWithAreasAndSunEvalsByAreaType: PubWithAreaAndSunEval[] = [];
+
+  if (selectedAreaTypes.length === 0) {
+    // If no filters selected, show all pubs
+    pubsWithAreasAndSunEvalsByAreaType = [];
+  } else {
+    // Filter pubs based on selected area types
+    pubsWithAreasAndSunEvals = pubsWithAreasAndSunEvals.filter((pub) => {
+      // Check if the pub matches any of the selected area types
+      return selectedAreaTypes.some((areaType) => {
+        return pub.groupedSunEvals.some(
+          ({ pubArea }) => pubArea.type === areaType
+        );
+      });
+    });
+  }
+
+  //
+
+  // Filter by selcted types
+
+  console.log("rawAreasOfTypes: ", { rawAreasOfTypes });
+
+  const areasOfTypes = rawAreasOfTypes.filter((area) => {
+    return selectedAreaTypes.includes(area.type);
+  });
+
+  //
+
+  // Filter by pubs which are in view
+  const areasWhichAreCurrentlyInView = areasOfTypes.filter((area) => {
+    //
+
+    // Check if the area's pub_id is in the pubsWithAreasAndSunEvals array
+    return pubsWithAreasAndSunEvals.some((pub) => pub.pub.id === area.pub_id);
+  });
 
   //
 
@@ -729,7 +798,7 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Areas
       areasForPub,
-      areasOfTypes,
+      areasOfTypes: areasWhichAreCurrentlyInView,
       allAvailableAreas,
 
       // Filters
@@ -741,6 +810,11 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Pubs with areas
       pubsWithAreasAndSunEvals,
+
+      // Categorized pubs by sun evaluation
+      pubsWithSunEvalAbove75,
+      pubsWithSunEvalAbove50Below75,
+      pubsWithoutSunEvalAbove50Percent,
     },
     operations: {
       // Select pub

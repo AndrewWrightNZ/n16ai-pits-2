@@ -1,8 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 
-// Icons
-import { Beer, Coffee, Umbrella, Home, Building, Waves } from "lucide-react";
-
 // Hooks
 import usePubAreas from "../../../areas/identifier/_shared/hooks/usePubAreas";
 
@@ -11,6 +8,7 @@ import { formatAreaType } from "../../../lists/_shared";
 
 // Components
 import { AreaTypeFilterButton } from "./AreaTypeFilterButton";
+import { getIconForAreaType } from "../helpers";
 
 interface AreaTypeFilterProps {}
 
@@ -28,26 +26,6 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
     },
     operations: { onSelectAreaType },
   } = usePubAreas();
-
-  // Get icon for area type
-  const getIconForAreaType = (type: string) => {
-    switch (type) {
-      case "beer-garden":
-        return <Beer size={20} color="#1d293d" />;
-      case "terrace":
-        return <Coffee size={20} color="#1d293d" />;
-      case "pavement":
-        return <Umbrella size={20} color="#1d293d" />;
-      case "frontage-seating":
-        return <Home size={20} color="#1d293d" />;
-      case "courtyard":
-        return <Building size={20} color="#1d293d" />;
-      case "terrace-waterfront":
-        return <Waves size={20} color="#1d293d" />;
-      default:
-        return <Umbrella size={20} color="#1d293d" />;
-    }
-  };
 
   // Collapse after 5 seconds
   useEffect(() => {
@@ -97,7 +75,9 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
             <p
               className={`font-bold text-xs text-slate-800 w-[60px] opacity-100 transition-opacity duration-500 ${totalDisplayedAreas > 0 ? "opacity-100" : "opacity-0"}`}
             >
-              {totalDisplayedAreas > 0 ? totalDisplayedAreas + " areas" : ""}
+              {totalDisplayedAreas > 0
+                ? totalDisplayedAreas + " areas"
+                : "All types"}
             </p>
           </div>
         ) : (
