@@ -70,10 +70,28 @@ const TimeSlider = () => {
       const slider = sliderRef.current;
       const min = parseInt(slider.min || "0", 10);
       const max = parseInt(slider.max || "36", 10);
-      const percentage = ((value - min) / (max - min)) * 100;
+
+      // Get the actual width of the slider track
+      const sliderRect = slider.getBoundingClientRect();
+
+      // Calculate the position in pixels first
+      const valueRange = max - min;
+      const pixelsPerUnit = sliderRect.width / valueRange;
+      const pixelPosition = (value - min) * pixelsPerUnit;
+
+      // Convert to percentage of the slider width
+      const percentage = (pixelPosition / sliderRect.width) * 100;
+
       setTooltipPosition(percentage);
     }
   };
+
+  // Update tooltip position on window resize
+  useEffect(() => {
+    const handleResize = () => updateTooltipPosition(sliderValue);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [sliderValue]);
 
   // Update tooltip position when slider value changes
   useEffect(() => {
@@ -95,8 +113,8 @@ const TimeSlider = () => {
       <div className="flex w-full gap-4 mt-6">
         {/* Left div (15% width) with time display */}
         <div className="w-[10%] flex flex-col justify-center">
-          <div className="text-sm text-white">Time:</div>
-          <div className="font-medium text-white">
+          <div className="text-sm text-white mb-2">Today</div>
+          <div className="font-bold text-white">
             {formatTimeSlot(sliderValue)}
           </div>
         </div>
