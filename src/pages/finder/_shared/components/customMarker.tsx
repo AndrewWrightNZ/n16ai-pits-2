@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
@@ -105,9 +105,37 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
     onSetHoveredPubId(pubId);
   }, [onSetHoveredPubId, pubId]);
 
+  // Add state to track recently unhovered markers
+  const [wasRecentlyHovered, setWasRecentlyHovered] = useState(false);
+
+  // Effect to clear wasRecentlyHovered state after transition completes
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    if (!isPubHovered && wasRecentlyHovered) {
+      timeoutId = setTimeout(() => {
+        setWasRecentlyHovered(false);
+      }, 300); // 300ms is enough for both transitions to complete
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isPubHovered, wasRecentlyHovered]);
+
+  // Update wasRecentlyHovered when hover state changes
+  useEffect(() => {
+    if (isPubHovered) {
+      setWasRecentlyHovered(false);
+    }
+  }, [isPubHovered]);
+
   const handleMouseLeave = useCallback(() => {
-    onSetHoveredPubId(hoveredPubId);
-  }, [onSetHoveredPubId, hoveredPubId]);
+    if (isPubHovered) {
+      setWasRecentlyHovered(true);
+    }
+    onSetHoveredPubId(0); // Use 0 instead of null as it expects a number
+  }, [onSetHoveredPubId, isPubHovered]);
 
   return (
     <>
@@ -135,15 +163,25 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
           style={{
             zIndex: isPubHovered ? 9999999999 : 1,
             opacity: isPubHidden ? 0.3 : 1,
-            cursor: isPubHovered ? "pointer" : "pointer",
+            cursor: "pointer",
             width: isPubHovered ? "250px" : "30px",
             height: isPubHovered ? "auto" : "30px",
             minHeight: isPubHovered ? "100px" : "30px",
             maxHeight: isPubHovered ? "300px" : "30px",
-            backgroundColor: isPubHovered ? "white" : "",
-            transition:
-              "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
-            border: "1px solid #1e293b", // slate-800
+            backgroundColor: isPubHovered || wasRecentlyHovered ? "white" : "",
+            ...(!isPubHovered &&
+              !wasRecentlyHovered &&
+              fn.getSunCircleClassFromPercentage(topSunValue) ===
+                "sun-half-marker" && {
+                background:
+                  "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                transform: "rotate(45deg)",
+              }),
+            // Synchronized transition for all properties
+            transition: isPubHovered
+              ? "width 0.3s ease, height 0.3s ease, min-height 0.3s ease, max-height 0.3s ease, background-color 0.2s ease"
+              : "all 0.2s ease",
+            border: "1px solid #1e293b", // slate-400
             boxShadow: isPubHovered
               ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
               : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
@@ -179,7 +217,15 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
                   WebkitMaskImage: `url(${sunLogo})`,
                   maskSize: "contain",
                   WebkitMaskSize: "contain",
-                  backgroundColor: topSunValue >= 75 ? "#FFCC00" : "#e5e7eb",
+                  ...(topSunValue >= 75
+                    ? { backgroundColor: "#FFCC00" }
+                    : topSunValue >= 50
+                      ? {
+                          background:
+                            "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                          transform: "rotate(45deg)",
+                        }
+                      : { backgroundColor: "#e5e7eb" }),
                 }}
                 aria-label="Sun"
               />

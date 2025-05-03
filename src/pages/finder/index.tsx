@@ -10,6 +10,7 @@ import usePubs from "./_shared/hooks/usePubs";
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import RenderPubsOfType from "./_shared/components/renderPubsOfType";
 import TimeSlider from "./_shared/components/timeSlider";
+import PubCounts from "./_shared/components/counts";
 
 // Default center (London)
 const defaultCenter = {
@@ -137,6 +138,7 @@ function Finder() {
           }}
         >
           <PubInTheSunMapHeader />
+          <PubCounts />
           <RenderPubsOfType />
           {userLocation && (
             <Marker

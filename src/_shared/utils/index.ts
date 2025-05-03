@@ -199,8 +199,9 @@ export function selectCorrectEmoji({
 export function getSunCircleClassFromPercentage(percentage: number) {
   if (percentage >= 75) {
     return "bg-amber-300"; // Bright yellow circle for high sun percentage
-    // } else if (percentage >= 50) {
-    //   return "bg-yellow-200"; // Light yellow circle for medium sun percentage
+  } else if (percentage >= 50) {
+    // For percentages between 50-75%, return an empty string as we'll use inline styles
+    return "sun-half-marker"; // Custom class for half sun markers
   } else {
     return "bg-gray-200"; // Gray circle for low sun percentage
   }
