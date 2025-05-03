@@ -131,7 +131,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
         getPixelPositionOffset={getPixelPositionOffset}
       >
         <div
-          className={`flex relative translate-y-0 ml-10 rounded-[20px] overflow-hidden ${!isPubHovered ? fn.getSunCircleClassFromPercentage(topSunValue) : ""}`}
+          className={`flex relative fade-in-out translate-y-0 ml-10 rounded-[20px] overflow-hidden ${!isPubHovered ? fn.getSunCircleClassFromPercentage(topSunValue) : ""}`}
           style={{
             zIndex: isPubHovered ? 9999999999 : 1,
             opacity: isPubHidden ? 0.3 : 1,

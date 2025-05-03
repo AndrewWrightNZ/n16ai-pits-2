@@ -9,6 +9,7 @@ import usePubs from "./_shared/hooks/usePubs";
 // Components
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import RenderPubsOfType from "./_shared/components/renderPubsOfType";
+import TimeSlider from "./_shared/components/timeSlider";
 
 // Default center (London)
 const defaultCenter = {
@@ -154,6 +155,7 @@ function Finder() {
               }}
             />
           )}
+          <TimeSlider />
         </GoogleMap>
       </main>
     </>
