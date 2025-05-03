@@ -19,13 +19,11 @@ const FilterButton = ({
 }: FilterButtonProps) => {
   return (
     <button
-      className={`flex cursor-pointer flex-row items-center justify-end bg-white rounded-[30px] border-2 p-3 gap-2 ${isSelected ? "border-slate-800 opacity-100" : "border-slate-400 opacity-80"}`}
+      className={`flex cursor-pointer transition-all duration-200 flex-row items-center justify-end bg-white rounded-[30px] border-2 p-3 gap-2 ${isSelected ? "border-slate-800 opacity-100 text-slate-800" : "border-slate-400 text-slate-400 opacity-80 hover:opacity-100 hover:text-slate-800"}`}
       onClick={() => onClick(id)}
     >
       {icon}
-      <p
-        className={`font-bold text-xs ${isSelected ? "text-slate-800" : "text-slate-400"}`}
-      >
+      <p className={`font-bold text-xs`}>
         {label} ({count})
       </p>
     </button>
