@@ -234,7 +234,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
 
               <p
                 className="text-[0.8rem] font-poppins font-black text-black-800 mx-1 flex items-center whitespace-nowrap"
-                style={{ fontFamily: "Poppins, sans-serif !important" }}
+                style={{ fontFamily: "Poppins !important" }}
               >
                 {potentiallyTruncatedName}
               </p>
