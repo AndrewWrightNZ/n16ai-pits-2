@@ -6,20 +6,20 @@ import { ChevronRight } from "lucide-react";
 
 // Assets
 import sunLogo from "../../assets/biggerBolderSun.svg";
-import usePubs from "../finder/_shared/hooks/usePubs";
 import CookieBanner from "./_shared/components/cookieBanner";
 
-// Components
+// Hooks
+import useMapMarkers from "../../_shared/hooks/mapMarkers/useMapMarkers";
 
 function App() {
   const [showContent, setShowContent] = useState(false);
 
   // Hooks
   const {
-    data: { pubsInTheSunCount, pubsPartiallyInTheSunCount },
-  } = usePubs();
+    data: { goodSunCount = 0, someSunCount = 0 },
+  } = useMapMarkers();
 
-  const totalInTheSun = pubsInTheSunCount + pubsPartiallyInTheSunCount;
+  const totalInTheSun = goodSunCount + someSunCount;
   const primaryActionButtonText = `${totalInTheSun} in the sun now`;
   const secondaryActionButtonText = `Missed one? Contact us`;
 
