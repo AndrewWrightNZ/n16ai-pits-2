@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 
 // Assets
-import sunLogo from "../../assets/bigBoldSun.svg";
+import sunLogo from "../../assets/biggerBolderSun.svg";
 import usePubs from "../finder/_shared/hooks/usePubs";
 import CookieBanner from "./_shared/components/cookieBanner";
 

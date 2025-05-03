@@ -1,5 +1,5 @@
 // IMages
-import sunLogo from "../../../../assets/bigBoldSun.svg";
+import sunLogo from "../../../../assets/biggerBolderSun.svg";
 
 const PubInTheSunMapHeader = () => {
   return (

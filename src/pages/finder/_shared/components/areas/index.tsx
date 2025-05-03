@@ -69,6 +69,7 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
         </>
       ) : (
         <>
+          <p className="mt-2">Areas:</p>
           {sunEvals.map((sunValue, index) => (
             <div
               key={index}

@@ -2,6 +2,9 @@ import { useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
+// Assets
+import sunLogo from "../../../../assets/biggerBolderSun.svg";
+
 // Hooks
 import usePubs from "../hooks/usePubs";
 import usePubAreas, {
@@ -140,11 +143,12 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
             backgroundColor: isPubHovered ? "white" : "",
             transition:
               "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
-            border: isPubHovered ? "1px solid #d3d3d3" : "1px solid #1e293b", // slate-800
+            border: "1px solid #1e293b", // slate-800
             boxShadow: isPubHovered
               ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
               : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
             padding: isPubHovered ? "16px" : "0",
+            paddingTop: isPubHovered ? "32px" : "0",
             display: "flex",
             flexDirection: "column",
             justifyContent: isPubHovered ? "start" : "center",
@@ -167,16 +171,19 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               overflow: "hidden",
             }}
           >
-            <div className="flex flex-row items-center gap-2">
+            <div className="flex flex-row items-center gap-2 color-[#FFCC00]">
               <div
-                className={`h-[25px] w-[25px] rounded-full ${fn.getSunCircleClassFromPercentage(topSunValue)}`}
-                aria-label={`Sun indicator: ${topSunValue}%`}
+                className="w-[30px] h-[30px]"
                 style={{
-                  position: "relative",
-                  top: "auto",
-                  left: "auto",
+                  maskImage: `url(${sunLogo})`,
+                  WebkitMaskImage: `url(${sunLogo})`,
+                  maskSize: "contain",
+                  WebkitMaskSize: "contain",
+                  backgroundColor: topSunValue >= 75 ? "#FFCC00" : "#e5e7eb",
                 }}
+                aria-label="Sun"
               />
+
               <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {potentiallyTruncatedName}
               </span>
