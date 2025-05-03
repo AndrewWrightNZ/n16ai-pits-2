@@ -388,8 +388,6 @@ const usePubAreas = (): PubAreasResponse => {
     });
   }
 
-  console.log("pubsWithAreasAndSunEvals", { pubsWithAreasAndSunEvals });
-
   //
 
   // Mutations
