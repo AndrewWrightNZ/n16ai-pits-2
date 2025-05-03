@@ -9,7 +9,12 @@ const PubCounts = () => {
 
   // Hooks
   const {
-    data: { sunQualitySelected = [] },
+    data: {
+      sunQualitySelected = [],
+      pubsAbove50Percent,
+      pubsAbove75Percent,
+      pubsBelow50Percent,
+    },
     operations: { onSunQualityFilterClick },
   } = useSunEvals();
 
@@ -18,13 +23,13 @@ const PubCounts = () => {
     {
       id: "good",
       label: "Good Sun",
-      count: 10,
+      count: pubsAbove75Percent,
       icon: <div className="w-[20px] h-[20px] bg-[#FFCC00] rounded-full" />,
     },
     {
       id: "some",
       label: "Some Sun",
-      count: 10,
+      count: pubsAbove50Percent,
       icon: (
         <div
           className="w-[20px] h-[20px] rounded-full"
@@ -38,7 +43,7 @@ const PubCounts = () => {
     {
       id: "no",
       label: "No Sun",
-      count: 10,
+      count: pubsBelow50Percent,
       icon: <div className="w-[20px] h-[20px] bg-[#99a1af] rounded-full" />,
     },
   ];
