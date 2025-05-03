@@ -69,7 +69,7 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
         </>
       ) : (
         <>
-          <p className="mt-2">Areas:</p>
+          <p className="">Areas:</p>
           {sunEvals.map((sunValue, index) => (
             <div
               key={index}
@@ -93,7 +93,7 @@ const ShowPubAreas = ({ sunEvals }: ShowPubAreasProps) => {
         </>
       )}
 
-      <button className="mt-2 w-full flex flex-row justify-center items-center gap-2 rounded border border-2 p-2 border-[#2962FF] bg-[#2962FF] text-white">
+      <button className="mt-2 w-full rounded-xl flex flex-row justify-center items-center gap-2 border border-2 p-2 border-[#2962FF] bg-[#2962FF] text-white">
         <Sun className="w-4 h-4" />
         View Live Sun
       </button>

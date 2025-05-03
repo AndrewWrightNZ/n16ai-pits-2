@@ -90,10 +90,16 @@ function App() {
               showContent ? "opacity-100" : "opacity-0"
             }`}
           >
-            <img
-              src={sunLogo}
+            <div
               className="w-full h-full [animation:slow-spin_20s_linear_infinite]"
-              alt="Sun"
+              style={{
+                maskImage: `url(${sunLogo})`,
+                WebkitMaskImage: `url(${sunLogo})`,
+                maskSize: "contain",
+                WebkitMaskSize: "contain",
+                backgroundColor: "#FFCC00",
+              }}
+              aria-label="Sun"
             />
           </div>
 
