@@ -141,6 +141,13 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
             minHeight: isPubHovered ? "100px" : "30px",
             maxHeight: isPubHovered ? "300px" : "30px",
             backgroundColor: isPubHovered ? "white" : "",
+            ...(!isPubHovered &&
+              fn.getSunCircleClassFromPercentage(topSunValue) ===
+                "sun-half-marker" && {
+                background:
+                  "linear-gradient(to right, #FFCC00 50%, #99a1af 50%)",
+                transform: "rotate(45deg)",
+              }),
             transition:
               "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
             border: "1px solid #1e293b", // slate-800
@@ -179,7 +186,15 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
                   WebkitMaskImage: `url(${sunLogo})`,
                   maskSize: "contain",
                   WebkitMaskSize: "contain",
-                  backgroundColor: topSunValue >= 75 ? "#FFCC00" : "#e5e7eb",
+                  ...(topSunValue >= 75
+                    ? { backgroundColor: "#FFCC00" }
+                    : topSunValue >= 50
+                      ? {
+                          background:
+                            "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                          transform: "rotate(45deg)",
+                        }
+                      : { backgroundColor: "#e5e7eb" }),
                 }}
                 aria-label="Sun"
               />
