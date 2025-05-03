@@ -58,7 +58,8 @@ const ShadowEnabledTilesScene = forwardRef<
   // State
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [shadowOpacity, setShadowOpacity] = useState(0.9);
-  const [northOffset, setNorthOffset] = useState(1.6); // Offset angle in radians
+  const [northOffset, setNorthOffset] = useState(1.5); // Offset angle in radians
+  const [heightOffset, setHeightOffset] = useState(-30); // Height offset in units
   const [sunPosition, setSunPosition] = useState<[number, number, number]>([
     100, 100, 50,
   ]);
@@ -105,7 +106,7 @@ const ShadowEnabledTilesScene = forwardRef<
     }
   }, [allowShadows, showWhiteTiles, onSetShowWhiteTiles]);
 
-  // Calculate sun position based on time of day with north offset adjustment
+  // Calculate sun position based on time of day with north offset adjustment and seasonal variations
   const calculateSunPosition = useCallback(
     (timeOfDay: Date) => {
       const hours = timeOfDay.getHours();
@@ -116,14 +117,40 @@ const ShadowEnabledTilesScene = forwardRef<
       // Apply the north offset to the angle
       const adjustedAngle = angle + northOffset;
 
-      const radius = 200;
-      const height = 100;
-      const x = Math.cos(adjustedAngle) * radius;
-      const z = Math.sin(adjustedAngle) * radius;
-      const y = Math.sin(angle) * height + height; // Keep vertical position based on original angle
+      // Calculate seasonal adjustment for sun height
+      // Day of year (0-365)
+      const start = new Date(timeOfDay.getFullYear(), 0, 0);
+      const diff = timeOfDay.getTime() - start.getTime();
+      const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+      // Seasonal adjustment - peaks at summer solstice (~day 172) and lowest at winter solstice (~day 355)
+      // This creates a sinusoidal variation throughout the year
+      const seasonalFactor = Math.sin(((dayOfYear - 80) / 365) * 2 * Math.PI);
+
+      // Apply seasonal adjustment to height
+      const baseHeight = 100;
+      const seasonalHeightVariation = 30; // How much the height varies by season
+      const adjustedHeight =
+        baseHeight + seasonalFactor * seasonalHeightVariation;
+
+      // Apply seasonal adjustment to radius (sun's path is wider in winter, narrower in summer)
+      const baseRadius = 200;
+      const seasonalRadiusVariation = 20;
+      const adjustedRadius =
+        baseRadius - seasonalFactor * seasonalRadiusVariation;
+
+      // Calculate position
+      const x = Math.cos(adjustedAngle) * adjustedRadius;
+      const z = Math.sin(adjustedAngle) * adjustedRadius;
+
+      // Apply height offset to the sun's vertical position
+      const calculatedHeight =
+        Math.sin(angle) * adjustedHeight + adjustedHeight;
+      const y = calculatedHeight + heightOffset; // Apply manual height offset
+
       return [x, y, z] as [number, number, number];
     },
-    [northOffset]
+    [northOffset, heightOffset]
   );
 
   const {
@@ -140,7 +167,7 @@ const ShadowEnabledTilesScene = forwardRef<
     cameraRef.current = camera;
   }, [camera]);
 
-  // Handle keyboard events for adjusting north offset
+  // Handle keyboard events for adjusting north offset and height offset
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Adjust north offset with W/S keys
@@ -150,6 +177,15 @@ const ShadowEnabledTilesScene = forwardRef<
       } else if (event.key.toLowerCase() === "s") {
         console.log("S pressed");
         setNorthOffset((prev) => prev - 0.1); // Decrease by 0.1 radians
+      }
+
+      // Adjust height offset with E/D keys
+      else if (event.key.toLowerCase() === "e") {
+        console.log("E pressed");
+        setHeightOffset((prev) => prev + 10); // Increase height by 10 units
+      } else if (event.key.toLowerCase() === "d") {
+        console.log("D pressed");
+        setHeightOffset((prev) => prev - 10); // Decrease height by 10 units
       }
     };
 
@@ -163,6 +199,7 @@ const ShadowEnabledTilesScene = forwardRef<
   }, []);
 
   console.log("North offset: ", northOffset);
+  console.log("Height offset: ", heightOffset);
 
   // Callback for handling camera movement events
   const handleCameraChange = useCallback(() => {
