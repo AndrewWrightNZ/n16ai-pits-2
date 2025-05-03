@@ -12,11 +12,7 @@ import usePubAreas, {
 import * as fn from "../../../../_shared/utils";
 
 // Components
-import React from "react";
-
-// Icons
-import { ChevronRight } from "lucide-react";
-import { formatAreaType } from "../../../lists/_shared";
+import ShowPubAreas from "./areas";
 
 export interface MarkerInternalsProps {
   children: React.ReactNode;
@@ -60,8 +56,6 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
   // Variables
   const { id: pubId, name, latitude, longitude } = pubWithAreas?.pub || {};
   const { groupedSunEvals = [] } = pubWithAreas || {};
-
-  console.log({ groupedSunEvals });
 
   const areaSunValues = groupedSunEvals.map((area) => area.pc_in_sun || 0);
 
@@ -185,31 +179,10 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               />
               <span className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {potentiallyTruncatedName}
-                <ChevronRight size={16} />
               </span>
             </div>
 
-            <div className="flex flex-col items-start gap-2 mt-6">
-              {groupedSunEvals.map((sunValue, index) => (
-                <div
-                  key={index}
-                  className="flex flex-row justify-start items-center gap-2"
-                >
-                  <div
-                    className={`h-[15px] w-[15px] ml-[2px] rounded-full ${fn.getSunCircleClassFromPercentage(sunValue.pc_in_sun)}`}
-                    aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
-                  />
-
-                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                    {sunValue.pc_in_sun.toFixed(0)}%
-                  </p>
-
-                  <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
-                    {formatAreaType(sunValue.pubArea.type)}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <ShowPubAreas sunEvals={groupedSunEvals} />
           </div>
         </div>
       </OverlayView>
