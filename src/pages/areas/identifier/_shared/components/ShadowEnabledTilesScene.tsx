@@ -58,7 +58,7 @@ const ShadowEnabledTilesScene = forwardRef<
   // State
   const [tilesLoaded, setTilesLoaded] = useState(false);
   const [shadowOpacity, setShadowOpacity] = useState(0.9);
-  const [northOffset, setNorthOffset] = useState(0); // Offset angle in radians
+  const [northOffset, setNorthOffset] = useState(1.6); // Offset angle in radians
   const [sunPosition, setSunPosition] = useState<[number, number, number]>([
     100, 100, 50,
   ]);
