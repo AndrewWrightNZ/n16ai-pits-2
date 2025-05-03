@@ -4,6 +4,9 @@ export interface SunEvalsState {
   // Sun evals details
   selectedTimeslot: number | null;
 
+  // Filters
+  sunQualitySelected: string[];
+
   // Timestamp for localStorage
   timestamp: number;
 }
@@ -22,6 +25,9 @@ const LOCAL_STORAGE_KEY = "sunEvalsState";
 const defaultState: SunEvalsState = {
   // Sun evals details
   selectedTimeslot: null,
+
+  // Filters
+  sunQualitySelected: ["good", "some"],
 
   // Timestamp for localStorage
   timestamp: Date.now(),

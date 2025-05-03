@@ -24,6 +24,9 @@ interface SunEvalsData extends SunEvalsState {
 }
 
 interface SunEvalsOperations {
+  // Filters
+  onSunQualityFilterClick: (filter: string) => void;
+
   // Updates
   onChangeSunEvalsState: (newState: Partial<SunEvalsState>) => void;
   onSeedCurrentTimeSlot: () => void;
@@ -44,7 +47,7 @@ const useSunEvals = (): SunEvalsResponse => {
   //
 
   // Variables
-  const { selectedTimeslot } = sunEvalsState || {};
+  const { selectedTimeslot, sunQualitySelected } = sunEvalsState || {};
   const { selectedPubArea, selectedPubId } = pubAreasState || {};
 
   //
@@ -141,6 +144,15 @@ const useSunEvals = (): SunEvalsResponse => {
     onChangeSunEvalsState({ selectedTimeslot: currentTimeSlot });
   };
 
+  const onSunQualityFilterClick = (filter: string) => {
+    const alreadySelected = sunQualitySelected.includes(filter);
+    onChangeSunEvalsState({
+      sunQualitySelected: alreadySelected
+        ? sunQualitySelected.filter((f) => f !== filter)
+        : [...sunQualitySelected, filter],
+    });
+  };
+
   return {
     data: {
       ...sunEvalsState,
@@ -156,6 +168,9 @@ const useSunEvals = (): SunEvalsResponse => {
       sunEvalsForAllPubAreas,
     },
     operations: {
+      // Filters
+      onSunQualityFilterClick,
+
       // Update
       onChangeSunEvalsState,
       onSeedCurrentTimeSlot,

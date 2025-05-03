@@ -1,49 +1,17 @@
-import { useState, ReactNode } from "react";
+// Components
+import { FilterButton } from "./FilterButton";
 
-type FilterButtonProps = {
-  id: string;
-  label: string;
-  count: number;
-  isSelected: boolean;
-  onClick: (id: string) => void;
-  icon: ReactNode;
-};
-
-const FilterButton = ({
-  id,
-  label,
-  count,
-  isSelected,
-  onClick,
-  icon,
-}: FilterButtonProps) => {
-  return (
-    <button
-      className={`flex cursor-pointer transition-all duration-200 flex-row items-center justify-end bg-white rounded-[30px] border-2 p-3 gap-2 ${isSelected ? "border-slate-800 opacity-100 text-slate-800" : "border-slate-400 text-slate-400 opacity-80 hover:opacity-100 hover:text-slate-800"}`}
-      onClick={() => onClick(id)}
-    >
-      {icon}
-      <p className={`font-bold text-xs`}>
-        {label} ({count})
-      </p>
-    </button>
-  );
-};
+// Hooks
+import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 
 const PubCounts = () => {
-  // State
-  const [filtersSelected, setFiltersSelected] = useState<string[]>([]);
+  //
 
-  // Handlers
-  const handleFilterClick = (filter: string) => {
-    setFiltersSelected((prev) => {
-      if (prev.includes(filter)) {
-        return prev.filter((f) => f !== filter);
-      } else {
-        return [...prev, filter];
-      }
-    });
-  };
+  // Hooks
+  const {
+    data: { sunQualitySelected = [] },
+    operations: { onSunQualityFilterClick },
+  } = useSunEvals();
 
   // Filter definitions
   const filters = [
@@ -83,8 +51,8 @@ const PubCounts = () => {
           id={filter.id}
           label={filter.label}
           count={filter.count}
-          isSelected={filtersSelected.includes(filter.id)}
-          onClick={handleFilterClick}
+          isSelected={sunQualitySelected.includes(filter.id)}
+          onClick={onSunQualityFilterClick}
           icon={filter.icon}
         />
       ))}
