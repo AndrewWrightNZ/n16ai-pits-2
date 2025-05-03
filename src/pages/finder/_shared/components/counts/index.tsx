@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 
 // Hooks
 import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
-import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
+import useMapMarkers from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 
 const PubCounts = () => {
   // State for collapse/expand functionality
@@ -18,40 +18,32 @@ const PubCounts = () => {
   } = useSunEvals();
 
   const {
-    data: {
-      pubsWithSunEvalAbove75,
-      pubsWithSunEvalAbove50Below75,
-      pubsWithoutSunEvalAbove50Percent,
-    },
-  } = usePubAreas();
+    data: { goodSunCount, someSunCount, noSunCount },
+  } = useMapMarkers();
 
   // Calculate total count of displayed pubs
   const totalDisplayedPubs =
     sunQualitySelected.length > 0
       ? sunQualitySelected.reduce((total, id) => {
-          if (id === "good") return total + pubsWithSunEvalAbove75.length;
-          if (id === "some")
-            return total + pubsWithSunEvalAbove50Below75.length;
-          if (id === "no")
-            return total + pubsWithoutSunEvalAbove50Percent.length;
+          if (id === "good") return total + goodSunCount;
+          if (id === "some") return total + someSunCount;
+          if (id === "no") return total + noSunCount;
           return total;
         }, 0)
-      : pubsWithSunEvalAbove75.length +
-        pubsWithSunEvalAbove50Below75.length +
-        pubsWithoutSunEvalAbove50Percent.length;
+      : goodSunCount + someSunCount + noSunCount;
 
   // Filter definitions
   const filters = [
     {
       id: "good",
       label: "Good Sun",
-      count: pubsWithSunEvalAbove75.length,
+      count: goodSunCount,
       icon: <div className="w-[20px] h-[20px] bg-[#FFCC00] rounded-full" />,
     },
     {
       id: "some",
       label: "Some Sun",
-      count: pubsWithSunEvalAbove50Below75.length,
+      count: someSunCount,
       icon: (
         <div
           className="w-[20px] h-[20px] rounded-full"
@@ -65,7 +57,7 @@ const PubCounts = () => {
     {
       id: "no",
       label: "No Sun",
-      count: pubsWithoutSunEvalAbove50Percent.length,
+      count: noSunCount,
       icon: <div className="w-[20px] h-[20px] bg-[#99a1af] rounded-full" />,
     },
   ];

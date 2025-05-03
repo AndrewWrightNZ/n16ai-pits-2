@@ -9,6 +9,7 @@ import { formatAreaType } from "../../../lists/_shared";
 import { AreaTypeFilterButton } from "./AreaTypeFilterButton";
 import { getIconForAreaType } from "../helpers";
 import usePubAreas from "../../../../_shared/hooks/pubAreas/usePubAreas";
+import useMapMarkers from "../../../../_shared/hooks/mapMarkers/useMapMarkers";
 
 interface AreaTypeFilterProps {}
 
@@ -19,13 +20,13 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
 
   // Hooks
   const {
-    data: {
-      availableAreaTypes = [],
-      selectedAreaTypes = [],
-      areasWhichAreCurrentlyInView = [],
-    },
+    data: { availableAreaTypes = [], selectedAreaTypes = [] },
     operations: { onSelectAreaType },
   } = usePubAreas();
+
+  const {
+    data: { totalAreasInView = [] },
+  } = useMapMarkers();
 
   // Collapse after 5 seconds
   useEffect(() => {
@@ -40,8 +41,7 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
   const filters = availableAreaTypes.map((type) => ({
     id: type,
     label: formatAreaType(type),
-    count: areasWhichAreCurrentlyInView.filter((area) => area.type === type)
-      .length,
+    count: totalAreasInView.filter((area) => area.type === type).length,
     icon: getIconForAreaType(type),
   }));
 
@@ -54,7 +54,11 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
   const filtersToShow = selectedFilters.length > 0 ? selectedFilters : filters;
 
   // Calculate total count of displayed areas
-  const totalDisplayedAreas = areasWhichAreCurrentlyInView.length;
+  let totalDisplayedAreas = 0;
+
+  for (const filter of filtersToShow) {
+    totalDisplayedAreas += filter.count;
+  }
 
   return (
     <div

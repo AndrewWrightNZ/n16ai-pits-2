@@ -12,6 +12,7 @@ import CustomMarker from "./_shared/components/markers/customMarker";
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
 import usePubAreas from "../../_shared/hooks/pubAreas/usePubAreas";
+import useMapMarkers from "../../_shared/hooks/mapMarkers/useMapMarkers";
 
 // Default center (London)
 const defaultCenter = {
@@ -39,6 +40,12 @@ function Finder() {
   const {
     data: { pubsWithAreasAndSunEvals },
   } = usePubAreas();
+
+  const {
+    data: { totalPubsInView = [] },
+  } = useMapMarkers();
+
+  console.log("totalPubsInView", totalPubsInView);
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {

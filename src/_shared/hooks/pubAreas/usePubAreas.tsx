@@ -15,9 +15,6 @@ import { supabaseClient } from "../../../_shared/hooks/useSupabase";
 // Providers
 
 // Types
-
-// Types
-
 interface SaveVisionMaskPayload {
   pubAreaId: number;
   visionMaskPoints: { x: number; y: number }[];
@@ -82,8 +79,8 @@ interface PubAreasData extends PubAreasState {
 
   // Areas
   areasForPub: PubArea[];
-  areasWhichAreCurrentlyInView: PubArea[];
   allAvailableAreas: PubArea[];
+  areasInMapBounds: PubArea[];
 
   // Filters
   availableAreaTypes: string[];
@@ -94,11 +91,6 @@ interface PubAreasData extends PubAreasState {
 
   // Pubs with areas
   pubsWithAreasAndSunEvals: PubWithAreaAndSunEval[];
-
-  // Categorized pubs by sun evaluation
-  pubsWithSunEvalAbove75: PubWithAreaAndSunEval[];
-  pubsWithSunEvalAbove50Below75: PubWithAreaAndSunEval[];
-  pubsWithoutSunEvalAbove50Percent: PubWithAreaAndSunEval[];
 }
 
 interface PubAreasOperations {
@@ -283,7 +275,7 @@ const usePubAreas = (): PubAreasResponse => {
   }, [selectedPubId, areasForPub]);
 
   const {
-    data: rawAllAvailableAreas = [],
+    data: allAvailableAreas = [],
     isLoading: isLoadingAllAvailableAreas,
   } = useQuery({
     queryKey: GET_ALL_AVAILABLE_AREAS_QUERY_KEY,
@@ -309,7 +301,7 @@ const usePubAreas = (): PubAreasResponse => {
   // First, assign pub areas to each sun evaluation
   const sunEvalsWithPubAreas = sunEvalsForTimeslot
     .map((sunEval) => {
-      const pubArea = rawAllAvailableAreas.find(
+      const pubArea = allAvailableAreas.find(
         (area) => area.id === sunEval.area_id
       );
       return pubArea ? { ...sunEval, pubArea } : null;
@@ -339,32 +331,6 @@ const usePubAreas = (): PubAreasResponse => {
     })
     .filter((pub) => pub.groupedSunEvals.length > 0);
 
-  //
-
-  // Categorize pubs based on sun evaluation percentages
-  // 1. Pubs with at least one sun eval above 75%
-  const pubsWithSunEvalAbove75 = rawPubsWithAreasAndSunEvals.filter((pub) => {
-    return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75);
-  });
-
-  // 2. Pubs with at least one sun eval above 50% but none above 75%
-  const pubsWithSunEvalAbove50Below75 = rawPubsWithAreasAndSunEvals.filter(
-    (pub) => {
-      return (
-        pub.groupedSunEvals.some(
-          (sunEval) => sunEval.pc_in_sun > 50 && sunEval.pc_in_sun <= 75
-        ) && !pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75)
-      );
-    }
-  );
-
-  // 3. Pubs with no sun evals above 50%s
-  const pubsWithoutSunEvalAbove50Percent = rawPubsWithAreasAndSunEvals.filter(
-    (pub) => {
-      return !pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 50);
-    }
-  );
-
   // Filter by selected sun quality (maintaining existing functionality)
   let pubsWithAreasAndSunEvals = [];
 
@@ -389,19 +355,6 @@ const usePubAreas = (): PubAreasResponse => {
       });
     });
   }
-
-  //
-
-  // Filter by pubs which are in view
-  const areasWhichAreCurrentlyInView = rawAllAvailableAreas.filter((area) => {
-    //
-
-    // Check if the area's pub_id is in the pubsWithAreasAndSunEvals array
-    return (
-      pubsWithAreasAndSunEvals.some((pub) => pub.pub.id === area.pub_id) &&
-      selectedAreaTypes.includes(area.type)
-    );
-  });
 
   //
 
@@ -499,7 +452,7 @@ const usePubAreas = (): PubAreasResponse => {
   //
 
   // Variables
-  const availableAreaTypes = rawAllAvailableAreas.reduce(
+  const availableAreaTypes = allAvailableAreas.reduce(
     (acc: string[], area: PubArea) => {
       if (!acc.includes(area.type)) {
         acc.push(area.type);
@@ -509,7 +462,7 @@ const usePubAreas = (): PubAreasResponse => {
     []
   );
 
-  const allAvailableAreas = rawAllAvailableAreas.filter((area) => {
+  const areasInMapBounds = allAvailableAreas.filter((area) => {
     return pubsInMapBounds.some((pub) => pub.id === area.pub_id);
   });
 
@@ -747,8 +700,8 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Areas
       areasForPub,
-      areasWhichAreCurrentlyInView,
       allAvailableAreas,
+      areasInMapBounds,
 
       // Filters
       availableAreaTypes,
@@ -759,11 +712,6 @@ const usePubAreas = (): PubAreasResponse => {
 
       // Pubs with areas
       pubsWithAreasAndSunEvals,
-
-      // Categorized pubs by sun evaluation
-      pubsWithSunEvalAbove75,
-      pubsWithSunEvalAbove50Below75,
-      pubsWithoutSunEvalAbove50Percent,
     },
     operations: {
       // Select pub
