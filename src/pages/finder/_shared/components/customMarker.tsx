@@ -140,7 +140,7 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
             backgroundColor: isPubHovered ? "white" : "",
             transition:
               "width 0.3s ease, height 0.3s ease, background-color 0.3s ease",
-            border: isPubHovered ? "1px solid #1e293b" : "1px solid #1e293b", // slate-800
+            border: isPubHovered ? "1px solid #d3d3d3" : "1px solid #1e293b", // slate-800
             boxShadow: isPubHovered
               ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
               : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
