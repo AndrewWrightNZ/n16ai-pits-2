@@ -10,6 +10,7 @@ export interface SimplePubAreaWithSunPc {
   id: number;
   type: string;
   pc_in_sun: number;
+  floor_area: number;
 }
 
 export interface MapReadyMarker {
@@ -86,6 +87,7 @@ const useMapMarkers = (): MapMarkersResponse => {
       id: area.id,
       type: area.type,
       pc_in_sun: sunEvalLookup[area.id] || 0,
+      floor_area: area.floor_area,
     }));
 
     const bestSunPercent =

@@ -66,13 +66,16 @@ const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
               aria-label={`Sun indicator: ${bestArea?.pc_in_sun.toFixed(0)}%`}
             />
 
-            <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-16">
+            <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
               {bestArea.pc_in_sun.toFixed(0)}%
-              <span className="font-normal ml-1">in sun</span>
+              <span className="font-normal ml-1">sun</span>
             </p>
 
             <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
               {formatAreaType(bestArea.type)}
+            </p>
+            <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+              {bestArea.floor_area.toFixed(0)}m<sup>2</sup>
             </p>
           </div>
 
@@ -95,13 +98,16 @@ const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
                 aria-label={`Sun indicator: ${area.pc_in_sun.toFixed(0)}%`}
               />
 
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-16">
+              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
                 {area.pc_in_sun.toFixed(0)}%
-                <span className="font-normal ml-1">in sun</span>
+                <span className="font-normal ml-1">sun</span>
               </p>
 
               <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {formatAreaType(area.type)}
+              </p>
+              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                {area.floor_area.toFixed(0)}m<sup>2</sup>
               </p>
             </div>
           ))}
@@ -127,13 +133,16 @@ const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
                 aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
               />
 
-              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-16">
+              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
                 {sunValue.pc_in_sun.toFixed(0)}%
-                <span className="font-normal ml-1">in sun</span>
+                <span className="font-normal ml-1">sun</span>
               </p>
 
               <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                 {formatAreaType(sunValue.type)}
+              </p>
+              <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                {sunValue.floor_area.toFixed(0)}m<sup>2</sup>
               </p>
             </div>
           ))}
@@ -163,13 +172,17 @@ const ShowPubAreas = ({ pubAreas }: ShowPubAreasProps) => {
                   aria-label={`Sun indicator: ${sunValue.pc_in_sun.toFixed(0)}%`}
                 />
 
-                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-16">
+                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap w-12">
                   {sunValue.pc_in_sun.toFixed(0)}%
-                  <span className="font-normal ml-1">in sun</span>
+                  <span className="font-normal ml-1">sun</span>
                 </p>
 
                 <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
                   {formatAreaType(sunValue.type)}
+                </p>
+
+                <p className="text-xs font-medium text-black-800 mx-1 flex items-center whitespace-nowrap">
+                  {sunValue.floor_area.toFixed(0)}m<sup>2</sup>
                 </p>
               </div>
             ))}
