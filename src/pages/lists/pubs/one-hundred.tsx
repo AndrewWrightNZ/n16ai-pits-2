@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
 // Assets
-import sunLogo from "../../../assets/bigBoldSun.svg";
+import sunLogo from "../../../assets/biggerBolderSun.svg";
 
 // Components
 import PitsOneHundredPubsList from "./pubList";
