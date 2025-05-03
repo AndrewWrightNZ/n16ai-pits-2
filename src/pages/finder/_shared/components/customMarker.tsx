@@ -174,14 +174,14 @@ const CustomMarker = ({ pubWithAreas }: CustomMarkerProps) => {
               fn.getSunCircleClassFromPercentage(topSunValue) ===
                 "sun-half-marker" && {
                 background:
-                  "linear-gradient(to right, #FFCC00 50%, #99a1af 50%)",
+                  "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
                 transform: "rotate(45deg)",
               }),
             // Two-step transition: first change color, then resize
             transition: isPubHovered
               ? "width 0.3s ease, height 0.3s ease, background-color 0.2s ease"
               : "background-color 0.2s ease, width 0.2s ease 0.1s, height 0.2s ease 0.1s",
-            border: "1px solid #1e293b", // slate-800
+            border: "1px solid #1e293b", // slate-400
             boxShadow: isPubHovered
               ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
               : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",

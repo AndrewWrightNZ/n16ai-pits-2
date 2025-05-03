@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface HalfColorDivProps {
   className?: string;
@@ -7,9 +7,9 @@ interface HalfColorDivProps {
 }
 
 export const HalfColorDiv: React.FC<HalfColorDivProps> = ({
-  className = '',
-  primaryColor = '#FFCC00',
-  secondaryColor = '#808080',
+  className = "",
+  primaryColor = "#FFCC00",
+  secondaryColor = "#e5e7eb",
 }) => {
   return (
     <div
