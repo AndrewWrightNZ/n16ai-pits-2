@@ -64,7 +64,7 @@ const useMapMarkers = (): MapMarkersResponse => {
   } = usePubs();
 
   const {
-    data: { areasInMapBounds = [] },
+    data: { allAvailableAreas = [] },
   } = usePubAreas();
 
   const {
@@ -74,6 +74,10 @@ const useMapMarkers = (): MapMarkersResponse => {
   //
 
   // Variables
+  const areasInMapBounds = allAvailableAreas.filter((area) => {
+    return pubsInMapBounds.some((pub) => pub.id === area.pub_id);
+  });
+
   const mapReadyMarkers = pubsInMapBounds.map((pub) => {
     const areasForPub = areasInMapBounds.filter(
       (area) => area.pub_id === pub.id

@@ -10,9 +10,6 @@ import {
   usePubAreasContext,
 } from "../../providers/PubAreasProvider";
 
-// Hooks
-import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
-
 import { supabaseClient } from "../../../_shared/hooks/useSupabase";
 
 // Interfaces
@@ -81,10 +78,6 @@ interface PubAreasData extends PubAreasState {
   // Areas
   areasForPub: PubArea[];
   allAvailableAreas: PubArea[];
-  areasInMapBounds: PubArea[];
-
-  // Filters
-  availableAreaTypes: string[];
 
   // Simulation
   currentSimulationPubIndex: number;
@@ -133,9 +126,6 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
-  const {
-    data: { pubsInMapBounds = [] },
-  } = usePubs();
 
   //
 
@@ -383,23 +373,6 @@ const usePubAreas = (): PubAreasResponse => {
 
   //
 
-  // Variables
-  const availableAreaTypes = allAvailableAreas.reduce(
-    (acc: string[], area: PubArea) => {
-      if (!acc.includes(area.type)) {
-        acc.push(area.type);
-      }
-      return acc;
-    },
-    []
-  );
-
-  const areasInMapBounds = allAvailableAreas.filter((area) => {
-    return pubsInMapBounds.some((pub) => pub.id === area.pub_id);
-  });
-
-  //
-
   // Handlers
   const onUpdatePubAreaDetails = (newDetails: Partial<PubAreasState>) => {
     updatePubAreasState(newDetails);
@@ -633,10 +606,6 @@ const usePubAreas = (): PubAreasResponse => {
       // Areas
       areasForPub,
       allAvailableAreas,
-      areasInMapBounds,
-
-      // Filters
-      availableAreaTypes,
 
       // Simulation
       currentSimulationPubIndex,

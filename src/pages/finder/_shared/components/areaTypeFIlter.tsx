@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 // Hooks
 
 // Constants
-import { formatAreaType } from "../../../lists/_shared";
+import { AREA_TYPES } from "../../../lists/_shared";
 
 // Components
 import { AreaTypeFilterButton } from "./AreaTypeFilterButton";
@@ -20,7 +20,7 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
 
   // Hooks
   const {
-    data: { availableAreaTypes = [], selectedAreaTypes = [] },
+    data: { selectedAreaTypes = [] },
     operations: { onSelectAreaType },
   } = usePubAreas();
 
@@ -38,11 +38,11 @@ const AreaTypeFilter: React.FC<AreaTypeFilterProps> = () => {
   }, []);
 
   // Define filter objects
-  const filters = availableAreaTypes.map((type) => ({
-    id: type,
-    label: formatAreaType(type),
-    count: totalAreasInView.filter((area) => area.type === type).length,
-    icon: getIconForAreaType(type),
+  const filters = AREA_TYPES.map(({ key, label }) => ({
+    id: key,
+    label: label,
+    count: totalAreasInView.filter((area) => area.type === key).length,
+    icon: getIconForAreaType(key),
   }));
 
   // Selected filters
