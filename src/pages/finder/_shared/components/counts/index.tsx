@@ -19,7 +19,7 @@ const FilterButton = ({
 }: FilterButtonProps) => {
   return (
     <button
-      className={`flex cursor-pointer flex-row items-center justify-end bg-white rounded-[30px] border-2 p-4 gap-2 ${isSelected ? "border-slate-800 opacity-100" : "border-slate-400 opacity-80"}`}
+      className={`flex cursor-pointer flex-row items-center justify-end bg-white rounded-[30px] border-2 p-3 gap-2 ${isSelected ? "border-slate-800 opacity-100" : "border-slate-400 opacity-80"}`}
       onClick={() => onClick(id)}
     >
       {icon}
