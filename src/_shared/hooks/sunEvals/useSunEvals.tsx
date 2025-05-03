@@ -9,6 +9,8 @@ import { SunEval } from "../../types";
 
 // Hooks
 import { supabaseClient } from "../../hooks/useSupabase";
+
+// Helpers
 import { getCurrentTimeSlot } from "../../utils";
 
 interface SunEvalsData extends SunEvalsState {
@@ -139,8 +141,6 @@ const useSunEvals = (): SunEvalsResponse => {
   //
 
   // Variables
-
-  // Create an array of pubs, with sun evals attached by pub_id
   const pubsWithSunEvals = sunEvalsForTimeslot.reduce(
     (acc, sunEval) => {
       if (!acc[sunEval.pub_id]) {

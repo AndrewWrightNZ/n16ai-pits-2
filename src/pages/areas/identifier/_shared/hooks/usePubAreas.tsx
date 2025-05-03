@@ -147,7 +147,12 @@ const usePubAreas = (): PubAreasResponse => {
     data: { pubsInMapBounds = [] },
   } = usePubs();
   const {
-    data: { sunEvalsForTimeslot = [] },
+    data: {
+      sunEvalsForTimeslot = [],
+
+      // Sun quality
+      sunQualitySelected = [],
+    },
   } = useSunEvals();
 
   //
@@ -347,7 +352,7 @@ const usePubAreas = (): PubAreasResponse => {
   );
 
   // Create array of objects with pub and its sun evaluations
-  const pubsWithAreasAndSunEvals = pubsInMapBounds
+  const rawPubsWithAreasAndSunEvals = pubsInMapBounds
     .map((pub) => {
       return {
         pub,
@@ -355,6 +360,35 @@ const usePubAreas = (): PubAreasResponse => {
       };
     })
     .filter((pub) => pub.groupedSunEvals.length > 0);
+
+  //
+
+  // Filter by selected sun quality
+  let pubsWithAreasAndSunEvals = [];
+
+  if (sunQualitySelected.length === 0) {
+    // If no filters selected, show all pubs
+    pubsWithAreasAndSunEvals = [] as PubWithAreaAndSunEval[];
+  } else {
+    // Filter pubs based on selected sun qualities
+    pubsWithAreasAndSunEvals = rawPubsWithAreasAndSunEvals.filter((pub) => {
+      // Check if the pub matches any of the selected sun qualities
+      return sunQualitySelected.some((quality) => {
+        if (quality === "good") {
+          return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun > 75);
+        } else if (quality === "some") {
+          return pub.groupedSunEvals.some(
+            (sunEval) => sunEval.pc_in_sun > 50 && sunEval.pc_in_sun <= 75
+          );
+        } else if (quality === "no") {
+          return pub.groupedSunEvals.some((sunEval) => sunEval.pc_in_sun < 50);
+        }
+        return false;
+      });
+    });
+  }
+
+  console.log("pubsWithAreasAndSunEvals", { pubsWithAreasAndSunEvals });
 
   //
 
