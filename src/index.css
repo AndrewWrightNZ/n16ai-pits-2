@@ -6,3 +6,18 @@ body {
   padding: 0;
   /* Removed hardcoded background color to allow Tailwind classes to work properly */
 }
+
+/* Styles for the collapsible filter buttons */
+.hover-trigger {
+  position: relative;
+}
+
+.hover-trigger::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  bottom: -20px;
+  left: -20px;
+  z-index: -1;
+}
