@@ -1,49 +1,21 @@
-import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useState, useEffect } from "react";
 import { Marker, OverlayView } from "@react-google-maps/api";
 
 // Assets
-import sunLogo from "../../../../assets/biggerBolderSun.svg";
+import sunLogo from "../../../../../assets/biggerBolderSun.svg";
 
 // Hooks
-import usePubs from "../hooks/usePubs";
+import usePubs from "../../hooks/usePubs";
 import usePubAreas, {
   PubWithAreaAndSunEval,
-} from "../../../areas/identifier/_shared/hooks/usePubAreas";
+} from "../../../../areas/identifier/_shared/hooks/usePubAreas";
 
 // Utils
-import * as fn from "../../../../_shared/utils";
+import * as fn from "../../../../../_shared/utils";
 
 // Components
 import ShowPubAreas from "./areas";
-
-export interface MarkerInternalsProps {
-  children: React.ReactNode;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
-  onClick?: () => void;
-  style?: React.CSSProperties;
-  className?: string;
-}
-
-export const StandardMarkerInternals: React.FC<MarkerInternalsProps> = ({
-  children,
-  onMouseEnter,
-  onClick,
-  style,
-  className = "",
-}) => {
-  return (
-    <div
-      className={`flex relative justify-start items-center w-[30px] h-[30px] bg-amber-300 rounded-[20px] p-[5px] left-0 top-0 border border-slate-800 shadow-lg ${className}`}
-      onMouseEnter={onMouseEnter}
-      onClick={onClick}
-      style={style}
-    >
-      {children}
-    </div>
-  );
-};
 
 interface CustomMarkerProps {
   pubWithAreas: PubWithAreaAndSunEval;

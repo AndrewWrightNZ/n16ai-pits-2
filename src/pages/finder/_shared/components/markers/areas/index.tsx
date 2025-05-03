@@ -1,11 +1,12 @@
-import { PubArea, SunEval } from "../../../../../_shared/types";
-import { formatAreaType } from "../../../../lists/_shared";
+// Types
+import { PubArea, SunEval } from "../../../../../../_shared/types";
 
 // Utils
-import * as fn from "../../../../../_shared/utils";
+import * as fn from "../../../../../../_shared/utils";
+import { formatAreaType } from "../../../../../lists/_shared";
 
 // Assets
-import sunLogo from "../../../../../assets/biggerBolderSun.svg";
+import sunLogo from "../../../../../../assets/biggerBolderSun.svg";
 
 interface ShowPubAreasProps {
   sunEvals: (SunEval & { pubArea: PubArea })[];
