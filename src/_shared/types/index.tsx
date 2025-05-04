@@ -95,6 +95,6 @@ export interface SunEval {
   pub_id: number;
   area_id: number;
   date: string;
-  time: string;
+  time: number;
   pc_in_sun: number;
 }

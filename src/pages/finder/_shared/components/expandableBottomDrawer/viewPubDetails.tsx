@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 
 // Hooks
-import useMapMarkers from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
+import useMapMarkers, {
+  SUN_THRESHOLDS,
+} from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 import useUserGeoLocation from "../../../../../_shared/hooks/user/useGeolocation";
 
@@ -9,11 +11,14 @@ import useUserGeoLocation from "../../../../../_shared/hooks/user/useGeolocation
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
 
 // Helpers
-import { formatAreaType } from "../../../../lists/_shared";
 import {
   extractPostCodeFromAddress,
   formatShortAddress,
 } from "../../../../lists/pubs/_shared/helpers";
+import { formatAreaType } from "../../../../lists/_shared";
+import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
+import { formatTimeSlot } from "../../helpers";
+import { ChevronLeftIcon } from "lucide-react";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -33,6 +38,10 @@ const ViewPubDetails = () => {
   const {
     data: { userLatitude, userLongitude },
   } = useUserGeoLocation();
+
+  const {
+    data: { sunEvalsForAllPubAreas = [], selectedTimeslot = 0 },
+  } = useSunEvals();
 
   // Handle close with animation
   const handleClose = () => {
@@ -82,6 +91,45 @@ const ViewPubDetails = () => {
     return distance;
   }, [latitude, longitude, userLatitude, userLongitude]);
 
+  // Calculate the sun eval with the pc_in_sun above SOME_SUN threshold and the highest time value
+  const latestSomeSunEval = useMemo(() => {
+    if (!sunEvalsForAllPubAreas || sunEvalsForAllPubAreas.length === 0) {
+      return null;
+    }
+
+    // Find the first evaluation with some sun to use as initial value
+    const initialEval = sunEvalsForAllPubAreas.find(
+      (sunEval) => sunEval.pc_in_sun >= SUN_THRESHOLDS.SOME
+    );
+
+    // If no evals have sun, return null
+    if (!initialEval) {
+      return null;
+    }
+
+    return sunEvalsForAllPubAreas.reduce((prev, current) => {
+      if (
+        current.pc_in_sun >= SUN_THRESHOLDS.SOME &&
+        current.time > prev.time
+      ) {
+        return current;
+      }
+      return prev;
+    }, initialEval);
+  }, [sunEvalsForAllPubAreas]);
+
+  // Find how many minutes left in the sun between now (selectedTimeslot) and the latestSomeSunEval's time
+  const minutesLeftInSun = useMemo(() => {
+    if (!selectedTimeslot || !latestSomeSunEval) return null;
+    // Calculate the difference in timeslots
+    const timeslotDifference = latestSomeSunEval.time - selectedTimeslot;
+    // Each timeslot represents 15 minutes
+    const minutesLeft = timeslotDifference * 15;
+    return minutesLeft > 0 ? minutesLeft : null;
+  }, [latestSomeSunEval, selectedTimeslot]);
+
+  console.log({ latestSomeSunEval });
+
   return (
     <div
       className={`pub-content ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 p-2 pt-8 h-full overflow-y-auto`}
@@ -120,9 +168,9 @@ const ViewPubDetails = () => {
       </div>
 
       {/* Best sun percentage summary */}
-      <div className="mb-6">
-        <h4 className="text-md font-semibold mb-2">In the sun</h4>
-        <div className="flex items-center gap-2">
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
+          <h4 className="text-sm font-semibold mb-2">In the sun now</h4>
           <div className="flex items-center gap-1">
             <DynamicSunIcon
               sunPercent={bestSunPercent}
@@ -130,6 +178,23 @@ const ViewPubDetails = () => {
             />
             <span className="font-medium">{bestSunPercent.toFixed(0)}%</span>
           </div>
+        </div>
+        <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
+          <h4 className="text-sm font-semibold mb-2">Sun for another</h4>
+          <div className="flex items-center gap-1">
+            <p className="font-medium">
+              {minutesLeftInSun
+                ? minutesLeftInSun >= 60
+                  ? `${Math.floor(minutesLeftInSun / 60)} hour${Math.floor(minutesLeftInSun / 60) !== 1 ? "s" : ""} ${minutesLeftInSun % 60 > 0 ? `${minutesLeftInSun % 60} mins` : ""}`
+                  : `${minutesLeftInSun} minutes`
+                : "No more sun today"}
+            </p>
+          </div>
+          {(latestSomeSunEval?.time || 0) > 0 && (
+            <p className="text-xs text-slate-600">
+              Until: {formatTimeSlot(latestSomeSunEval?.time || 0)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -180,10 +245,11 @@ const ViewPubDetails = () => {
       </div>
       {/* Close button */}
       <button
-        className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors mt-4"
+        className="w-full flex flex-row items-center justify-center gap-2 p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors mt-4"
         onClick={handleClose}
       >
-        Close Pub View
+        <ChevronLeftIcon className="w-5 h-5" />
+        Back to map
       </button>
     </div>
   );
