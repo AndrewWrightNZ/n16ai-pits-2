@@ -47,7 +47,7 @@ interface MapMarkersResponse {
 }
 
 // Sun quality thresholds
-const SUN_THRESHOLDS = {
+export const SUN_THRESHOLDS = {
   GOOD: 75,
   SOME: 50,
 };
@@ -152,7 +152,7 @@ const useMapMarkers = (): MapMarkersResponse => {
       pubsWithSunEvalAbove50Below75: [],
       pubsWithoutSunEvalAbove50Percent: [],
 
-      // Simple sun quality counts
+      // Counts in map bounds
       goodSunCount,
       someSunCount,
       noSunCount,
