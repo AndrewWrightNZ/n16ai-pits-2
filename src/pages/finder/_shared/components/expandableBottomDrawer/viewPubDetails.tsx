@@ -19,6 +19,7 @@ import { formatAreaType } from "../../../../lists/_shared";
 import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 import { formatTimeSlot } from "../../helpers";
 import { ChevronLeftIcon } from "lucide-react";
+import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -176,7 +177,9 @@ const ViewPubDetails = () => {
                 sunPercent={bestSunPercent}
                 className="w-[24px] h-[24px]"
               />
-              <span className="font-medium">{bestSunPercent.toFixed(0)}%</span>
+              <span className="font-medium">
+                {formatSunPercentage(bestSunPercent)}%
+              </span>
             </div>
           </div>
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
@@ -216,7 +219,7 @@ const ViewPubDetails = () => {
                         className="w-[20px] h-[20px]"
                       />
                       <span className="text-sm font-medium">
-                        {area.pc_in_sun.toFixed(0)}%
+                        {formatSunPercentage(area.pc_in_sun)}%
                       </span>
                     </div>
                   </div>

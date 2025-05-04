@@ -5,6 +5,8 @@ import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Types
 import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
+
+// Components
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
 
 interface MobileMarkerProps {
