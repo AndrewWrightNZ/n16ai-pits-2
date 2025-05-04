@@ -8,6 +8,7 @@ import { Pub } from "../../../../../_shared/types";
 
 // Components
 import ViewPubDetails from "./viewPubDetails";
+import TimeSliderInternals from "../timeSlider/SliderInternals";
 
 const ExpandableBottomDrawer = () => {
   // State for animations
@@ -77,23 +78,16 @@ const ExpandableBottomDrawer = () => {
     prevSelectedPubRef.current = selectedPub;
   }, []);
 
-  // Render slider content component
-  const SliderContent = () => (
-    <div className="h-16 flex items-center justify-center">
-      <p className="text-slate-600">Time slider here</p>
-    </div>
-  );
-
   return (
     <div
-      className={`transition-all duration-300 ease-in-out fixed bottom-[0px] left-[8px] right-[8px] p-4 bg-white shadow-lg border-1 border-slate-800 rounded-t-xl ${isExpanded ? "h-[80vh]" : "h-16"}`}
+      className={`transition-all duration-300 ease-in-out fixed bottom-[0px] left-[8px] right-[8px] p-4 bg-white shadow-lg border-1 border-slate-800 rounded-t-xl ${isExpanded ? "h-[80vh]" : "h-32"}`}
     >
       <div
         className={`${isContentVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 overflow-hidden h-full`}
       >
         {/* Only render one type of content at a time */}
         {activeContent === "pub" && <ViewPubDetails />}
-        {activeContent === "slider" && <SliderContent />}
+        {activeContent === "slider" && <TimeSliderInternals />}
       </div>
     </div>
   );

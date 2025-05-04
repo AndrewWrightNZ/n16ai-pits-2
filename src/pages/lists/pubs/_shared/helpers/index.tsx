@@ -1,12 +1,14 @@
 import { Sun } from "lucide-react";
 import { formatTimeLabel } from "../../../_shared";
 
-export const formatShortAddress = (address: string, postcode?: string) => {
+export const formatShortAddress = (address: string) => {
   // Return the first two parts of the address, split by commas
   const initialShortAddress = address.split(",").slice(0, 2).join(", ");
 
-  const withPostCodeRemoved = postcode
-    ? initialShortAddress.replace(postcode, "")
+  const postCode = extractPostCodeFromAddress(address || "");
+
+  const withPostCodeRemoved = postCode
+    ? initialShortAddress.replace(postCode, "")
     : initialShortAddress;
 
   return withPostCodeRemoved.trim();

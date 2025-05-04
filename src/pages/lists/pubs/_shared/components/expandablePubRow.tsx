@@ -40,7 +40,7 @@ const ExpandablePubRow = ({ pub, index }: ExpandablePubRowProps) => {
         {pub.name}
       </td>
       <td className="px-6 py-4 text-sm text-gray-500 max-w-md truncate">
-        {formatShortAddress(pub.address_text, pub.postcode)}
+        {formatShortAddress(pub.address_text)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         {pub.postcode}

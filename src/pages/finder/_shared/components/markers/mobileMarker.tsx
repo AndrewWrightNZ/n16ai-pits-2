@@ -3,11 +3,9 @@ import { Marker, OverlayView } from "@react-google-maps/api";
 // Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
-// Utils
-import * as fn from "../../../../../_shared/utils";
-
 // Types
 import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
+import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
 
 interface MobileMarkerProps {
   mapMarker: MapReadyMarker;
@@ -23,7 +21,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
 
   // Variables
   const { bestSunPercent = 0, pub } = mapMarker || {};
-  const { id: pubId, name, latitude, longitude } = pub || {};
+  const { id: pubId, latitude, longitude } = pub || {};
 
   //
 
@@ -59,27 +57,43 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
         getPixelPositionOffset={getPixelPositionOffset}
       >
         <div
-          className={`flex relative rounded-[20px] overflow-hidden ${fn.getSunCircleClassFromPercentage(bestSunPercent)}`}
-          style={{
-            zIndex: 1,
-            cursor: "pointer",
-            width: "30px",
-            height: "30px",
-            border: "1px solid #1e293b", // slate-400
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontFamily: "Poppins, sans-serif !important",
-            ...(fn.getSunCircleClassFromPercentage(bestSunPercent) ===
-              "sun-half-marker" && {
-              background: "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
-              transform: "rotate(45deg)",
-            }),
-          }}
+          className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
           onClick={handleClick}
-          title={name}
-        />
+          style={{
+            ...(bestSunPercent >= 75
+              ? { border: "2px solid #FFCC00" }
+              : bestSunPercent >= 50
+                ? {
+                    // For the middle tier, we'll use a pseudo-element with a gradient
+                    // The actual styling is handled in the :before pseudo-element
+                    position: "relative",
+                    border: "2px solid transparent",
+                    backgroundClip: "padding-box",
+                    boxSizing: "border-box",
+                  }
+                : { border: "2px solid #e5e7eb" }),
+          }}
+        >
+          {/* Gradient border for middle tier */}
+          {bestSunPercent >= 50 && bestSunPercent < 75 && (
+            <div
+              className="absolute inset-0 rounded-full z-[-1]"
+              style={{
+                background:
+                  "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                padding: "2px",
+                transform: "rotate(45deg)",
+                margin: "-2px",
+              }}
+            />
+          )}
+
+          <DynamicSunIcon
+            sunPercent={bestSunPercent}
+            className="w-[22px] h-[22px]"
+            aria-label="Sun"
+          />
+        </div>
       </OverlayView>
     </>
   );
