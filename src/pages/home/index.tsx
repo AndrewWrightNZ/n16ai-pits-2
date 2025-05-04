@@ -32,6 +32,7 @@ function App() {
   } = useSunEvals();
 
   const totalInTheSun = goodSunCount + someSunCount;
+
   // Initial button text shows total count
   const [primaryActionButtonText, setPrimaryActionButtonText] = useState(
     `${totalInTheSun} in the sun now`
@@ -95,8 +96,8 @@ function App() {
 
         // Schedule the next cycle
         cycleTimerRef.current = window.setTimeout(cycleThroughAreaTypes, 3000);
-      }, 300);
-    }, 300);
+      }, 500);
+    }, 500);
   };
 
   const handleSeePubs = () => {
@@ -177,23 +178,24 @@ function App() {
             }`}
           >
             <div
-              className="w-full h-full [animation:slow-spin_20s_linear_infinite]"
+              className="w-[100vw] md:w-[48vw] h-[100vw] md:h-[48vw] [animation:slow-spin_20s_linear_infinite]"
               style={{
                 maskImage: `url(${sunLogo})`,
                 WebkitMaskImage: `url(${sunLogo})`,
                 maskSize: "contain",
                 WebkitMaskSize: "contain",
                 backgroundColor: "#FFCC00",
+                zIndex: 9999,
               }}
               aria-label="Sun"
             />
           </div>
 
           {/* Content container */}
-          <div className="relative flex flex-col z-20 w-[85vw] md:w-[80vw] mx-auto mt-[40vh] md:mt-0 ">
+          <div className="relative flex flex-col z-20 w-[85vw] md:w-[80vw] mx-auto mt-[350px] md:mt-[20vh] md:mt-0">
             {/* Content wrapper with opacity transition */}
             <div
-              className={`transition-all duration-1000 md:mt-[15vh] ${
+              className={`transition-all duration-1000 ${
                 showContent ? "opacity-100" : "opacity-0"
               }`}
             >
@@ -203,7 +205,7 @@ function App() {
               </h1>
 
               {/* Call to action buttons */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 md:mt-16">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 mt-12 md:mt-6">
                 {/* Primary Button */}
                 <button
                   onClick={handleSeePubs}
