@@ -1,5 +1,8 @@
 import { Marker, OverlayView } from "@react-google-maps/api";
 
+// Hooks
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
+
 // Utils
 import * as fn from "../../../../../_shared/utils";
 
@@ -16,12 +19,23 @@ const getPixelPositionOffset = (width: number, height: number) => ({
 });
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
+  //
+
   // Variables
   const { bestSunPercent = 0, pub } = mapMarker || {};
   const { id: pubId, name, latitude, longitude } = pub || {};
 
+  //
+
+  // Hooks
+
+  const {
+    operations: { onSetSelectedPubById },
+  } = usePubAreas();
+
   const handleClick = () => {
     console.log("Mobile marker clicked: ", pubId);
+    onSetSelectedPubById(pubId);
   };
 
   return (

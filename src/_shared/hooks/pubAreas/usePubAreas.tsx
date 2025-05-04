@@ -87,6 +87,7 @@ interface PubAreasData extends PubAreasState {
 interface PubAreasOperations {
   // Select pub
   onSetSelectedPub: (pub: Pub | null) => void;
+  onSetSelectedPubById: (pubId: number) => void;
 
   // Add properties relevant to PubAreasOperations
   onUpdatePubAreaDetails: (newDetails: Partial<PubAreasState>) => void;
@@ -475,6 +476,15 @@ const usePubAreas = (): PubAreasResponse => {
     });
   };
 
+  const onSetSelectedPubById = (pubId: number) => {
+    updatePubAreasState({
+      selectedPubId: pubId,
+      name: "",
+      description: "",
+      type: "",
+    });
+  };
+
   const onToggleAreaTypeFilter = (type: string) => {
     const currentSelectedTypes = selectedAreaTypes || [];
     const newSelectedTypes = currentSelectedTypes.includes(type)
@@ -614,6 +624,7 @@ const usePubAreas = (): PubAreasResponse => {
     operations: {
       // Select pub
       onSetSelectedPub,
+      onSetSelectedPubById,
 
       // Update details
       onUpdatePubAreaDetails,
