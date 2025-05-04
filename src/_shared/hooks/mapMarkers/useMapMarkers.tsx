@@ -2,8 +2,8 @@
 import { Pub, PubArea } from "../../types";
 
 // Hooks
+import usePubs from "../pubs/usePubs";
 import useSunEvals from "../sunEvals/useSunEvals";
-import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
 import usePubAreas, { PubWithAreaAndSunEval } from "../pubAreas/usePubAreas";
 
 export interface SimplePubAreaWithSunPc {

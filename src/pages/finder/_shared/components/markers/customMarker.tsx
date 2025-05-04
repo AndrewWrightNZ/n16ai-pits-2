@@ -6,7 +6,7 @@ import { Marker, OverlayView } from "@react-google-maps/api";
 import sunLogo from "../../../../../assets/biggerBolderSun.svg";
 
 // Hooks
-import usePubs from "../../hooks/usePubs";
+import usePubs from "../../../../../_shared/hooks/pubs/usePubs";
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Utils

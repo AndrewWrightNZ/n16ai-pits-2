@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 
 // Hooks
-import usePubs from "../../../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../../../_shared/hooks/pubs/usePubs";
 
 // Types
 import { Pub } from "../../../../../_shared/types";

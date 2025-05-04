@@ -2,13 +2,14 @@ import { useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 // Hooks
-import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
+import { supabaseClient } from "../useSupabase";
 
 // Contexts
-import { PubState, usePubContext } from "../providers/PubProvider";
+import { usePubContext } from "../../providers/PubProvider";
 
 // Types
-import { Pub } from "../../../../_shared/types";
+import { Pub } from "../../types";
+import { PubState } from "../../providers/PubProvider";
 
 //
 

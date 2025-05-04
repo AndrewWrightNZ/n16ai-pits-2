@@ -3,7 +3,7 @@ import { GoogleMap, Marker } from "@react-google-maps/api";
 import { useState, useEffect, useCallback } from "react";
 
 // Hooks
-import usePubs from "./_shared/hooks/usePubs";
+import usePubs from "../../_shared/hooks/pubs/usePubs";
 
 // Components
 import PubCounts from "./_shared/components/counts";

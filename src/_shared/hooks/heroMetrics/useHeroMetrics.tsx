@@ -1,6 +1,6 @@
 // Hooks
+import usePubs from "../pubs/usePubs";
 import useSunEvals from "../sunEvals/useSunEvals";
-import usePubs from "../../../pages/finder/_shared/hooks/usePubs";
 import usePubAreas from "../pubAreas/usePubAreas";
 
 // Constants
