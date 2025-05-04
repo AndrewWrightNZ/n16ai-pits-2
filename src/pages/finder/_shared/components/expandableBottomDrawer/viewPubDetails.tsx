@@ -1,10 +1,12 @@
 // Hooks
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import useMapMarkers from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Components
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
+import { formatAreaType } from "../../../../lists/_shared";
+import useUserGeoLocation from "../../../../../_shared/hooks/user/useGeolocation";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -20,6 +22,10 @@ const ViewPubDetails = () => {
   const {
     data: { mapReadyMarkers },
   } = useMapMarkers();
+
+  const {
+    data: { userLatitude, userLongitude },
+  } = useUserGeoLocation();
 
   // Handle close with animation
   const handleClose = () => {
@@ -39,24 +45,112 @@ const ViewPubDetails = () => {
     (marker) => marker.pub.id === selectedPub?.id
   );
 
-  const { bestSunPercent = 0 } = selectedPubMarker || {};
+  const { bestSunPercent = 0, pubAreas = [], pub } = selectedPubMarker || {};
+  const { latitude, longitude } = pub || { latitude: 0, longitude: 0 };
 
-  console.log("selectedPubMarker", { selectedPubMarker });
+  // Calculate distance between user and pub using Haversine formula
+  const distanceFromUser = useMemo(() => {
+    // If we don't have user location or pub location, return null
+    if (!userLatitude || !userLongitude || !latitude || !longitude) {
+      return null;
+    }
+
+    // Haversine formula to calculate distance between two points on Earth
+    const toRadians = (degrees: number) => degrees * (Math.PI / 180);
+
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = toRadians(latitude - userLatitude);
+    const dLon = toRadians(longitude - userLongitude);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(userLatitude)) *
+        Math.cos(toRadians(latitude)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+
+    return distance;
+  }, [latitude, longitude, userLatitude, userLongitude]);
 
   return (
     <div
-      className={`pub-content ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 pt-2`}
+      className={`pub-content ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 pt-2 h-full overflow-y-auto`}
     >
-      <div className="flex flex-row items-center gap-2 mb-12">
+      {/* Header with pub name and sun icon */}
+      <div className="flex flex-row items-center gap-2 mb-6">
         <DynamicSunIcon
           sunPercent={bestSunPercent}
           className="w-[40px] h-[40px]"
         />
-
-        <h3 className="text-lg font-bold">{name}</h3>
+        <h3 className="text-lg font-black font-poppins">{name}</h3>
       </div>
+
+      {/* Best sun percentage summary */}
+      <div className="mb-6">
+        <h4 className="text-md font-semibold mb-2">Sun Summary</h4>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Best sun area:</span>
+          <div className="flex items-center gap-1">
+            <DynamicSunIcon
+              sunPercent={bestSunPercent}
+              className="w-[24px] h-[24px]"
+            />
+            <span className="font-medium">{bestSunPercent}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Pub areas section */}
+      <div className="mb-6">
+        <h4 className="text-md font-semibold mb-2">Outdoor Areas</h4>
+
+        {pubAreas && pubAreas.length > 0 ? (
+          <div className="space-y-4">
+            {pubAreas.map((area) => (
+              <div key={area.id} className="bg-slate-50 p-3 rounded-md">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-medium">
+                    {formatAreaType(area.type)}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <DynamicSunIcon
+                      sunPercent={area.pc_in_sun}
+                      className="w-[20px] h-[20px]"
+                    />
+                    <span className="text-sm font-medium">
+                      {area.pc_in_sun}%
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600">
+                  Area: {area.floor_area.toFixed(1)} m²
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No outdoor areas available</p>
+        )}
+      </div>
+
+      {/* Distance from user */}
+      <div className="mb-6">
+        <h4 className="text-md font-semibold mb-2">Location</h4>
+        <div className="flex items-center gap-2">
+          <span className="text-sm">Distance from you:</span>
+          <span className="font-medium">
+            {distanceFromUser !== null
+              ? `${distanceFromUser.toFixed(1)} km`
+              : "Location unavailable"}
+          </span>
+        </div>
+      </div>
+      {/* Close button */}
       <button
-        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+        className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors mt-4"
         onClick={handleClose}
       >
         Close Pub View
