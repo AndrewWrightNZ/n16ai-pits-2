@@ -209,7 +209,7 @@ function App() {
                 {/* Primary Button */}
                 <button
                   onClick={handleSeePubs}
-                  className="white-shadow bg-[#2962FF] flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
+                  className="white-shadow bg-[#2962FF] md:text-lg flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 md:py-4 md:px-8 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
                 >
                   <span
                     className={`transition-all w-[180px] text-left duration-600 ease-in-out ${isTransitioning ? "opacity-0 transform -translate-y-4" : "opacity-100 transform translate-y-0"}`}
@@ -222,7 +222,7 @@ function App() {
                 {/* Secondary Button */}
                 <button
                   onClick={handleContactUs}
-                  className="px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
+                  className="md:text-lg px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
                 >
                   {secondaryActionButtonText}
                 </button>
