@@ -12,7 +12,7 @@ import PubList from "./_shared/components/SelectPubFromList";
 import usePubAreas, {
   PolygonCoordinate,
 } from "../../../_shared/hooks/pubAreas/usePubAreas";
-import usePubs from "../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../_shared/hooks/pubs/usePubs";
 
 // Types
 import { Pub } from "../../../_shared/types";
@@ -73,17 +73,17 @@ const PubAreaSizer: React.FC = () => {
 
     // Set the selected pub
     onSetSelectedPub(pub);
-    
+
     // Try to center the map immediately
     if (mapRef.current) {
       // Clear existing shape
       mapRef.current.clearShape();
-      
+
       // Position the map at the pub location - even if isMapReady is false
       // The enhanced setCenter method in MapDrawingComponent will handle this safely
       mapRef.current.setCenter(pub.latitude, pub.longitude);
       mapRef.current.setZoom(19);
-      
+
       // Also schedule another attempt after a short delay to ensure it happens
       setTimeout(() => {
         if (mapRef.current) {
@@ -126,7 +126,7 @@ const PubAreaSizer: React.FC = () => {
       if (mapRef.current && mapRef.current.isMapReady) {
         setIsMapReady(true);
         clearInterval(checkMapReady);
-        
+
         // If we have a selected pub, center the map on it once it's ready
         if (selectedPub) {
           mapRef.current.setCenter(selectedPub.latitude, selectedPub.longitude);
@@ -143,7 +143,7 @@ const PubAreaSizer: React.FC = () => {
   useEffect(() => {
     if (isMapReady && selectedPub) {
       // This ensures we have the latest state when the map becomes ready
-      console.log('Map is ready and pub is selected');
+      console.log("Map is ready and pub is selected");
     }
   }, [isMapReady, selectedPub]);
 

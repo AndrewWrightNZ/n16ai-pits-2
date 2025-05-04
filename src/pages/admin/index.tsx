@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Hooks
-import usePubs from "../finder/_shared/hooks/usePubs";
+
 import ProgressBar from "./_shared/components/ProgressBar";
+import usePubs from "../../_shared/hooks/pubs/usePubs";
 
 const AdminOverview = () => {
   // Add query client

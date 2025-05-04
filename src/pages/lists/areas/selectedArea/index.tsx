@@ -1,7 +1,7 @@
 import { MapPin, Info, Square, X, Sun, Clock } from "lucide-react";
 
 // Hooks
-import usePubs from "../../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../../_shared/hooks/pubs/usePubs";
 import useSunEvals from "../../../../_shared/hooks/sunEvals/useSunEvals";
 
 // Helpers

@@ -3,7 +3,8 @@ import { GoogleMap, Marker } from "@react-google-maps/api";
 import { useState, useEffect, useCallback } from "react";
 
 // Hooks
-import usePubs from "./_shared/hooks/usePubs";
+import usePubs from "../../_shared/hooks/pubs/usePubs";
+import useDeviceDetect from "../../_shared/hooks/useDeviceDetect";
 
 // Components
 import PubCounts from "./_shared/components/counts";
@@ -11,6 +12,7 @@ import TimeSlider from "./_shared/components/timeSlider";
 import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
 import RenderFilteredMarkers from "./_shared/components/markers";
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
+import ExpandableBottomDrawer from "./_shared/components/expandableBottomDrawer";
 
 // Default center (London)
 const defaultCenter = {
@@ -34,6 +36,8 @@ function Finder() {
     data: { selectedPub = null },
     operations: { onSetMapBounds },
   } = usePubs();
+
+  const { isMobile } = useDeviceDetect();
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -154,7 +158,8 @@ function Finder() {
               }}
             />
           )}
-          <TimeSlider />
+
+          {isMobile ? <ExpandableBottomDrawer /> : <TimeSlider />}
         </GoogleMap>
       </main>
     </>

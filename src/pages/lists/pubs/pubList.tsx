@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 
 // Hooks
-import usePubs from "../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../_shared/hooks/pubs/usePubs";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Types
 import { PubArea, Pub } from "../../../_shared/types";
@@ -9,8 +10,9 @@ import { PubArea, Pub } from "../../../_shared/types";
 // Components
 import PubDetail from "./pubDetail";
 import ExpandablePubRow from "./_shared/components/expandablePubRow";
+
+// Helpers
 import { extractPostCodeFromAddress } from "./_shared/helpers";
-import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 export interface PubForTableDisplay extends Pub {
   areas: PubArea[];

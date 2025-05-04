@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { ArrowUpDown, Check, Filter, Sun } from "lucide-react";
 
 // Hooks
-import usePubs from "../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../_shared/hooks/pubs/usePubs";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Components
 import ViewSelectedArea from "./selectedArea";
@@ -13,7 +14,6 @@ import { PubArea } from "../../../_shared/types";
 
 // Helpers
 import { AREA_TYPES } from "../_shared";
-import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Define a type for the sortable keys
 type SortableKey = keyof Pick<
