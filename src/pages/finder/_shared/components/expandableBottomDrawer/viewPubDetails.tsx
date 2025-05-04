@@ -84,10 +84,10 @@ const ViewPubDetails = () => {
 
   return (
     <div
-      className={`pub-content ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 pt-2 h-full overflow-y-auto`}
+      className={`pub-content ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 p-2 pt-8 h-full overflow-y-auto`}
     >
       {/* Header with pub name and sun icon */}
-      <div className="flex flex-row items-center gap-4 mb-6">
+      <div className="flex flex-row items-center gap-4 mb-12">
         <div
           className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
           style={{
@@ -121,16 +121,14 @@ const ViewPubDetails = () => {
 
       {/* Best sun percentage summary */}
       <div className="mb-6">
-        <h4 className="text-md font-semibold mb-2">Sun Summary</h4>
+        <h4 className="text-md font-semibold mb-2">In the sun</h4>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <DynamicSunIcon
               sunPercent={bestSunPercent}
               className="w-[24px] h-[24px]"
             />
-            <span className="font-medium">
-              {bestSunPercent.toFixed(0)}% in the sun
-            </span>
+            <span className="font-medium">{bestSunPercent.toFixed(0)}%</span>
           </div>
         </div>
       </div>
@@ -153,7 +151,7 @@ const ViewPubDetails = () => {
                       className="w-[20px] h-[20px]"
                     />
                     <span className="text-sm font-medium">
-                      {area.pc_in_sun}%
+                      {area.pc_in_sun.toFixed(0)}%
                     </span>
                   </div>
                 </div>
