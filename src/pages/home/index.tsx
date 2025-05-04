@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Icons
 import { ChevronRight } from "lucide-react";
@@ -11,20 +11,31 @@ import CookieBanner from "./_shared/components/cookieBanner";
 // Hooks
 import useSunEvals from "../../_shared/hooks/sunEvals/useSunEvals";
 import useHeroMetrics from "../../_shared/hooks/heroMetrics/useHeroMetrics";
+import { formatAreaType } from "../lists/_shared";
 
 function App() {
   const [showContent, setShowContent] = useState(false);
+  const [currentAreaTypeIndex, setCurrentAreaTypeIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const cycleTimerRef = useRef<number | null>(null);
 
   // Hooks
   const {
-    data: { goodSunCount = 0, someSunCount = 0 },
+    data: {
+      goodSunCount = 0,
+      someSunCount = 0,
+      areaTypeCountsWithSomeSun = [],
+    },
   } = useHeroMetrics();
   const {
     operations: { onSeedCurrentTimeSlot },
   } = useSunEvals();
 
   const totalInTheSun = goodSunCount + someSunCount;
-  const primaryActionButtonText = `${totalInTheSun} in the sun now`;
+  // Initial button text shows total count
+  const [primaryActionButtonText, setPrimaryActionButtonText] = useState(
+    `${totalInTheSun} in the sun now`
+  );
   const secondaryActionButtonText = `Missed one? Contact us`;
 
   useEffect(() => {
@@ -35,6 +46,58 @@ function App() {
 
     return () => clearTimeout(contentTimer);
   }, []);
+
+  // Update button text when total count changes
+  useEffect(() => {
+    setPrimaryActionButtonText(`${totalInTheSun} in the sun now`);
+  }, [totalInTheSun]);
+
+  // Effect to cycle through area types
+  useEffect(() => {
+    if (showContent && areaTypeCountsWithSomeSun.length > 0) {
+      // Start cycling after initial content is shown
+      const startCycling = setTimeout(() => {
+        cycleThroughAreaTypes();
+      }, 2000); // Wait 2 seconds after content appears before starting the cycle
+
+      return () => {
+        clearTimeout(startCycling);
+        if (cycleTimerRef.current) {
+          clearTimeout(cycleTimerRef.current);
+        }
+      };
+    }
+  }, [showContent, areaTypeCountsWithSomeSun]);
+
+  const cycleThroughAreaTypes = () => {
+    if (areaTypeCountsWithSomeSun.length <= 1) return;
+
+    // Start transition animation
+    setIsTransitioning(true);
+
+    // After transition out completes, change the index
+    setTimeout(() => {
+      setCurrentAreaTypeIndex(
+        (prevIndex) => (prevIndex + 1) % areaTypeCountsWithSomeSun.length
+      );
+
+      // Update button text with current area type
+      const currentType = areaTypeCountsWithSomeSun[currentAreaTypeIndex];
+      if (currentType) {
+        setPrimaryActionButtonText(
+          `${currentType.count} ${formatAreaType(currentType.type)}s`
+        );
+      }
+
+      // After changing index, transition back in
+      setTimeout(() => {
+        setIsTransitioning(false);
+
+        // Schedule the next cycle
+        cycleTimerRef.current = window.setTimeout(cycleThroughAreaTypes, 3000);
+      }, 300);
+    }, 300);
+  };
 
   const handleSeePubs = () => {
     // Navigate to finder page
@@ -70,6 +133,17 @@ function App() {
           @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+          }
+          
+          @keyframes slideInUp {
+            from { 
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to { 
+              opacity: 1;
+              transform: translateY(0);
+            }
           }
           
           .white-shadow {
@@ -124,18 +198,22 @@ function App() {
               }`}
             >
               {/* Heading */}
-              <h1 className="text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-12 md:mb-6 leading-[1.1] max-w-[80vw]  md:max-w-[700px]">
+              <h1 className="text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px]">
                 Pubs in the
               </h1>
 
               {/* Call to action buttons */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 md:mt-0">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 md:mt-16">
                 {/* Primary Button */}
                 <button
                   onClick={handleSeePubs}
-                  className="white-shadow bg-[#2962FF] flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 text-white font-medium rounded-full transition-all duration-300 ease-in-out"
+                  className="white-shadow bg-[#2962FF] flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
                 >
-                  <span>{primaryActionButtonText}</span>
+                  <span
+                    className={`transition-all w-[180px] text-left duration-600 ease-in-out ${isTransitioning ? "opacity-0 transform -translate-y-4" : "opacity-100 transform translate-y-0"}`}
+                  >
+                    {primaryActionButtonText}
+                  </span>
                   <ChevronRight className="h-6 w-6 ml-2" />
                 </button>
 

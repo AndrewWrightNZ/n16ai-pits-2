@@ -82,8 +82,6 @@ const useHeroMetrics = (): HeroMetricsResponse => {
   const rawGoodSunPubs = allMapReadyPubs.filter(
     (pub) => pub.bestSunPercent >= SUN_THRESHOLDS.GOOD
   );
-  console.log("rawGoodSunPubs", { rawGoodSunPubs });
-
   const goodSunCount = rawGoodSunPubs.length;
 
   const rawSomeSunPubs = allMapReadyPubs.filter(
@@ -91,7 +89,6 @@ const useHeroMetrics = (): HeroMetricsResponse => {
       pub.bestSunPercent >= SUN_THRESHOLDS.SOME &&
       pub.bestSunPercent < SUN_THRESHOLDS.GOOD
   );
-  console.log("rawSomeSunPubs", { rawSomeSunPubs });
 
   const someSunCount = rawSomeSunPubs.length;
 
@@ -99,7 +96,6 @@ const useHeroMetrics = (): HeroMetricsResponse => {
   const areasWithSomeSun = allMapReadyPubs.flatMap((pub) =>
     pub.pubAreas.filter((area) => area.pc_in_sun >= SUN_THRESHOLDS.SOME)
   );
-  console.log("areasWithSomeSun", { areasWithSomeSun });
 
   // Create an array of objects with type and count of areas of that type
   const areaTypeCountsWithSomeSun = areasWithSomeSun.reduce<AreaTypeCount[]>(
@@ -121,7 +117,6 @@ const useHeroMetrics = (): HeroMetricsResponse => {
     },
     []
   );
-  console.log("areaTypeCountsWithSomeSun", { areaTypeCountsWithSomeSun });
 
   return {
     data: {
