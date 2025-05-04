@@ -1,10 +1,10 @@
 // Define the area types that can be filtered
 export const AREA_TYPES = [
   { key: "pavement", label: "Pavement" },
-  { key: "frontage-seating", label: "Frontage seating" },
+  { key: "frontage-seating", label: "Frontage Seating" },
   { key: "terrace", label: "Terrace" },
   { key: "terrace-waterfront", label: "Waterfront Terrace" },
-  { key: "beer-garden", label: "Beer garden" },
+  { key: "beer-garden", label: "Beer Garden" },
   { key: "courtyard", label: "Courtyard" },
 ];
 
