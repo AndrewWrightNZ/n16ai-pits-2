@@ -51,7 +51,7 @@ const PubDetail = () => {
 
     // Sort the evaluations by time to ensure proper order in visualization
     const sortedEvals = [...sunEvalsForAreaThroughtTheDay].sort(
-      (a, b) => parseInt(a.time) - parseInt(b.time)
+      (a, b) => Number(a.time || -1) - Number(b.time || -1)
     );
 
     if (!sunEvalRightNow) {
@@ -60,7 +60,7 @@ const PubDetail = () => {
 
     // Determine sun rating based on percentage in sun
     const sunPercentage = sunEvalRightNow.pc_in_sun || 0;
-    const currentTimeSlot = parseInt(sunEvalRightNow.time);
+    const currentTimeSlot = Number(sunEvalRightNow.time || -1);
 
     // Create a visual representation based on percentage
 
@@ -75,7 +75,8 @@ const PubDetail = () => {
             {sortedEvals.map((sunEval, index) => {
               const width = `${100 / sortedEvals.length}%`;
               const opacity = sunEval.pc_in_sun / 100;
-              const isCurrentTime = parseInt(sunEval.time) === currentTimeSlot;
+              const isCurrentTime =
+                Number(sunEval.time || -1) === currentTimeSlot;
 
               const isHovered = hoveredIndex === index;
 
@@ -120,7 +121,7 @@ const PubDetail = () => {
         {hoveredSunEval && hoveredIndex !== null
           ? renderSunRating(
               hoveredSunEval.pc_in_sun,
-              parseInt(hoveredSunEval.time)
+              Number(hoveredSunEval.time || -1)
             )
           : renderSunRating(sunPercentage)}
         {renderDayTimeline()}
