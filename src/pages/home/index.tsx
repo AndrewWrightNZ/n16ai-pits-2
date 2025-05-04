@@ -9,17 +9,21 @@ import sunLogo from "../../assets/biggerBolderSun.svg";
 import CookieBanner from "./_shared/components/cookieBanner";
 
 // Hooks
-import useMapMarkers from "../../_shared/hooks/mapMarkers/useMapMarkers";
+import useSunEvals from "../../_shared/hooks/sunEvals/useSunEvals";
+import useHeroMetrics from "../../_shared/hooks/heroMetrics/useHeroMetrics";
 
 function App() {
   const [showContent, setShowContent] = useState(false);
 
   // Hooks
   const {
-    data: { goodSunCount = 0, someSunCount = 0 },
-  } = useMapMarkers();
+    data: { rawGoodSunCount = 0, rawSomeSunCount = 0 },
+  } = useHeroMetrics();
+  const {
+    operations: { onSeedCurrentTimeSlot },
+  } = useSunEvals();
 
-  const totalInTheSun = goodSunCount + someSunCount;
+  const totalInTheSun = rawGoodSunCount + rawSomeSunCount;
   const primaryActionButtonText = `${totalInTheSun} in the sun now`;
   const secondaryActionButtonText = `Missed one? Contact us`;
 
@@ -44,6 +48,14 @@ function App() {
       "_blank"
     );
   };
+
+  //
+
+  // Effects
+  useEffect(() => {
+    // Seed the current timeslot
+    onSeedCurrentTimeSlot();
+  }, []);
 
   return (
     <>
