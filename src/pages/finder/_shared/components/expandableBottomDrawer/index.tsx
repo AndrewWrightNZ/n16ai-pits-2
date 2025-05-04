@@ -1,19 +1,26 @@
 import { useEffect, useState, useRef } from "react";
+
+// Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
+
+// Types
 import { Pub } from "../../../../../_shared/types";
+
+// Components
+import ViewPubDetails from "./viewPubDetails";
 
 const ExpandableBottomDrawer = () => {
   // State for animations
   const [isContentVisible, setIsContentVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [renderPubContent, setRenderPubContent] = useState(false);
-  const [renderSliderContent, setRenderSliderContent] = useState(false);
+  const [activeContent, setActiveContent] = useState<"pub" | "slider" | null>(
+    null
+  );
   const prevSelectedPubRef = useRef<Pub | null>(null);
 
   // Hooks
   const {
     data: { selectedPub },
-    operations: { onSetSelectedPub },
   } = usePubAreas();
 
   // Animation timing constants
@@ -25,51 +32,36 @@ const ExpandableBottomDrawer = () => {
     const hadPub = prevSelectedPubRef.current !== null;
     const hasPub = selectedPub !== null;
 
-    // Going from pub to no pub
-    if (hadPub && !hasPub) {
-      // 1. First hide the content
+    // Determine the transition type
+    const transitionType =
+      !hadPub && hasPub ? "expand" : hadPub && !hasPub ? "collapse" : "update";
+
+    // Common animation pattern for all transitions
+    const animateTransition = () => {
+      // Step 1: Hide content
       setIsContentVisible(false);
 
-      // 2. After content is hidden, switch what's rendered and collapse
+      // Step 2: After content is hidden, update what needs to change
       setTimeout(() => {
-        setRenderPubContent(false);
-        setRenderSliderContent(true);
-        setIsExpanded(false);
+        // Update content type
+        setActiveContent(hasPub ? "pub" : "slider");
 
-        // 3. After height transition completes, show content
+        // Update height if needed
+        if (transitionType !== "update") {
+          setIsExpanded(hasPub);
+        }
+
+        // Step 3: After height transition completes (if any), show content
+        const showContentDelay =
+          transitionType !== "update" ? HEIGHT_DURATION : 0;
         setTimeout(() => {
           setIsContentVisible(true);
-        }, HEIGHT_DURATION);
+        }, showContentDelay);
       }, FADE_DURATION);
-    }
-    // Going from no pub to pub
-    else if (!hadPub && hasPub) {
-      // 1. First hide the content
-      setIsContentVisible(false);
+    };
 
-      // 2. After content is hidden, switch what's rendered and expand
-      setTimeout(() => {
-        setRenderSliderContent(false);
-        setRenderPubContent(true);
-        setIsExpanded(true);
-
-        // 3. After height transition completes, show content
-        setTimeout(() => {
-          setIsContentVisible(true);
-        }, HEIGHT_DURATION);
-      }, FADE_DURATION);
-    }
-    // Changing between pubs
-    else if (hasPub && hadPub) {
-      // Just update content without height changes
-      setIsContentVisible(false);
-
-      setTimeout(() => {
-        setRenderPubContent(true);
-        setRenderSliderContent(false);
-        setIsContentVisible(true);
-      }, FADE_DURATION);
-    }
+    // Run the animation
+    animateTransition();
 
     // Update ref for next comparison
     prevSelectedPubRef.current = selectedPub;
@@ -80,11 +72,17 @@ const ExpandableBottomDrawer = () => {
     // Set initial states based on whether we have a selectedPub
     const hasPub = !!selectedPub;
     setIsExpanded(hasPub);
-    setRenderPubContent(hasPub);
-    setRenderSliderContent(!hasPub);
+    setActiveContent(hasPub ? "pub" : "slider");
     setIsContentVisible(true); // Start with content visible
     prevSelectedPubRef.current = selectedPub;
   }, []);
+
+  // Render slider content component
+  const SliderContent = () => (
+    <div className="h-16 flex items-center justify-center">
+      <p className="text-slate-600">Time slider here</p>
+    </div>
+  );
 
   return (
     <div
@@ -94,40 +92,8 @@ const ExpandableBottomDrawer = () => {
         className={`${isContentVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 overflow-hidden h-full`}
       >
         {/* Only render one type of content at a time */}
-        {renderPubContent && (
-          <div>
-            {selectedPub?.id && (
-              <>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-                <button onClick={() => onSetSelectedPub(null)}>
-                  {selectedPub?.id || ""}
-                </button>
-              </>
-            )}
-          </div>
-        )}
-        {renderSliderContent && (
-          <div className="h-16">
-            <p>Time slider here</p>
-          </div>
-        )}
+        {activeContent === "pub" && <ViewPubDetails />}
+        {activeContent === "slider" && <SliderContent />}
       </div>
     </div>
   );

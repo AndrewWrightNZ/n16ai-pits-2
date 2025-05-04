@@ -34,7 +34,6 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
   } = usePubAreas();
 
   const handleClick = () => {
-    console.log("Mobile marker clicked: ", pubId);
     onSetSelectedPubById(pubId);
   };
 
