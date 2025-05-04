@@ -2,14 +2,16 @@ import { useState } from "react";
 
 // Hooks
 import useSunEvals from "../../../_shared/hooks/sunEvals/useSunEvals";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Types
 import { PubArea, Pub } from "../../../_shared/types";
 
 // Icons
 import { Sun } from "lucide-react";
+
+// Helpers
 import { extractPostCodeFromAddress, renderSunRating } from "./_shared/helpers";
-import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
 
 export interface PubForDetailDisplay extends Pub {
   areas: PubArea[];

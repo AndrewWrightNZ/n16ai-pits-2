@@ -57,7 +57,8 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
         getPixelPositionOffset={getPixelPositionOffset}
       >
         <div
-          className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative"
+          className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
+          onClick={handleClick}
           style={{
             ...(bestSunPercent >= 75
               ? { border: "2px solid #FFCC00" }

@@ -1,12 +1,19 @@
-// Hooks
 import { useState, useMemo } from "react";
+
+// Hooks
 import useMapMarkers from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
+import useUserGeoLocation from "../../../../../_shared/hooks/user/useGeolocation";
 
 // Components
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
+
+// Helpers
 import { formatAreaType } from "../../../../lists/_shared";
-import useUserGeoLocation from "../../../../../_shared/hooks/user/useGeolocation";
+import {
+  extractPostCodeFromAddress,
+  formatShortAddress,
+} from "../../../../lists/pubs/_shared/helpers";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -39,7 +46,7 @@ const ViewPubDetails = () => {
   };
 
   // Variables
-  const { name = "" } = selectedPub || {};
+  const { name = "", address_text = "" } = selectedPub || {};
 
   const selectedPubMarker = mapReadyMarkers.find(
     (marker) => marker.pub.id === selectedPub?.id
@@ -80,25 +87,50 @@ const ViewPubDetails = () => {
       className={`pub-content ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 pt-2 h-full overflow-y-auto`}
     >
       {/* Header with pub name and sun icon */}
-      <div className="flex flex-row items-center gap-2 mb-6">
-        <DynamicSunIcon
-          sunPercent={bestSunPercent}
-          className="w-[40px] h-[40px]"
-        />
-        <h3 className="text-lg font-black font-poppins">{name}</h3>
+      <div className="flex flex-row items-center gap-4 mb-6">
+        <div
+          className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
+          style={{
+            ...(bestSunPercent >= 75
+              ? { border: "2px solid #FFCC00" }
+              : bestSunPercent >= 50
+                ? {
+                    // For the middle tier, we'll use a pseudo-element with a gradient
+                    // The actual styling is handled in the :before pseudo-element
+                    position: "relative",
+                    border: "2px solid transparent",
+                    backgroundClip: "padding-box",
+                    boxSizing: "border-box",
+                  }
+                : { border: "2px solid #e5e7eb" }),
+          }}
+        >
+          <DynamicSunIcon
+            sunPercent={bestSunPercent}
+            className="w-[25px] h-[25px]"
+          />
+        </div>
+        <div className="flex flex-col">
+          <h3 className="text-lg font-black font-poppins">{name}</h3>
+          <p className="text-sm font-normal text-gray-600 font-poppins">
+            {formatShortAddress(address_text)},{" "}
+            {extractPostCodeFromAddress(address_text)}
+          </p>
+        </div>
       </div>
 
       {/* Best sun percentage summary */}
       <div className="mb-6">
         <h4 className="text-md font-semibold mb-2">Sun Summary</h4>
         <div className="flex items-center gap-2">
-          <span className="text-sm">Best sun area:</span>
           <div className="flex items-center gap-1">
             <DynamicSunIcon
               sunPercent={bestSunPercent}
               className="w-[24px] h-[24px]"
             />
-            <span className="font-medium">{bestSunPercent}%</span>
+            <span className="font-medium">
+              {bestSunPercent.toFixed(0)}% in the sun
+            </span>
           </div>
         </div>
       </div>
