@@ -17,13 +17,13 @@ function App() {
 
   // Hooks
   const {
-    data: { rawGoodSunCount = 0, rawSomeSunCount = 0 },
+    data: { goodSunCount = 0, someSunCount = 0 },
   } = useHeroMetrics();
   const {
     operations: { onSeedCurrentTimeSlot },
   } = useSunEvals();
 
-  const totalInTheSun = rawGoodSunCount + rawSomeSunCount;
+  const totalInTheSun = goodSunCount + someSunCount;
   const primaryActionButtonText = `${totalInTheSun} in the sun now`;
   const secondaryActionButtonText = `Missed one? Contact us`;
 

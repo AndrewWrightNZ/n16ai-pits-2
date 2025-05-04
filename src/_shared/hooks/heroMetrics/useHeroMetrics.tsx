@@ -6,13 +6,20 @@ import usePubAreas from "../pubAreas/usePubAreas";
 // Constants
 import { SUN_THRESHOLDS } from "../mapMarkers/useMapMarkers";
 
+// Type for area count by type
+interface AreaTypeCount {
+  type: string;
+  count: number;
+}
+
 interface HeroMetricsResponse {
   data: {
     // Raw sun quality counts
-    rawGoodSunCount: number;
-    rawSomeSunCount: number;
+    goodSunCount: number;
+    someSunCount: number;
 
-    // Area counts
+    // Areas with sun above threshold
+    areaTypeCountsWithSomeSun: AreaTypeCount[];
   };
 }
 
@@ -72,20 +79,58 @@ const useHeroMetrics = (): HeroMetricsResponse => {
   });
 
   // Count raw markers by sun quality using filter instead of multiple reduces
-  const rawGoodSunCount = allMapReadyPubs.filter(
+  const rawGoodSunPubs = allMapReadyPubs.filter(
     (pub) => pub.bestSunPercent >= SUN_THRESHOLDS.GOOD
-  ).length;
-  const rawSomeSunCount = allMapReadyPubs.filter(
+  );
+  console.log("rawGoodSunPubs", { rawGoodSunPubs });
+
+  const goodSunCount = rawGoodSunPubs.length;
+
+  const rawSomeSunPubs = allMapReadyPubs.filter(
     (pub) =>
       pub.bestSunPercent >= SUN_THRESHOLDS.SOME &&
       pub.bestSunPercent < SUN_THRESHOLDS.GOOD
-  ).length;
+  );
+  console.log("rawSomeSunPubs", { rawSomeSunPubs });
+
+  const someSunCount = rawSomeSunPubs.length;
+
+  // Get all pub areas with sun evaluation above SOME threshold
+  const areasWithSomeSun = allMapReadyPubs.flatMap((pub) =>
+    pub.pubAreas.filter((area) => area.pc_in_sun >= SUN_THRESHOLDS.SOME)
+  );
+  console.log("areasWithSomeSun", { areasWithSomeSun });
+
+  // Create an array of objects with type and count of areas of that type
+  const areaTypeCountsWithSomeSun = areasWithSomeSun.reduce<AreaTypeCount[]>(
+    (acc, area) => {
+      // Find if this type already exists in our accumulator
+      const existingTypeIndex = acc.findIndex(
+        (item) => item.type === area.type
+      );
+
+      if (existingTypeIndex >= 0) {
+        // If type exists, increment the count
+        acc[existingTypeIndex].count++;
+      } else {
+        // If type doesn't exist, add a new entry
+        acc.push({ type: area.type, count: 1 });
+      }
+
+      return acc;
+    },
+    []
+  );
+  console.log("areaTypeCountsWithSomeSun", { areaTypeCountsWithSomeSun });
 
   return {
     data: {
       // Raw counts
-      rawGoodSunCount,
-      rawSomeSunCount,
+      goodSunCount,
+      someSunCount,
+
+      // Areas with sun above threshold
+      areaTypeCountsWithSomeSun,
     },
   };
 };
