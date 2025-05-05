@@ -9,7 +9,8 @@ import useHeroMetrics from "../../../../../_shared/hooks/heroMetrics/useHeroMetr
 import { SUN_THRESHOLDS } from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
 
 // Components
-import PubAreasOverview from "./PubAreasOverview";
+import LocationDetails from "./LocationDetails";
+import PubAreasOverview from "./areas/PubAreasOverview";
 import TimeLeftInTheSun from "./TImeLeftInTheSun";
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
 import DynamicSunIconWithBorder from "../../../../../_shared/components/DynamicSunIconWithBorder";
@@ -24,7 +25,6 @@ import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Icons
 import { ChevronLeftIcon } from "lucide-react";
-import LocationDetails from "./LocationDetails";
 
 // Render pub content component
 const ViewPubDetails = () => {
