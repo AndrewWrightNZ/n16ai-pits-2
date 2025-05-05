@@ -1,3 +1,5 @@
+import { useNavigate } from "@tanstack/react-router";
+
 // Providers
 import {
   EarlyAccessState,
@@ -42,7 +44,8 @@ const useEarlyAccess = (): EarlyAccessResponse => {
   //
 
   // Variables
-  const { showSignUpForEarlyAccess } = earlyAccessState || {};
+  const { showSignUpForEarlyAccess, enteredAccessCode } =
+    earlyAccessState || {};
 
   //
 
@@ -50,6 +53,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
   const {
     operations: { onSendSlackMessage },
   } = useCommunication();
+  const navigate = useNavigate();
 
   //
 
@@ -79,7 +83,20 @@ const useEarlyAccess = (): EarlyAccessResponse => {
 
   const onAttemptEarlyAccess = () => {
     updateEarlyAccessState({
-      showAccessCodeForm: true,
+      hasConfirmedEntry: true,
+    });
+
+    //
+
+    // Ping slack about access code used
+    onSendSlackMessage({
+      messageText: `:key: Early Access code used: ${enteredAccessCode}`,
+      channelName: "azul-early-access",
+    });
+
+    // Redirect to /finder with tansatck router
+    navigate({
+      to: "/finder",
     });
   };
 

@@ -113,10 +113,6 @@ const SelectFilterOptions = () => {
                 ({ type }) => type === option
               );
 
-            console.log({
-              areasForType,
-            });
-
             return (
               <button
                 key={option}

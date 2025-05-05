@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 // Icons
 import { ChevronRight } from "lucide-react";
@@ -19,7 +20,6 @@ function App() {
   //
 
   // State
-
   const [showContent, setShowContent] = useState(false);
   const [currentAreaTypeIndex, setCurrentAreaTypeIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -38,9 +38,14 @@ function App() {
   } = useSunEvals();
 
   const {
-    data: { showAccessCodeForm },
-    operations: { onShowAccessForm },
+    data: {
+      showAccessCodeForm,
+      showAccessCodeEnteredSuccess,
+      hasConfirmedEntry,
+    },
+    operations: { onShowAccessForm, onAttemptEarlyAccess },
   } = useEarlyAccess();
+  const navigate = useNavigate();
 
   //
 
@@ -134,6 +139,19 @@ function App() {
     onSeedCurrentTimeSlot();
   }, []);
 
+  useEffect(() => {
+    // Show the access code form
+    if (hasConfirmedEntry) {
+      navigate({
+        to: "/finder",
+      });
+    }
+
+    if (showAccessCodeEnteredSuccess && !hasConfirmedEntry) {
+      onAttemptEarlyAccess();
+    }
+  }, [showAccessCodeEnteredSuccess, hasConfirmedEntry]);
+
   return (
     <>
       {/* Define custom animation keyframes and styles */}
@@ -157,6 +175,17 @@ function App() {
             to { 
               opacity: 1;
               transform: translateY(0);
+            }
+          }
+          
+          @keyframes fadeOutUp {
+            from { 
+              opacity: 1;
+              transform: translateY(0);
+            }
+            to { 
+              opacity: 0;
+              transform: translateY(-20px);
             }
           }
           
@@ -213,9 +242,30 @@ function App() {
               }`}
             >
               {/* Heading */}
-              <h1 className="text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px]">
-                Pubs in the
-              </h1>
+              {showAccessCodeEnteredSuccess ? (
+                <>
+                  <h1
+                    className="text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px] transition-all duration-500 ease-in-out animate-[fadeOutUp_500ms_ease-in-out_forwards]"
+                    style={{ animationFillMode: "forwards" }}
+                  >
+                    Pubs in the
+                  </h1>
+                  <h1
+                    className="text-[2.5rem] md:text-[4.5rem] mt-[-10vh] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.2] max-w-[90vw] md:max-w-[700px] opacity-0 transition-all duration-500 ease-in-out animate-[slideInUp_500ms_ease-in-out_forwards]"
+                    style={{
+                      animationDelay: "1000ms",
+                      animationFillMode: "forwards",
+                    }}
+                  >
+                    <span className="font-normal">Welcome to</span> Pubs in the
+                    Sun
+                  </h1>
+                </>
+              ) : (
+                <h1 className="text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px]">
+                  Pubs in the
+                </h1>
+              )}
 
               {/* Call to action buttons */}
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 mt-12 md:mt-6">
