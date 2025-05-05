@@ -66,10 +66,10 @@ const LcoationDteails = () => {
 
   return (
     <div className="mb-6 text-xs mb-16">
-      <h4 className="font-semibold mb-2">Location</h4>
-      <div className="flex items-end gap-2">
-        <span className="font-medium">{distanceFromUserFormatted}</span>
-        <span className="">from you</span>
+      <h4 className="font-semibold mb-2 font-poppins">Location</h4>
+      <div className="flex flex-col items-start justify-between bg-slate-50 p-3 rounded-md text-xs gap-2">
+        <p className="font-bold">Distance from you</p>
+        <p className="font-medium">{distanceFromUserFormatted}</p>
       </div>
     </div>
   );

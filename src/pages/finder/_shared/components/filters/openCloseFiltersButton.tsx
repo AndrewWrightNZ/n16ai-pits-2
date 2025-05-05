@@ -21,19 +21,13 @@ const OpenCloseFiltersButton = () => {
 
   // Render
   return (
-    <div className="fixed flex flex-row items-center gap-2 top-[18px] right-2 rounded-[30px] bg-white p-3 border-[#2962FF] border-2 z-[1000]">
-      <button
-        onClick={onToggleFilters}
-        className="font-bold text-[#2962FF] text-xs flex flex-row items-center gap-2"
-      >
-        {viewFilters ? (
-          <X className="w-4 h-4" />
-        ) : (
-          <Filter className="w-4 h-4" />
-        )}
-        {viewFilters ? "Close" : "Filters"}
-      </button>
-    </div>
+    <button
+      onClick={onToggleFilters}
+      className="fixed flex flex-row items-center justify-center border-2 gap-2 w-26 top-[18px] right-2 rounded-[30px] bg-white p-3 border-slate-800 text-xs font-bold font-poppins z-[1000]"
+    >
+      {viewFilters ? <X className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
+      {viewFilters ? "Close" : "Filters"}
+    </button>
   );
 };
 
