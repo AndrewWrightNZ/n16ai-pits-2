@@ -11,6 +11,10 @@ import {
 } from "../../providers/PubAreasProvider";
 
 import { supabaseClient } from "../../../_shared/hooks/useSupabase";
+import useCommunications from "../communication/useCommunication";
+import usePubs from "../pubs/usePubs";
+import useMapMarkers from "../mapMarkers/useMapMarkers";
+import useDeviceDetect from "../useDeviceDetect";
 
 // Interfaces
 interface SaveVisionMaskPayload {
@@ -132,6 +136,13 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Context
   const { pubAreasState, updatePubAreasState } = usePubAreasContext();
+
+  //
+
+  // Hooks
+  const {
+    operations: { onSendSlackMessage },
+  } = useCommunications();
 
   //
 
@@ -272,6 +283,15 @@ const usePubAreas = (): PubAreasResponse => {
     queryFn: fetchPubById,
     enabled: !!selectedPubId,
   });
+
+  //
+
+  // Internal hooks
+
+  const {
+    data: { uiReadyPubs = [] },
+  } = usePubs();
+  const { isMobile } = useDeviceDetect();
 
   //
 
@@ -482,6 +502,18 @@ const usePubAreas = (): PubAreasResponse => {
       name: "",
       description: "",
       type: "",
+    });
+
+    const selectedPub = uiReadyPubs.find(({ id }) => id === pubId);
+
+    const { name = "", address_text = "" } = selectedPub || {};
+
+    //
+
+    // Ping slack
+    onSendSlackMessage({
+      channelName: "azul-usage",
+      messageText: `:beers: ${name} - ${address_text} selected on Map ${isMobile ? "(Mobile)" : "(Desktop)"}`,
     });
   };
 
