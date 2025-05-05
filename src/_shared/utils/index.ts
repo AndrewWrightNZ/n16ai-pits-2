@@ -240,7 +240,6 @@ export const encryptString = (inputString: string) => {
   // Ensure the key is 32 bytes long
   const key = CryptoJS.enc.Utf8.parse(secretKey.padEnd(32, "\0").slice(0, 32));
 
-  console.log("key", key);
   const encrypted = CryptoJS.AES.encrypt(inputString, key, {
     mode: CryptoJS.mode.ECB,
     padding: CryptoJS.pad.Pkcs7,
