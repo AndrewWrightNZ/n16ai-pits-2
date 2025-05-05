@@ -9,6 +9,7 @@ import {
 // Hooks
 import useCommunication from "../communication/useCommunication";
 import { VALID_ACCESS_CODES } from "./accessCodes";
+import useDeviceDetect from "../useDeviceDetect";
 
 //
 
@@ -55,6 +56,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
     operations: { onSendSlackMessage },
   } = useCommunication();
   const navigate = useNavigate();
+  const { isMobile } = useDeviceDetect();
 
   //
 
@@ -95,7 +97,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
 
     // Ping slack about access code used
     onSendSlackMessage({
-      messageText: `:key: Early Access code used: ${enteredAccessCode}`,
+      messageText: `:key: Early Access code used: ${enteredAccessCode} - ${isMobile ? "(Mobile)" : "(Desktop)"}`,
       channelName: "azul-early-access",
     });
 
