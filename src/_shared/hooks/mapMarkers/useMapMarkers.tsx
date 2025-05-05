@@ -67,7 +67,7 @@ const useMapMarkers = (): MapMarkersResponse => {
   } = useSunEvals();
 
   const {
-    data: { sunQualityFilters = [] },
+    data: { sunQualityFilters = [], areaTypeFilters = [] },
   } = useFilters();
 
   // Filter areas to only those that belong to pubs in map bounds
@@ -82,6 +82,11 @@ const useMapMarkers = (): MapMarkersResponse => {
       sunEval.pc_in_sun || 0,
     ])
   );
+
+  //
+
+  // Filter out areas from pubs based on Area Type filters
+  console.log({ areaTypeFilters });
 
   // Create map-ready markers with optimized lookups
   const mapReadyMarkers = pubsInMapBounds.map((pub) => {

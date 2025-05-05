@@ -19,6 +19,7 @@ interface FiltersData extends FiltersState {
 
   // Area types to show
   areaTypesToShowAfterFilteringBySunQuality: PubArea[];
+  areaTypesToShowAfterFilteringByAreaType: PubArea[];
 }
 
 interface FiltersOperations {
@@ -56,7 +57,7 @@ const useFilters = (): FiltersResponse => {
   //
 
   // Variables
-  const { sunQualityFilters = [] } = filtersState || {};
+  const { sunQualityFilters = [], areaTypeFilters = [] } = filtersState || {};
 
   const pubsToShowAfterFilteringBySunQuality = sunQualityFilters.reduce(
     (acc: MapReadyMarker[], option: SunQuality) => {
@@ -75,6 +76,11 @@ const useFilters = (): FiltersResponse => {
         (pub) => pub.pub.id === area.pub_id
       )
   );
+
+  const areaTypesToShowAfterFilteringByAreaType =
+    areaTypesToShowAfterFilteringBySunQuality.filter(({ type }) =>
+      areaTypeFilters.includes(type as AreaType)
+    );
 
   //
 
@@ -125,6 +131,7 @@ const useFilters = (): FiltersResponse => {
 
       // Area types to show after filtering by sun quality
       areaTypesToShowAfterFilteringBySunQuality,
+      areaTypesToShowAfterFilteringByAreaType,
     },
     operations: {
       // View

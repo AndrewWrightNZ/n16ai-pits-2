@@ -33,6 +33,9 @@ const SelectFilterOptions = () => {
       // Pubs filtered by sun quality
       pubsToShowAfterFilteringBySunQuality = [],
       areaTypesToShowAfterFilteringBySunQuality = [],
+
+      // Areas filtered by area type
+      areaTypesToShowAfterFilteringByAreaType = [],
     },
     operations: { onSunQualityFilterClick, onAreaTypeFilterClick },
   } = useFilters();
@@ -41,9 +44,12 @@ const SelectFilterOptions = () => {
     data: { goodSunCount = 0, someSunCount = 0, noneSunCount = 0 },
   } = useHeroMetrics();
 
-  // Calculate the number of pubs to show based on selected sun quality filters
+  //
 
-  const numberOfPubsToShow = pubsToShowAfterFilteringBySunQuality.length;
+  // Variables
+
+  const showingAllPubs = sunQualityFilters.length === sunQualityOptions.length;
+  const showingAllAreas = areaTypeFilters.length === areaTypeOptions.length;
 
   //
 
@@ -88,7 +94,8 @@ const SelectFilterOptions = () => {
       </div>
 
       <p className="text-xs font-normal mt-2">
-        Showing: {numberOfPubsToShow} Pubs
+        {showingAllPubs ? "Showing all Pubs" : "Filtered to: "}
+        <strong>{pubsToShowAfterFilteringBySunQuality.length} pubs</strong>
       </p>
 
       <p className="text-xs font-bold mt-4">Area Type</p>
@@ -123,6 +130,19 @@ const SelectFilterOptions = () => {
           );
         })}
       </div>
+
+      <p className="text-xs font-normal mt-2">
+        {showingAllAreas ? (
+          "Showing all Areas"
+        ) : (
+          <>
+            Filtered to:{" "}
+            <strong>
+              {areaTypesToShowAfterFilteringByAreaType.length} areas
+            </strong>
+          </>
+        )}
+      </p>
     </div>
   );
 };
