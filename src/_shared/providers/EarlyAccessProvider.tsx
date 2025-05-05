@@ -14,6 +14,7 @@ export interface EarlyAccessState {
 
   // Has confirmed entry
   hasConfirmedEntry: boolean;
+  showDeniedEntry: boolean;
 
   // Timestamp for localStorage
   timestamp: number;
@@ -44,6 +45,7 @@ const defaultState: EarlyAccessState = {
 
   // Has confirmed entry
   hasConfirmedEntry: false,
+  showDeniedEntry: false,
 
   // Timestamp for localStorage
   timestamp: Date.now(),

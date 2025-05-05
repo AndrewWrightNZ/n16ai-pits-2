@@ -17,6 +17,9 @@ declare module "@tanstack/react-router" {
   }
 }
 
+// Empty component to replace the default "Loading..." text
+const EmptyPendingComponent = () => null;
+
 // Render the app
 const rootElement = document.getElementById("root")!;
 if (!rootElement.innerHTML) {
@@ -24,7 +27,10 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <GeneralProviders>
-        <RouterProvider router={router} />
+        <RouterProvider
+          router={router}
+          defaultPendingComponent={EmptyPendingComponent}
+        />
       </GeneralProviders>
     </StrictMode>
   );

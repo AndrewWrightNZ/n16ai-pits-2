@@ -25,6 +25,7 @@ interface EarlyAccessOperations {
 
   // Attempt access
   onUpdateAccessCode: (accessCode: string) => void;
+  onUnlockEarlyAccess: () => void;
   onAttemptEarlyAccess: () => void;
 }
 
@@ -81,7 +82,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
     }
   };
 
-  const onAttemptEarlyAccess = () => {
+  const onUnlockEarlyAccess = () => {
     updateEarlyAccessState({
       hasConfirmedEntry: true,
     });
@@ -98,6 +99,18 @@ const useEarlyAccess = (): EarlyAccessResponse => {
     navigate({
       to: "/finder",
     });
+  };
+
+  const onAttemptEarlyAccess = () => {
+    updateEarlyAccessState({
+      showDeniedEntry: true,
+    });
+
+    setTimeout(() => {
+      updateEarlyAccessState({
+        showDeniedEntry: false,
+      });
+    }, 5000);
   };
 
   const onToggleSignUpForEarlyAccess = () => {
@@ -149,6 +162,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
       onUpdateAccessCode,
 
       // Attempt access
+      onUnlockEarlyAccess,
       onAttemptEarlyAccess,
     },
   };

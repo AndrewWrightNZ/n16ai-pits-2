@@ -43,7 +43,7 @@ function App() {
       showAccessCodeEnteredSuccess,
       hasConfirmedEntry,
     },
-    operations: { onShowAccessForm, onAttemptEarlyAccess },
+    operations: { onShowAccessForm, onUnlockEarlyAccess },
   } = useEarlyAccess();
   const navigate = useNavigate();
 
@@ -149,7 +149,7 @@ function App() {
 
     if (showAccessCodeEnteredSuccess && !hasConfirmedEntry) {
       setTimeout(() => {
-        onAttemptEarlyAccess();
+        onUnlockEarlyAccess();
       }, 5000);
     }
   }, [showAccessCodeEnteredSuccess, hasConfirmedEntry]);
