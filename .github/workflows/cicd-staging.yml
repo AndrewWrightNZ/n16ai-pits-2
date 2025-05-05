@@ -85,6 +85,7 @@ jobs:
           --build-arg VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }} \
           --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }} \
           --build-arg VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }} \
+          --build-arg VITE_ENCRYPTION_KEY=${{ secrets.VITE_ENCRYPTION_KEY }} \
           -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
