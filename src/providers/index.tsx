@@ -10,6 +10,7 @@ import { PubAreasProvider } from "../_shared/providers/PubAreasProvider";
 import { GeoLocationProvider } from "../_shared/providers/useGeolocationContext";
 import { MapSettingsProvider } from "../pages/scene/_shared/context/useMapSettingsContext";
 import { PubLabelsProvider } from "../pages/pub-labels/_shared/providers/PubLabelsProvider";
+import { EarlyAccessProvider } from "../_shared/providers/EarlyAccessProvider";
 
 export const GeneralProviders = ({ children }: any) => {
   const queryClient = new QueryClient({
@@ -28,7 +29,9 @@ export const GeneralProviders = ({ children }: any) => {
               <GeoLocationProvider>
                 <SunEvalsProvider>
                   <FiltersProvider>
-                    <MapSettingsProvider>{children}</MapSettingsProvider>
+                    <EarlyAccessProvider>
+                      <MapSettingsProvider>{children}</MapSettingsProvider>
+                    </EarlyAccessProvider>
                   </FiltersProvider>
                 </SunEvalsProvider>
               </GeoLocationProvider>

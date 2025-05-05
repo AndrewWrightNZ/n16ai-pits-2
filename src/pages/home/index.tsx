@@ -12,8 +12,14 @@ import CookieBanner from "./_shared/components/cookieBanner";
 import useSunEvals from "../../_shared/hooks/sunEvals/useSunEvals";
 import useHeroMetrics from "../../_shared/hooks/heroMetrics/useHeroMetrics";
 import { formatAreaType } from "../lists/_shared";
+import useEarlyAccess from "../../_shared/hooks/earlyAccess/useEarlyAccess";
+import EnterEarlyAccessCode from "./_shared/components/EnterEarlyAccessCode";
 
 function App() {
+  //
+
+  // State
+
   const [showContent, setShowContent] = useState(false);
   const [currentAreaTypeIndex, setCurrentAreaTypeIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -31,13 +37,21 @@ function App() {
     operations: { onSeedCurrentTimeSlot },
   } = useSunEvals();
 
+  const {
+    data: { showAccessCodeForm },
+    operations: { onShowAccessForm },
+  } = useEarlyAccess();
+
+  //
+
+  // Variables
   const totalInTheSun = goodSunCount + someSunCount;
 
-  // Initial button text shows total count
   const [primaryActionButtonText, setPrimaryActionButtonText] = useState(
     `See ${totalInTheSun} in the sun now`
   );
-  const secondaryActionButtonText = `Missed one? Contact us`;
+
+  const secondaryActionButtonText = `Know a sunny pub? Contact us`;
 
   useEffect(() => {
     // Show the content after a delay (simulating your original timeout)
@@ -101,14 +115,13 @@ function App() {
   };
 
   const handleSeePubs = () => {
-    // Navigate to finder page
-    window.location.href = "/finder";
+    onShowAccessForm();
   };
 
   const handleContactUs = () => {
     // Open a new email
     window.open(
-      "mailto:hello@pubsinthesun.com?subject=I know a great pub in the sun",
+      "mailto:hello@pubsinthesun.com?subject=I know a great pub in the sun!",
       "_blank"
     );
   };
@@ -206,26 +219,31 @@ function App() {
 
               {/* Call to action buttons */}
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 mt-12 md:mt-6">
-                {/* Primary Button */}
-                <button
-                  onClick={handleSeePubs}
-                  className="white-shadow bg-[#2962FF] transition-all duration-500 md:text-lg flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 md:py-4 md:px-8 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
-                >
-                  <span
-                    className={`transition-all w-full md:w-fit-content text-left duration-600 ease-in-out ${isTransitioning ? "opacity-0 transform -translate-y-4" : "opacity-100 transform translate-y-0"}`}
-                  >
-                    {primaryActionButtonText}
-                  </span>
-                  <ChevronRight className="h-6 w-6 ml-2" />
-                </button>
+                {showAccessCodeForm ? (
+                  <EnterEarlyAccessCode />
+                ) : (
+                  <>
+                    <button
+                      onClick={handleSeePubs}
+                      className="white-shadow bg-[#2962FF] transition-all duration-500 md:text-lg flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 md:py-4 md:px-8 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
+                    >
+                      <span
+                        className={`transition-all w-full md:w-fit-content text-left duration-600 ease-in-out ${isTransitioning ? "opacity-0 transform -translate-y-4" : "opacity-100 transform translate-y-0"}`}
+                      >
+                        {primaryActionButtonText}
+                      </span>
+                      <ChevronRight className="h-6 w-6 ml-2" />
+                    </button>
 
-                {/* Secondary Button */}
-                <button
-                  onClick={handleContactUs}
-                  className="md:text-lg px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
-                >
-                  {secondaryActionButtonText}
-                </button>
+                    {/* Secondary Button */}
+                    <button
+                      onClick={handleContactUs}
+                      className="md:text-lg px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
+                    >
+                      {secondaryActionButtonText}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>
