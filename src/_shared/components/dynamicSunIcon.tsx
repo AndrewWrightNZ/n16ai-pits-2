@@ -9,7 +9,7 @@ interface DynamicSunIconProps {
 const DynamicSunIcon = ({ sunPercent, className }: DynamicSunIconProps) => {
   return (
     <div
-      className={`w-[30px] h-[30px] ${className}`}
+      className={`${className || "w-[30px] h-[30px]"}`}
       style={{
         maskImage: `url(${sunLogo})`,
         WebkitMaskImage: `url(${sunLogo})`,

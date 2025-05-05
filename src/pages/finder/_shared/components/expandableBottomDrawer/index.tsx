@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 
 // Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
+import useFilters from "../../../../../_shared/hooks/filters/useFilters";
 
 // Types
 import { Pub } from "../../../../../_shared/types";
@@ -9,36 +10,53 @@ import { Pub } from "../../../../../_shared/types";
 // Components
 import ViewPubDetails from "./viewPubDetails";
 import TimeSliderInternals from "../timeSlider/SliderInternals";
+import SelectFilterOptions from "../../components/filters/selectFilterOptions";
 
 const ExpandableBottomDrawer = () => {
   // State for animations
   const [isContentVisible, setIsContentVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [activeContent, setActiveContent] = useState<"pub" | "slider" | null>(
-    null
-  );
+  const [activeContent, setActiveContent] = useState<
+    "pub" | "slider" | "filters" | null
+  >(null);
   const prevSelectedPubRef = useRef<Pub | null>(null);
+  const prevViewFiltersRef = useRef<boolean>(false);
 
   // Hooks
   const {
     data: { selectedPub },
   } = usePubAreas();
 
+  const {
+    data: { viewFilters },
+  } = useFilters();
+
   // Animation timing constants
   const FADE_DURATION = 200; // ms - how long opacity transitions take
   const HEIGHT_DURATION = 300; // ms - how long height transitions take
 
-  // Handle transitions between pub states
+  // Handle transitions between states (pub selection or filters view)
   useEffect(() => {
     try {
       const hadPub = prevSelectedPubRef.current !== null;
       const hasPub = selectedPub !== null;
+      const hadFilters = prevViewFiltersRef.current;
+      const hasFilters = viewFilters;
+
+      // Skip if both pub and filters are unchanged
+      if (
+        hadPub === hasPub &&
+        hadFilters === hasFilters &&
+        hasPub === hasFilters
+      ) {
+        return;
+      }
 
       // Determine the transition type
       const transitionType =
-        !hadPub && hasPub
+        !hadPub && !hadFilters && (hasPub || hasFilters)
           ? "expand"
-          : hadPub && !hasPub
+          : (hadPub || hadFilters) && !hasPub && !hasFilters
             ? "collapse"
             : "update";
 
@@ -51,12 +69,21 @@ const ExpandableBottomDrawer = () => {
           // Step 2: After content is hidden, update what needs to change
           setTimeout(() => {
             try {
+              // Determine which content to show
+              // Priority: filters > pub > slider
+              let newContent = "slider";
+              if (hasFilters) {
+                newContent = "filters";
+              } else if (hasPub) {
+                newContent = "pub";
+              }
+
               // Update content type
-              setActiveContent(hasPub ? "pub" : "slider");
+              setActiveContent(newContent as "pub" | "slider" | "filters");
 
               // Update height if needed
               if (transitionType !== "update") {
-                setIsExpanded(hasPub);
+                setIsExpanded(hasPub || hasFilters);
               }
 
               // Step 3: After height transition completes (if any), show content
@@ -89,8 +116,9 @@ const ExpandableBottomDrawer = () => {
       // Run the animation
       animateTransition();
 
-      // Update ref for next comparison
+      // Update refs for next comparison
       prevSelectedPubRef.current = selectedPub;
+      prevViewFiltersRef.current = viewFilters;
     } catch (error) {
       console.error("Error in transition effect:", error);
       // Reset to a safe state
@@ -98,16 +126,31 @@ const ExpandableBottomDrawer = () => {
       setActiveContent("slider");
       setIsExpanded(false);
     }
-  }, [selectedPub]);
+  }, [selectedPub, viewFilters]);
 
-  // Initialize states based on initial selectedPub value
+  // Initialize states based on initial values
   useEffect(() => {
-    // Set initial states based on whether we have a selectedPub
+    // Set initial states based on whether we have a selectedPub or filters view
     const hasPub = !!selectedPub;
-    setIsExpanded(hasPub);
-    setActiveContent(hasPub ? "pub" : "slider");
+    const hasFilters = viewFilters;
+
+    // Determine initial expanded state and content type
+    setIsExpanded(hasPub || hasFilters);
+
+    // Priority: filters > pub > slider
+    let initialContent = "slider";
+    if (hasFilters) {
+      initialContent = "filters";
+    } else if (hasPub) {
+      initialContent = "pub";
+    }
+
+    setActiveContent(initialContent as "pub" | "slider" | "filters");
     setIsContentVisible(true); // Start with content visible
+
+    // Set initial ref values
     prevSelectedPubRef.current = selectedPub;
+    prevViewFiltersRef.current = viewFilters;
   }, []);
 
   return (
@@ -120,6 +163,7 @@ const ExpandableBottomDrawer = () => {
         {/* Only render one type of content at a time */}
         {activeContent === "pub" && <ViewPubDetails />}
         {activeContent === "slider" && <TimeSliderInternals />}
+        {activeContent === "filters" && <SelectFilterOptions />}
       </div>
     </div>
   );

@@ -3,12 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Providers
 import { GoogleMapsProvider } from "./GoogleMapsProvider";
-import { SunEvalsProvider } from "../_shared/providers/useSunEvals";
 import { PubProvider } from "../_shared/providers/PubProvider";
+import { SunEvalsProvider } from "../_shared/providers/useSunEvals";
+import { FiltersProvider } from "../_shared/providers/FiltersProvider";
+import { PubAreasProvider } from "../_shared/providers/PubAreasProvider";
 import { GeoLocationProvider } from "../_shared/providers/useGeolocationContext";
 import { MapSettingsProvider } from "../pages/scene/_shared/context/useMapSettingsContext";
 import { PubLabelsProvider } from "../pages/pub-labels/_shared/providers/PubLabelsProvider";
-import { PubAreasProvider } from "../_shared/providers/PubAreasProvider";
 
 export const GeneralProviders = ({ children }: any) => {
   const queryClient = new QueryClient({
@@ -26,7 +27,9 @@ export const GeneralProviders = ({ children }: any) => {
             <PubLabelsProvider>
               <GeoLocationProvider>
                 <SunEvalsProvider>
-                  <MapSettingsProvider>{children}</MapSettingsProvider>
+                  <FiltersProvider>
+                    <MapSettingsProvider>{children}</MapSettingsProvider>
+                  </FiltersProvider>
                 </SunEvalsProvider>
               </GeoLocationProvider>
               {/* <ReactQueryDevtools /> */}
