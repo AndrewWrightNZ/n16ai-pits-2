@@ -18,7 +18,7 @@ const DynamicSunIconWithBorder = ({
         ...(sunPercent >= 75
           ? { border: "2px solid #FFCC00" }
           : sunPercent < 50
-            ? { border: "2px solid #e5e7eb" }
+            ? { border: "2px solid #b7b7b7" }
             : {}),
       }}
     >
@@ -27,7 +27,7 @@ const DynamicSunIconWithBorder = ({
         <div
           className="absolute inset-0 rounded-full z-[-1]"
           style={{
-            background: "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+            background: "linear-gradient(to right, #FFCC00 50%, #b7b7b7 50%)",
             padding: "2px",
             transform: "rotate(45deg)",
             margin: "-2px",

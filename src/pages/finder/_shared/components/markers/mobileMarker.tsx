@@ -1,5 +1,4 @@
 import { Marker, OverlayView } from "@react-google-maps/api";
-import { useRef, useEffect } from "react";
 
 // Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
@@ -9,6 +8,7 @@ import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMa
 
 // Components
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
+import useFilters from "../../../../../_shared/hooks/filters/useFilters";
 
 interface MobileMarkerProps {
   mapMarker: MapReadyMarker;
@@ -20,33 +20,23 @@ const getPixelPositionOffset = () => ({
 });
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
-  // Track component mounted state to prevent updates after unmount
-  const isMountedRef = useRef(true);
-
   // Variables
   const { bestSunPercent = 0, pub } = mapMarker || {};
   const { id: pubId, latitude, longitude } = pub || {};
-
-  // Set up effect to track component mounting state
-  useEffect(() => {
-    // Component is mounted
-    isMountedRef.current = true;
-
-    // Cleanup function to run when component unmounts
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   // Hooks
   const {
     operations: { onSetSelectedPubById },
   } = usePubAreas();
+  const {
+    data: { viewFilters },
+    operations: { onToggleViewFilters },
+  } = useFilters();
 
   const handleClick = () => {
-    // Only update if component is still mounted
-    if (isMountedRef.current) {
-      onSetSelectedPubById(pubId);
+    onSetSelectedPubById(pubId);
+    if (viewFilters) {
+      onToggleViewFilters();
     }
   };
 
@@ -86,7 +76,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
                     backgroundClip: "padding-box",
                     boxSizing: "border-box",
                   }
-                : { border: "2px solid #e5e7eb" }),
+                : { border: "2px solid #b7b7b7" }),
           }}
         >
           {/* Gradient border for middle tier */}
@@ -95,7 +85,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
               className="absolute inset-0 rounded-full z-[-1]"
               style={{
                 background:
-                  "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                  "linear-gradient(to right, #FFCC00 50%, #b7b7b7 50%)",
                 padding: "2px",
                 transform: "rotate(45deg)",
                 margin: "-2px",

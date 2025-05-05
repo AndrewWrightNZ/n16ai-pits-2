@@ -1,11 +1,11 @@
 import { useEffect, useState, useRef } from "react";
 
 // Hooks
+import useDeviceDetect from "../../../../../_shared/hooks/useDeviceDetect";
 import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 
 // Helpers
 import { formatTimeSlot } from "../../helpers";
-import useDeviceDetect from "../../../../../_shared/hooks/useDeviceDetect";
 
 const TimeSliderInternals = () => {
   //
@@ -87,15 +87,15 @@ const TimeSliderInternals = () => {
   const maxSliderValue = 36; // 9pm
 
   return (
-    <div className="flex w-full gap-4 mt-6">
+    <div className="flex w-full gap-4 mt-2 md:mt-6 md:px-4">
       {/* Left div (20% width) with time display */}
-      <div className="w-[20%] flex flex-col justify-center">
+      <div className="w-[20%] md:w-[100px] flex flex-col justify-center">
         <div className="text-sm mb-2">Today</div>
         <div className="font-black">{formatTimeSlot(sliderValue)}</div>
       </div>
 
       {/* Right div (80% width) with slider */}
-      <div className="w-[80%] flex items-center relative">
+      <div className="w-[80%] md:w-[calc(100%-100px)] flex items-center relative">
         {/* Tooltip - always visible with arrow */}
         {!isMobile && (
           <div

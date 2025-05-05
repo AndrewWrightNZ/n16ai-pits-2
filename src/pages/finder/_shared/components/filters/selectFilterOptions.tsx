@@ -3,10 +3,7 @@ import useFilters from "../../../../../_shared/hooks/filters/useFilters";
 import useHeroMetrics from "../../../../../_shared/hooks/heroMetrics/useHeroMetrics";
 
 // Enums
-import {
-  AreaType,
-  SunQuality,
-} from "../../../../../_shared/providers/FiltersProvider";
+import { AreaType } from "../../../../../_shared/providers/FiltersProvider";
 
 // Helpers
 import {
@@ -25,32 +22,34 @@ const SelectFilterOptions = () => {
   // Hooks
   const {
     data: {
+      // Options
       sunQualityOptions = [],
-      sunQualityFilters = [],
       areaTypeOptions = [],
+
+      // Filters
+      sunQualityFilters = [],
       areaTypeFilters = [],
+
+      // Pubs filtered by sun quality
+      pubsToShowAfterFilteringBySunQuality = [],
+      areaTypesToShowAfterFilteringBySunQuality = [],
+
+      // Areas filtered by area type
+      areaTypesToShowAfterFilteringByAreaType = [],
     },
     operations: { onSunQualityFilterClick, onAreaTypeFilterClick },
   } = useFilters();
 
-  console.log("areaTypeOptions", { areaTypeOptions });
-
   const {
-    data: {
-      goodSunCount = 0,
-      someSunCount = 0,
-      noneSunCount = 0,
-      allMapReadyAreas = [],
-    },
+    data: { goodSunCount = 0, someSunCount = 0, noneSunCount = 0 },
   } = useHeroMetrics();
 
-  // Calculate the number of pubs to show based on selected sun quality filters
-  const numberOfPubsToShow = sunQualityFilters.reduce((total, option) => {
-    if (option === SunQuality.GOOD) return total + goodSunCount;
-    if (option === SunQuality.SOME) return total + someSunCount;
-    if (option === SunQuality.NO) return total + noneSunCount;
-    return total;
-  }, 0);
+  //
+
+  // Variables
+
+  const showingAllPubs = sunQualityFilters.length === sunQualityOptions.length;
+  const showingAllAreas = areaTypeFilters.length === areaTypeOptions.length;
 
   //
 
@@ -76,7 +75,7 @@ const SelectFilterOptions = () => {
             <button
               key={option}
               onClick={() => onSunQualityFilterClick(option)}
-              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 border-slate-800 p-2 ${isSelected ? "border-[#2962FF] opacity-100 " : "border-gray-100 opacity-30 cursor-not-allowed"}`}
+              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 p-2 ${isSelected ? "border-gray-800 opacity-100 " : "border-gray-600 opacity-30 cursor-not-allowed"}`}
             >
               <DynamicSunIconWithBorder
                 sunPercent={getSunPercentageFromOption(option)}
@@ -95,7 +94,8 @@ const SelectFilterOptions = () => {
       </div>
 
       <p className="text-xs font-normal mt-2">
-        Showing: {numberOfPubsToShow} Pubs
+        {showingAllPubs ? "Showing all Pubs" : "Filtered to: "}
+        <strong>{pubsToShowAfterFilteringBySunQuality.length} pubs</strong>
       </p>
 
       <p className="text-xs font-bold mt-4">Area Type</p>
@@ -104,15 +104,19 @@ const SelectFilterOptions = () => {
         {areaTypeOptions.map((option: AreaType) => {
           const isSelected = areaTypeFilters.includes(option);
 
-          const count = allMapReadyAreas.filter(
-            (area) => area.type === option
-          ).length;
+          const areasForType = areaTypesToShowAfterFilteringBySunQuality.filter(
+            ({ type }) => type === option
+          );
+
+          console.log({
+            areasForType,
+          });
 
           return (
             <button
               key={option}
               onClick={() => onAreaTypeFilterClick(option)}
-              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 border-slate-800 p-2 ${isSelected ? "border-[#2962FF] opacity-100 " : "border-gray-100 opacity-30 cursor-not-allowed"}`}
+              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 p-3 ${isSelected ? "border-gray-800 opacity-100 " : "border-gray-600 opacity-30 cursor-not-allowed"}`}
             >
               {isSelected ? (
                 <Check className="w-4 h-4" />
@@ -124,12 +128,25 @@ const SelectFilterOptions = () => {
               </p>
 
               <p className="text-xs font-normal font-poppins">
-                ({count} Areas)
+                ({areasForType.length} Areas)
               </p>
             </button>
           );
         })}
       </div>
+
+      <p className="text-xs font-normal mt-2">
+        {showingAllAreas ? (
+          "Showing all Areas"
+        ) : (
+          <>
+            Filtered to:{" "}
+            <strong>
+              {areaTypesToShowAfterFilteringByAreaType.length} areas
+            </strong>
+          </>
+        )}
+      </p>
     </div>
   );
 };

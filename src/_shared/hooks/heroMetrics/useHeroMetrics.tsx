@@ -17,7 +17,12 @@ interface AreaTypeCount {
 
 interface HeroMetricsResponse {
   data: {
-    // Raw sun quality counts
+    // Raw values
+    rawGoodSunPubs: MapReadyMarker[];
+    rawSomeSunPubs: MapReadyMarker[];
+    rawNoneSunPubs: MapReadyMarker[];
+
+    // Counts
     goodSunCount: number;
     someSunCount: number;
     noneSunCount: number;
@@ -126,11 +131,20 @@ const useHeroMetrics = (): HeroMetricsResponse => {
     []
   );
 
-  const noneSunCount = allMapReadyPubs.length - goodSunCount - someSunCount;
+  const rawNoneSunPubs = allMapReadyPubs.filter(
+    (pub) => pub.bestSunPercent < SUN_THRESHOLDS.SOME
+  );
+
+  const noneSunCount = rawNoneSunPubs.length;
 
   return {
     data: {
-      // Raw counts
+      // Raw pubs
+      rawGoodSunPubs,
+      rawSomeSunPubs,
+      rawNoneSunPubs,
+
+      // Counts
       goodSunCount,
       someSunCount,
       noneSunCount,
