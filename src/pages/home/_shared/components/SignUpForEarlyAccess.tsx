@@ -37,7 +37,7 @@ const SignUpForEarlyAccess = () => {
         </p>
       ) : (
         <>
-          <div className="flex flex-row items-center justify-start gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-start gap-4">
             <input
               type="email"
               autoFocus
