@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Helpers
 import { formatHumanized, formatRealTime } from "../../helpers";
@@ -17,16 +17,23 @@ const TimeLeftInTheSun = ({ minutesLeftInSun }: TimeLeftInTheSunProps) => {
     formatRealTime(minutesLeftInSun)
   );
 
+  // Use refs to keep track of timers for safe cleanup
+  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
   // Effect to toggle between formats every 5 seconds
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
     const toggleFormat = () => {
       // Step 1: Fade out
       setIsVisible(false);
 
       // Step 2: After fade out completes, update the content
-      timeoutId = setTimeout(() => {
+      // Clear any existing timeout first
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
+
+      timeoutIdRef.current = setTimeout(() => {
         const nextShowHumanized = !showHumanized;
         setShowHumanized(nextShowHumanized);
         setCurrentText(
@@ -40,12 +47,23 @@ const TimeLeftInTheSun = ({ minutesLeftInSun }: TimeLeftInTheSunProps) => {
       }, 300); // Match the transition duration
     };
 
-    const intervalId = setInterval(toggleFormat, 5000);
+    // Clear any existing interval first
+    if (intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+    }
+
+    intervalIdRef.current = setInterval(toggleFormat, 5000);
 
     // Cleanup interval and timeout on unmount
     return () => {
-      clearInterval(intervalId);
-      clearTimeout(timeoutId);
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
     };
   }, [showHumanized, minutesLeftInSun]);
 

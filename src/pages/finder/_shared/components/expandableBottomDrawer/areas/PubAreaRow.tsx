@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import DynamicSunIcon from "../../../../../../_shared/components/dynamicSunIcon";
 import { formatSunPercentage } from "../../../../../../_shared/helpers";
 import { SimplePubAreaWithSunPc } from "../../../../../../_shared/hooks/mapMarkers/useMapMarkers";
@@ -34,6 +34,10 @@ const PubAreaRow = ({ area }: PubAreaRowProps) => {
 
   //
 
+  // Use refs to keep track of timers for safe cleanup
+  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
   // Effects
   useEffect(() => {
     const toggleFormat = () => {
@@ -41,7 +45,12 @@ const PubAreaRow = ({ area }: PubAreaRowProps) => {
       setIsVisible(false);
 
       // Step 2: After fade out completes, update the content
-      setTimeout(() => {
+      // Clear any existing timeout first
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
+
+      timeoutIdRef.current = setTimeout(() => {
         const nextShowHumanized = !humanizeAreaValue;
         setHumanizeAreaValue(nextShowHumanized);
         setCurrentText(
@@ -55,10 +64,24 @@ const PubAreaRow = ({ area }: PubAreaRowProps) => {
       }, 300); // Match the transition duration
     };
 
-    const intervalId = setInterval(toggleFormat, 5000);
+    // Clear any existing interval first
+    if (intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+    }
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
+    intervalIdRef.current = setInterval(toggleFormat, 5000);
+
+    // Cleanup interval and timeout on unmount
+    return () => {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+    };
   }, [humanizeAreaValue, area.floor_area]);
 
   //
