@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 import useHeroMetrics from "../../../../../_shared/hooks/heroMetrics/useHeroMetrics";
+import { usePubAreasContext } from "../../../../../_shared/providers/PubAreasProvider";
 
 // Constants
 import { SUN_THRESHOLDS } from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
@@ -37,6 +38,9 @@ const ViewPubDetails = () => {
     operations: { onSetSelectedPub },
   } = usePubAreas();
 
+  // Get direct access to context for fallback
+  const { updatePubAreasState } = usePubAreasContext();
+
   const {
     data: { allMapReadyPubs },
   } = useHeroMetrics();
@@ -52,7 +56,16 @@ const ViewPubDetails = () => {
 
     // Step 2: After 200ms, process the onSetSelectedPub(null) action
     setTimeout(() => {
-      onSetSelectedPub(null);
+      try {
+        onSetSelectedPub(null);
+      } catch (error) {
+        console.error("Error when setting selected pub to null:", error);
+        // Fallback: Force a reset of the selected pub ID directly through context
+        updatePubAreasState({
+          selectedPubId: 0,
+          selectedPubArea: null,
+        });
+      }
     }, 200);
   };
 

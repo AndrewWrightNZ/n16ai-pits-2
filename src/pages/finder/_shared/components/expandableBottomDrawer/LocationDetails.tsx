@@ -19,7 +19,7 @@ const LcoationDteails = () => {
   //
 
   // Variables
-  const { latitude, longitude } = selectedPub || { latitude: 0, longitude: 0 };
+  const { latitude, longitude } = selectedPub || {};
 
   // Calculate distance between user and pub using Haversine formula
   const distanceFromUser = useMemo(() => {

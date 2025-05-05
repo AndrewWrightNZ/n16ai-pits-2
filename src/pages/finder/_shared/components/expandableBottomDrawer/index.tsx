@@ -30,42 +30,70 @@ const ExpandableBottomDrawer = () => {
 
   // Handle transitions between pub states
   useEffect(() => {
-    const hadPub = prevSelectedPubRef.current !== null;
-    const hasPub = selectedPub !== null;
+    try {
+      const hadPub = prevSelectedPubRef.current !== null;
+      const hasPub = selectedPub !== null;
 
-    // Determine the transition type
-    const transitionType =
-      !hadPub && hasPub ? "expand" : hadPub && !hasPub ? "collapse" : "update";
+      // Determine the transition type
+      const transitionType =
+        !hadPub && hasPub ? "expand" : hadPub && !hasPub ? "collapse" : "update";
 
-    // Common animation pattern for all transitions
-    const animateTransition = () => {
-      // Step 1: Hide content
-      setIsContentVisible(false);
+      // Common animation pattern for all transitions
+      const animateTransition = () => {
+        try {
+          // Step 1: Hide content
+          setIsContentVisible(false);
 
-      // Step 2: After content is hidden, update what needs to change
-      setTimeout(() => {
-        // Update content type
-        setActiveContent(hasPub ? "pub" : "slider");
+          // Step 2: After content is hidden, update what needs to change
+          setTimeout(() => {
+            try {
+              // Update content type
+              setActiveContent(hasPub ? "pub" : "slider");
 
-        // Update height if needed
-        if (transitionType !== "update") {
-          setIsExpanded(hasPub);
-        }
+              // Update height if needed
+              if (transitionType !== "update") {
+                setIsExpanded(hasPub);
+              }
 
-        // Step 3: After height transition completes (if any), show content
-        const showContentDelay =
-          transitionType !== "update" ? HEIGHT_DURATION : 0;
-        setTimeout(() => {
+              // Step 3: After height transition completes (if any), show content
+              const showContentDelay =
+                transitionType !== "update" ? HEIGHT_DURATION : 0;
+              setTimeout(() => {
+                try {
+                  setIsContentVisible(true);
+                } catch (error) {
+                  console.error("Error in final animation step:", error);
+                  // Ensure content becomes visible even if there's an error
+                  setIsContentVisible(true);
+                }
+              }, showContentDelay);
+            } catch (error) {
+              console.error("Error during content type update:", error);
+              // Fallback: ensure we at least show some content
+              setActiveContent("slider");
+              setIsExpanded(false);
+              setIsContentVisible(true);
+            }
+          }, FADE_DURATION);
+        } catch (error) {
+          console.error("Error starting animation transition:", error);
+          // Fallback to a safe state
           setIsContentVisible(true);
-        }, showContentDelay);
-      }, FADE_DURATION);
-    };
+        }
+      };
 
-    // Run the animation
-    animateTransition();
+      // Run the animation
+      animateTransition();
 
-    // Update ref for next comparison
-    prevSelectedPubRef.current = selectedPub;
+      // Update ref for next comparison
+      prevSelectedPubRef.current = selectedPub;
+    } catch (error) {
+      console.error("Error in transition effect:", error);
+      // Reset to a safe state
+      setIsContentVisible(true);
+      setActiveContent("slider");
+      setIsExpanded(false);
+    }
   }, [selectedPub]);
 
   // Initialize states based on initial selectedPub value
