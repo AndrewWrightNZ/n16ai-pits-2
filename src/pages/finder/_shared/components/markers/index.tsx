@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 
 // Hooks
 import useMapMarkers from "../../../../../_shared/hooks/mapMarkers/useMapMarkers";
-import useDeviceDetect from "../../../../../_shared/hooks/useDeviceDetect";
 
 // Components
-import CustomMarker from "./customMarker";
 import MobileMarker from "./mobileMarker";
 
 const RenderFilteredMarkers = () => {
@@ -16,8 +14,6 @@ const RenderFilteredMarkers = () => {
   const {
     data: { filteredBySunQualityMarkers = [] },
   } = useMapMarkers();
-
-  const { isMobile } = useDeviceDetect();
 
   // Set up effect to track component mounting state
   useEffect(() => {
@@ -36,35 +32,21 @@ const RenderFilteredMarkers = () => {
     !filteredBySunQualityMarkers ||
     filteredBySunQualityMarkers.length === 0
   ) {
-    return null;
+    return <></>;
   }
 
   // Safely render markers with error boundary pattern
   try {
     return (
       <>
-        {isMobile ? (
-          <>
-            {filteredBySunQualityMarkers.map((mapMarker) =>
-              mapMarker && mapMarker.pub && mapMarker.pub.id ? (
-                <MobileMarker key={mapMarker.pub.id} mapMarker={mapMarker} />
-              ) : null
-            )}
-          </>
-        ) : (
-          <>
-            {filteredBySunQualityMarkers.map((mapMarker) =>
-              mapMarker && mapMarker.pub && mapMarker.pub.id ? (
-                <CustomMarker key={mapMarker.pub.id} mapMarker={mapMarker} />
-              ) : null
-            )}
-          </>
-        )}
+        {filteredBySunQualityMarkers.map((mapMarker) => (
+          <MobileMarker key={mapMarker?.pub?.id} mapMarker={mapMarker} />
+        ))}
       </>
     );
   } catch (error) {
     console.error("Error rendering markers:", error);
-    return null;
+    return <></>;
   }
 };
 

@@ -16,14 +16,14 @@ const DynamicSunIcon = ({ sunPercent, className }: DynamicSunIconProps) => {
         maskSize: "contain",
         WebkitMaskSize: "contain",
         ...(sunPercent >= 75
-          ? { backgroundColor: "#FFCC00" }
+          ? { backgroundColor: "#ffc400" }
           : sunPercent >= 50
             ? {
                 background:
-                  "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                  "linear-gradient(to right, #ffc400 50%, #b7b7b7 50%)",
                 transform: "rotate(45deg)",
               }
-            : { backgroundColor: "#e5e7eb" }),
+            : { backgroundColor: "#b7b7b7" }),
       }}
       aria-label="Sun"
     />

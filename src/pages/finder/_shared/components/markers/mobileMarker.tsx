@@ -86,7 +86,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
                     backgroundClip: "padding-box",
                     boxSizing: "border-box",
                   }
-                : { border: "2px solid #e5e7eb" }),
+                : { border: "2px solid #b7b7b7" }),
           }}
         >
           {/* Gradient border for middle tier */}
@@ -95,7 +95,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
               className="absolute inset-0 rounded-full z-[-1]"
               style={{
                 background:
-                  "linear-gradient(to right, #FFCC00 50%, #e5e7eb 50%)",
+                  "linear-gradient(to right, #FFCC00 50%, #b7b7b7 50%)",
                 padding: "2px",
                 transform: "rotate(45deg)",
                 margin: "-2px",

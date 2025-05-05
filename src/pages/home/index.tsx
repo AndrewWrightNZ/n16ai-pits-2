@@ -86,7 +86,7 @@ function App() {
       const currentType = areaTypeCountsWithSomeSun[currentAreaTypeIndex];
       if (currentType) {
         setPrimaryActionButtonText(
-          `${currentType.count} ${formatAreaType(currentType.type)}s`
+          `${currentType.count} sunny ${formatAreaType(currentType.type)}s`
         );
       }
 
@@ -192,7 +192,7 @@ function App() {
           </div>
 
           {/* Content container */}
-          <div className="relative flex flex-col z-20 w-[85vw] md:w-[80vw] mx-auto mt-[350px] md:mt-[20vh] md:mt-0">
+          <div className="relative flex flex-col z-20 w-[85vw] md:w-[80vw] mx-auto mt-[275px] md:mt-[20vh] md:mt-0">
             {/* Content wrapper with opacity transition */}
             <div
               className={`transition-all duration-1000 ${

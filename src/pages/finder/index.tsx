@@ -4,13 +4,9 @@ import { useState, useEffect, useCallback } from "react";
 
 // Hooks
 import usePubs from "../../_shared/hooks/pubs/usePubs";
-import useDeviceDetect from "../../_shared/hooks/useDeviceDetect";
 import usePubAreas from "../../_shared/hooks/pubAreas/usePubAreas";
 
 // Components
-import PubCounts from "./_shared/components/counts";
-import TimeSlider from "./_shared/components/timeSlider";
-import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
 import RenderFilteredMarkers from "./_shared/components/markers";
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import ExpandableBottomDrawer from "./_shared/components/expandableBottomDrawer";
@@ -41,8 +37,6 @@ function Finder() {
   const {
     data: { selectedPub = null },
   } = usePubAreas();
-
-  const { isMobile } = useDeviceDetect();
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -144,12 +138,6 @@ function Finder() {
         >
           <PubInTheSunMapHeader />
           {!selectedPub?.id && <OpenCloseFiltersButton />}
-          {!isMobile && (
-            <>
-              <PubCounts />
-              <AreaTypeFilter />
-            </>
-          )}
           <RenderFilteredMarkers />
           {userLocation && (
             <Marker
@@ -169,7 +157,7 @@ function Finder() {
             />
           )}
 
-          {isMobile ? <ExpandableBottomDrawer /> : <TimeSlider />}
+          <ExpandableBottomDrawer />
         </GoogleMap>
       </main>
     </>

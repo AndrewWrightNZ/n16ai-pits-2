@@ -76,7 +76,7 @@ const SelectFilterOptions = () => {
             <button
               key={option}
               onClick={() => onSunQualityFilterClick(option)}
-              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 border-slate-800 p-2 ${isSelected ? "border-[#2962FF] opacity-100 " : "border-gray-100 opacity-30 cursor-not-allowed"}`}
+              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 p-2 ${isSelected ? "border-gray-800 opacity-100 " : "border-gray-100 opacity-30 cursor-not-allowed"}`}
             >
               <DynamicSunIconWithBorder
                 sunPercent={getSunPercentageFromOption(option)}
@@ -112,7 +112,7 @@ const SelectFilterOptions = () => {
             <button
               key={option}
               onClick={() => onAreaTypeFilterClick(option)}
-              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 border-slate-800 p-2 ${isSelected ? "border-[#2962FF] opacity-100 " : "border-gray-100 opacity-30 cursor-not-allowed"}`}
+              className={`flex flex-row items-center transition-all rounded-[20px] duration-300 cursor-pointer justify-center gap-2 border-2 p-2 ${isSelected ? "border-gray-800 opacity-100 " : "border-gray-100 opacity-30 cursor-not-allowed"}`}
             >
               {isSelected ? (
                 <Check className="w-4 h-4" />
