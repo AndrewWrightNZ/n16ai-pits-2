@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 // Helpers
 import { formatHumanized, formatRealTime } from "../../helpers";
@@ -17,52 +17,53 @@ const TimeLeftInTheSun = ({ minutesLeftInSun }: TimeLeftInTheSunProps) => {
     formatRealTime(minutesLeftInSun)
   );
 
-  // Use refs to keep track of timers for safe cleanup
-  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Effect to toggle between formats every 5 seconds
+  // Effect to toggle between formats based on current time
   useEffect(() => {
-    const toggleFormat = () => {
-      // Step 1: Fade out
-      setIsVisible(false);
+    // Function to check if we should show humanized format based on current time
+    const checkTimeAndUpdateFormat = () => {
+      const now = new Date();
+      const seconds = now.getSeconds();
+      // Determine if we should show humanized format based on 10-second intervals
+      // (0-9 seconds: real time format, 10-19 seconds: humanized format)
+      const shouldShowHumanized = Math.floor(seconds / 10) % 2 === 1;
 
-      // Step 2: After fade out completes, update the content
-      // Clear any existing timeout first
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
+      // Only update if the format has changed to avoid unnecessary re-renders
+      if (shouldShowHumanized !== showHumanized) {
+        // Step 1: Fade out
+        setIsVisible(false);
+
+        // Step 2: After fade out completes, update the content
+        setTimeout(() => {
+          setShowHumanized(shouldShowHumanized);
+          setCurrentText(
+            shouldShowHumanized
+              ? formatHumanized(minutesLeftInSun)
+              : formatRealTime(minutesLeftInSun)
+          );
+
+          // Step 3: Fade back in
+          setIsVisible(true);
+        }, 300); // Match the transition duration
       }
-
-      timeoutIdRef.current = setTimeout(() => {
-        const nextShowHumanized = !showHumanized;
-        setShowHumanized(nextShowHumanized);
-        setCurrentText(
-          nextShowHumanized
-            ? formatHumanized(minutesLeftInSun)
-            : formatRealTime(minutesLeftInSun)
-        );
-
-        // Step 3: Fade back in
-        setIsVisible(true);
-      }, 300); // Match the transition duration
     };
 
-    // Clear any existing interval first
-    if (intervalIdRef.current) {
-      clearInterval(intervalIdRef.current);
-    }
+    // Initial check
+    checkTimeAndUpdateFormat();
 
-    intervalIdRef.current = setInterval(toggleFormat, 5000);
+    // Set up a single requestAnimationFrame loop that checks the time
+    let animationFrameId: number;
 
-    // Cleanup interval and timeout on unmount
+    const updateLoop = () => {
+      checkTimeAndUpdateFormat();
+      animationFrameId = requestAnimationFrame(updateLoop);
+    };
+
+    animationFrameId = requestAnimationFrame(updateLoop);
+
+    // Cleanup on unmount
     return () => {
-      if (intervalIdRef.current) {
-        clearInterval(intervalIdRef.current);
-        intervalIdRef.current = null;
-      }
-      if (timeoutIdRef.current) {
-        clearTimeout(timeoutIdRef.current);
-        timeoutIdRef.current = null;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
       }
     };
   }, [showHumanized, minutesLeftInSun]);
