@@ -13,6 +13,7 @@ import AreaTypeFilter from "./_shared/components/areaTypeFIlter";
 import RenderFilteredMarkers from "./_shared/components/markers";
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import ExpandableBottomDrawer from "./_shared/components/expandableBottomDrawer";
+import OpenCloseFiltersButton from "./_shared/components/filters/openCloseFiltersButton";
 
 // Default center (London)
 const defaultCenter = {
@@ -138,6 +139,7 @@ function Finder() {
           }}
         >
           <PubInTheSunMapHeader />
+          <OpenCloseFiltersButton />
           {!isMobile && (
             <>
               <PubCounts />
