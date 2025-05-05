@@ -172,7 +172,8 @@ resource "aws_ecs_task_definition" "n16-pits-azul-staging-task" {
       environment : [
         { name : "VITE_SUPABASE_URL", value : var.VITE_SUPABASE_URL },
         { name : "VITE_SUPABASE_ANON_KEY", value : var.VITE_SUPABASE_ANON_KEY },
-        { name : "VITE_GOOGLE_MAPS_API_KEY", value : var.VITE_GOOGLE_MAPS_API_KEY }
+        { name : "VITE_GOOGLE_MAPS_API_KEY", value : var.VITE_GOOGLE_MAPS_API_KEY },
+        { name : "VITE_ENCRYPTION_KEY", value : var.VITE_ENCRYPTION_KEY },
       ]
     }
   ])
