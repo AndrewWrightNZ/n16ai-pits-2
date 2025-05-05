@@ -5,6 +5,8 @@ import { Pub, PubArea } from "../../types";
 import usePubs from "../pubs/usePubs";
 import useSunEvals from "../sunEvals/useSunEvals";
 import usePubAreas, { PubWithAreaAndSunEval } from "../pubAreas/usePubAreas";
+import useFilters from "../filters/useFilters";
+import { SunQuality } from "../../providers/FiltersProvider";
 
 export interface SimplePubAreaWithSunPc {
   id: number;
@@ -61,8 +63,12 @@ const useMapMarkers = (): MapMarkersResponse => {
     data: { allAvailableAreas = [] },
   } = usePubAreas();
   const {
-    data: { sunEvalsForTimeslot = [], sunQualitySelected = [] },
+    data: { sunEvalsForTimeslot = [] },
   } = useSunEvals();
+
+  const {
+    data: { sunQualityFilters = [] },
+  } = useFilters();
 
   // Filter areas to only those that belong to pubs in map bounds
   const areasInMapBounds = allAvailableAreas.filter((area) =>
@@ -123,18 +129,18 @@ const useMapMarkers = (): MapMarkersResponse => {
   // Filter markers by selected sun quality in a single operation
   const filteredBySunQualityMarkers = mapReadyMarkers.filter((marker) => {
     if (
-      sunQualitySelected.includes("good") &&
+      sunQualityFilters.includes(SunQuality.GOOD) &&
       marker.bestSunPercent >= SUN_THRESHOLDS.GOOD
     )
       return true;
     if (
-      sunQualitySelected.includes("some") &&
+      sunQualityFilters.includes(SunQuality.SOME) &&
       marker.bestSunPercent >= SUN_THRESHOLDS.SOME &&
       marker.bestSunPercent < SUN_THRESHOLDS.GOOD
     )
       return true;
     if (
-      sunQualitySelected.includes("no") &&
+      sunQualityFilters.includes(SunQuality.NO) &&
       marker.bestSunPercent < SUN_THRESHOLDS.SOME
     )
       return true;
