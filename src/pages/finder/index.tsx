@@ -138,8 +138,12 @@ function Finder() {
           }}
         >
           <PubInTheSunMapHeader />
-          <PubCounts />
-          <AreaTypeFilter />
+          {!isMobile && (
+            <>
+              <PubCounts />
+              <AreaTypeFilter />
+            </>
+          )}
           <RenderFilteredMarkers />
           {userLocation && (
             <Marker

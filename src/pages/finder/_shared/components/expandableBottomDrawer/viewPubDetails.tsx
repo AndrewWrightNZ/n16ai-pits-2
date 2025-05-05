@@ -127,9 +127,9 @@ const ViewPubDetails = () => {
 
   return (
     <div
-      className={`flex h-[75vh] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
+      className={`flex h-[calc(75vh-12px)] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
     >
-      <div className="flex flex-col h-[calc(75vh-74px)] overflow-y-auto pt-4">
+      <div className="flex flex-col h-[calc(75vh-72px)] overflow-y-auto pt-4">
         {/* Header with pub name and sun icon */}
 
         <div className="flex flex-row items-center gap-4 mb-8">
@@ -175,7 +175,7 @@ const ViewPubDetails = () => {
         <LocationDetails />
       </div>
 
-      <div className="relative flex flex-col h-[74px] justify-start border-l-0 border-r-0 border-b-0 border-t border-2 border-gray-200 pt-2 shadow-[0_-6px_8px_-4px_rgba(0,0,0,0.1)]">
+      <div className="relative flex flex-col h-[50px] justify-start border-l-0 border-r-0 border-b-0 border-t border-2 border-gray-200 shadow-[0_-6px_8px_-4px_rgba(0,0,0,0.1)]">
         {/* White gradient fade effect for scrolling content */}
         <div className="absolute -top-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none z-10 border-b-2 border-gray-200"></div>
         <button

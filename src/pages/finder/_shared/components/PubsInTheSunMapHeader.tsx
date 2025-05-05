@@ -3,9 +3,9 @@ import sunLogo from "../../../../assets/biggerBolderSun.svg";
 
 const PubInTheSunMapHeader = () => {
   return (
-    <div className="fixed flex flex-row items-center gap-4 top-2 left-2 rounded-[30px] bg-[#2962FF] p-4">
+    <div className="fixed flex flex-row items-center gap-2 top-2 left-2 rounded-[30px] bg-[#2962FF] p-4 border-white border-2">
       <div
-        className="w-[30px] h-[30px]"
+        className="w-[24px] h-[24px]"
         style={{
           maskImage: `url(${sunLogo})`,
           WebkitMaskImage: `url(${sunLogo})`,
@@ -15,7 +15,7 @@ const PubInTheSunMapHeader = () => {
         }}
         aria-label="Sun"
       />
-      <h1 className="font-black text-white text-xl">Pubs In The Sun</h1>
+      <h1 className="font-black text-white text-sm mr-1">Pubs In The Sun</h1>
     </div>
   );
 };

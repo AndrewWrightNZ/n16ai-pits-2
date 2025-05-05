@@ -14,9 +14,9 @@ interface MobileMarkerProps {
   mapMarker: MapReadyMarker;
 }
 
-const getPixelPositionOffset = (width: number, height: number) => ({
-  x: -(width / 2),
-  y: -(height / 2),
+const getPixelPositionOffset = () => ({
+  x: -30,
+  y: -30,
 });
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
@@ -31,7 +31,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
   useEffect(() => {
     // Component is mounted
     isMountedRef.current = true;
-    
+
     // Cleanup function to run when component unmounts
     return () => {
       isMountedRef.current = false;
