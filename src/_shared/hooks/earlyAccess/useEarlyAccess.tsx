@@ -70,7 +70,11 @@ const useEarlyAccess = (): EarlyAccessResponse => {
       enteredAccessCode: accessCode,
     });
 
-    const isCodeValid = VALID_ACCESS_CODES.includes(accessCode);
+    const accessCodesToLower = VALID_ACCESS_CODES.map((code) =>
+      code.toLowerCase()
+    );
+
+    const isCodeValid = accessCodesToLower.includes(accessCode.toLowerCase());
 
     //
 
