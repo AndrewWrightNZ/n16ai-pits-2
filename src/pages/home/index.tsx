@@ -168,9 +168,17 @@ function App() {
     }
 
     if (showAccessCodeEnteredSuccess && !hasConfirmedEntry) {
+      // First show the success message for a few seconds
       setTimeout(() => {
-        onUnlockEarlyAccess();
-      }, 5000);
+        // Then fade out the elements before unlocking
+        setIsFadingOut(true);
+        setIsSunFadingOut(true);
+
+        // After fade-out completes, unlock early access
+        setTimeout(() => {
+          onUnlockEarlyAccess();
+        }, 1500);
+      }, 3500);
     }
   }, [showAccessCodeEnteredSuccess, hasConfirmedEntry, navigate]);
 
