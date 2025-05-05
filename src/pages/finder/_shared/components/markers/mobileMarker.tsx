@@ -1,6 +1,7 @@
 import { Marker, OverlayView } from "@react-google-maps/api";
 
 // Hooks
+import useFilters from "../../../../../_shared/hooks/filters/useFilters";
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Types
@@ -8,16 +9,13 @@ import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMa
 
 // Components
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
-import useFilters from "../../../../../_shared/hooks/filters/useFilters";
+
+// Helpers
+import { getPixelPositionOffset } from "../../helpers";
 
 interface MobileMarkerProps {
   mapMarker: MapReadyMarker;
 }
-
-const getPixelPositionOffset = () => ({
-  x: -30,
-  y: -30,
-});
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
   // Variables

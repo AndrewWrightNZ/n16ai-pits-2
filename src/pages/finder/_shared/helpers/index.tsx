@@ -99,3 +99,8 @@ export const formatSunQualityFilterOption = (option: string) => {
       return "None";
   }
 };
+
+export const getPixelPositionOffset = () => ({
+  x: -30,
+  y: -30,
+});

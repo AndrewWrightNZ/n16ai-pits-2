@@ -78,9 +78,7 @@ const PubAreaRow = ({ area }: PubAreaRowProps) => {
   return (
     <div className="flex flex-row items-center justify-between bg-slate-50 p-3 rounded-md text-xs">
       <div className="flex flex-col justify-start items-start gap-2">
-        <span className="font-bold font-poppins">
-          {formatAreaType(area.type)}
-        </span>
+        <p className="font-bold font-poppins">{formatAreaType(area.type)}</p>
 
         <p className={`text-slate-600`}>
           Size:{" "}

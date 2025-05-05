@@ -153,7 +153,7 @@ const ViewPubDetails = () => {
         <h4 className="text-xs font-semibold mb-2">Sun Quality</h4>
         <div className="grid grid-cols-2 gap-2 mb-6 text-xs">
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="font-semibold mb-1">Area in the sun</h4>
+            <h4 className="font-bold mb-1">Area in the sun</h4>
             <div className="flex items-center gap-1">
               <p className="text-sm font-bold font-poppins">
                 {formatSunPercentage(bestSunPercent)}%
@@ -165,7 +165,7 @@ const ViewPubDetails = () => {
             </p>
           </div>
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="font-semibold mb-1">In the sun until</h4>
+            <h4 className="font-bold mb-1">In the sun until</h4>
             <div className="flex items-center gap-1">
               <p className="text-sm font-bold font-poppins whitespace-nowrap overflow-hidden">
                 {formatTimeSlot(latestSomeSunEval?.time || 0)}
