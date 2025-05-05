@@ -127,9 +127,9 @@ const ViewPubDetails = () => {
 
   return (
     <div
-      className={`flex h-[75vh] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
+      className={`flex h-[65vh] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
     >
-      <div className="flex flex-col h-[calc(75vh-74px)] overflow-y-auto pt-4">
+      <div className="flex flex-col h-[calc(65vh-74px)] overflow-y-auto pt-4">
         {/* Header with pub name and sun icon */}
 
         <div className="flex flex-row items-center gap-4 mb-8">
