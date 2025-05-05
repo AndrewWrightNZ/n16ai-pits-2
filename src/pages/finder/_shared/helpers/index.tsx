@@ -40,9 +40,9 @@ export const formatRealTime = (minutesLeftInSun: number) => {
   const minutes = minutesLeftInSun % 60;
 
   if (minutesLeftInSun >= 60) {
-    return `Another ${hours} hour${hours !== 1 ? "s" : ""} ${minutes > 0 ? `${minutes} mins` : ""}`;
+    return `~ ${hours} hour${hours !== 1 ? "s" : ""} ${minutes > 0 ? `${minutes} mins` : ""} left`;
   } else {
-    return `Another ${minutesLeftInSun} minutes`;
+    return `~ ${minutesLeftInSun} minutes left`;
   }
 };
 

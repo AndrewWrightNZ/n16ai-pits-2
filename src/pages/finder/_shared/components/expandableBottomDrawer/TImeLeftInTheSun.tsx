@@ -19,12 +19,14 @@ const TimeLeftInTheSun = ({ minutesLeftInSun }: TimeLeftInTheSunProps) => {
 
   // Effect to toggle between formats every 5 seconds
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
     const toggleFormat = () => {
       // Step 1: Fade out
       setIsVisible(false);
 
       // Step 2: After fade out completes, update the content
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         const nextShowHumanized = !showHumanized;
         setShowHumanized(nextShowHumanized);
         setCurrentText(
@@ -40,12 +42,17 @@ const TimeLeftInTheSun = ({ minutesLeftInSun }: TimeLeftInTheSunProps) => {
 
     const intervalId = setInterval(toggleFormat, 5000);
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
+    // Cleanup interval and timeout on unmount
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(timeoutId);
+    };
   }, [showHumanized, minutesLeftInSun]);
 
   // Update the text when minutesLeftInSun changes
   useEffect(() => {
+    // Only update if the component is still mounted
+    // This is a synchronous update so we don't need cleanup like with setTimeout
     setCurrentText(
       showHumanized
         ? formatHumanized(minutesLeftInSun)
