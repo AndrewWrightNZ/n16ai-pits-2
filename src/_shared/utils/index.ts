@@ -234,7 +234,7 @@ export const filterPubsBySunEvaluation = (
 
 // Encryption
 
-const secretKey = "willow-eats-sandwiches";
+const secretKey = import.meta.env.VITE_ENCRYPTION_KEY;
 
 export const encryptString = (inputString: string) => {
   // Ensure the key is 32 bytes long

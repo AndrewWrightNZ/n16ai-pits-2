@@ -1,7 +1,11 @@
+// Providers
 import {
   EarlyAccessState,
   useEarlyAccessContext,
 } from "../../providers/EarlyAccessProvider";
+
+// Hooks
+import useCommunication from "../communication/useCommunication";
 
 //
 
@@ -14,6 +18,7 @@ interface EarlyAccessOperations {
 
   // Show sign up for early access
   onToggleSignUpForEarlyAccess: () => void;
+  onSignUpForEarlyAccess: (emailAddress: string) => void;
 
   // Attempt access
   onAttemptEarlyAccess: () => void;
@@ -34,6 +39,18 @@ const useEarlyAccess = (): EarlyAccessResponse => {
 
   //
 
+  // Variables
+  const { showSignUpForEarlyAccess } = earlyAccessState || {};
+
+  //
+
+  // Hooks
+  const {
+    operations: { onSendSlackMessage },
+  } = useCommunication();
+
+  //
+
   // Handlers
   const onShowAccessForm = () => {
     updateEarlyAccessState({
@@ -49,8 +66,35 @@ const useEarlyAccess = (): EarlyAccessResponse => {
 
   const onToggleSignUpForEarlyAccess = () => {
     updateEarlyAccessState({
-      showSignUpForEarlyAccess: true,
+      showSignUpForEarlyAccess: !showSignUpForEarlyAccess,
     });
+  };
+
+  const onSignUpForEarlyAccess = (emailAddress: string) => {
+    //
+
+    // Send the slack ping off
+    onSendSlackMessage({
+      messageText: `:eyes: New early access sign up: ${emailAddress}`,
+      channelName: "azul-waitlist",
+    });
+
+    //
+
+    // Show temporary success message
+    updateEarlyAccessState({
+      showSignUpSuccess: true,
+    });
+
+    //
+
+    // After 5 seconds, flip back to adding the code
+    setTimeout(() => {
+      updateEarlyAccessState({
+        showSignUpSuccess: false,
+        showSignUpForEarlyAccess: false,
+      });
+    }, 5000);
   };
 
   return {
@@ -63,6 +107,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
 
       // Show sign up for early access
       onToggleSignUpForEarlyAccess,
+      onSignUpForEarlyAccess,
 
       // Attempt access
       onAttemptEarlyAccess,

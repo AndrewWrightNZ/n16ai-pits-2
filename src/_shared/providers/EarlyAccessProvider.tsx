@@ -6,6 +6,7 @@ export interface EarlyAccessState {
 
   // Sign up for early access
   showSignUpForEarlyAccess: boolean;
+  showSignUpSuccess: boolean;
 
   // Has confirmed entry
   hasConfirmedEntry: boolean;
@@ -31,6 +32,7 @@ const defaultState: EarlyAccessState = {
 
   // Sign up for early access
   showSignUpForEarlyAccess: false,
+  showSignUpSuccess: false,
 
   // Access confimred
   hasConfirmedEntry: false,
