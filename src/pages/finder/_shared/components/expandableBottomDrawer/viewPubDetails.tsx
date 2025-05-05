@@ -127,27 +127,30 @@ const ViewPubDetails = () => {
 
   return (
     <div
-      className={`flex h-[80vh] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
+      className={`flex h-[75vh] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
     >
-      <div className="flex flex-col h-[calc(80vh-74px)] overflow-y-auto pt-4">
+      <div className="flex flex-col h-[calc(75vh-74px)] overflow-y-auto pt-4">
         {/* Header with pub name and sun icon */}
+
         <div className="flex flex-row items-center gap-4 mb-8">
           <DynamicSunIconWithBorder sunPercent={bestSunPercent} />
           <div className="flex flex-col">
-            <h3 className="text-lg font-black font-poppins">{name}</h3>
-            <p className="text-sm font-normal text-gray-600 font-poppins">
+            <h3 className="text-md font-black font-poppins mb-1">{name}</h3>
+            <p className="text-xs font-normal text-gray-600 font-poppins">
               {formatShortAddress(address_text)}
             </p>
           </div>
         </div>
+
         {/* Best sun percentage summary */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <h4 className="text-xs font-semibold mb-2">Sun Quality</h4>
+        <div className="grid grid-cols-2 gap-2 mb-6 text-xs">
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="text-sm font-semibold mb-1">Area in the sun</h4>
+            <h4 className="font-semibold mb-1">Area in the sun</h4>
             <div className="flex items-center gap-1">
-              <span className="font-medium">
+              <p className="text-sm font-bold font-poppins">
                 {formatSunPercentage(bestSunPercent)}%
-              </span>
+              </p>
             </div>
             <p className="text-xs text-slate-600">
               Peak: {formatTimeSlot(highestSunPcEval?.time || 0)} (
@@ -155,9 +158,9 @@ const ViewPubDetails = () => {
             </p>
           </div>
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="text-sm font-semibold mb-1">In the sun until</h4>
+            <h4 className="font-semibold mb-1">In the sun until</h4>
             <div className="flex items-center gap-1">
-              <p className="font-medium whitespace-nowrap overflow-hidden">
+              <p className="text-sm font-bold font-poppins whitespace-nowrap overflow-hidden">
                 {formatTimeSlot(latestSomeSunEval?.time || 0)}
               </p>
             </div>
@@ -176,11 +179,11 @@ const ViewPubDetails = () => {
         {/* White gradient fade effect for scrolling content */}
         <div className="absolute -top-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none z-10 border-b-2 border-gray-200"></div>
         <button
-          className="w-full flex text-xs flex-row items-center justify-center gap-2 p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+          className="w-full flex font-bold text-xs flex-row items-center border-2 border-[#2962ff] justify-center gap-2 p-3 bg-white text-[#2962ff] rounded hover:bg-[#2962ff] hover:text-white transition-colors"
           onClick={handleClose}
         >
           <ChevronLeftIcon className="w-4 h-4" />
-          Back to map
+          Back to Map
         </button>
       </div>
     </div>
