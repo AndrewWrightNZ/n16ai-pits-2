@@ -12,8 +12,9 @@ import {
 
 import { supabaseClient } from "../../../_shared/hooks/useSupabase";
 import useCommunications from "../communication/useCommunication";
+
+// Hooks
 import usePubs from "../pubs/usePubs";
-import useMapMarkers from "../mapMarkers/useMapMarkers";
 import useDeviceDetect from "../useDeviceDetect";
 
 // Interfaces
