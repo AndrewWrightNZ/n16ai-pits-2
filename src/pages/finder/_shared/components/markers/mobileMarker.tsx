@@ -1,4 +1,5 @@
 import { Marker, OverlayView } from "@react-google-maps/api";
+import { useRef, useEffect } from "react";
 
 // Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
@@ -19,22 +20,34 @@ const getPixelPositionOffset = (width: number, height: number) => ({
 });
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
-  //
+  // Track component mounted state to prevent updates after unmount
+  const isMountedRef = useRef(true);
 
   // Variables
   const { bestSunPercent = 0, pub } = mapMarker || {};
   const { id: pubId, latitude, longitude } = pub || {};
 
-  //
+  // Set up effect to track component mounting state
+  useEffect(() => {
+    // Component is mounted
+    isMountedRef.current = true;
+    
+    // Cleanup function to run when component unmounts
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Hooks
-
   const {
     operations: { onSetSelectedPubById },
   } = usePubAreas();
 
   const handleClick = () => {
-    onSetSelectedPubById(pubId);
+    // Only update if component is still mounted
+    if (isMountedRef.current) {
+      onSetSelectedPubById(pubId);
+    }
   };
 
   return (
