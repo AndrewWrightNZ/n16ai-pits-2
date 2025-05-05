@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 // Hooks
 import usePubs from "../../_shared/hooks/pubs/usePubs";
 import useDeviceDetect from "../../_shared/hooks/useDeviceDetect";
+import usePubAreas from "../../_shared/hooks/pubAreas/usePubAreas";
 
 // Components
 import PubCounts from "./_shared/components/counts";
@@ -34,9 +35,12 @@ function Finder() {
 
   // Hooks
   const {
-    data: { selectedPub = null },
     operations: { onSetMapBounds },
   } = usePubs();
+
+  const {
+    data: { selectedPub = null },
+  } = usePubAreas();
 
   const { isMobile } = useDeviceDetect();
 
@@ -139,7 +143,7 @@ function Finder() {
           }}
         >
           <PubInTheSunMapHeader />
-          <OpenCloseFiltersButton />
+          {!selectedPub?.id && <OpenCloseFiltersButton />}
           {!isMobile && (
             <>
               <PubCounts />

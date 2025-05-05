@@ -5,7 +5,6 @@ const OpenCloseFiltersButton = () => {
   //
 
   // Hooks
-
   const {
     data: { viewFilters },
     operations: { onToggleViewFilters },
@@ -14,7 +13,6 @@ const OpenCloseFiltersButton = () => {
   //
 
   // Handlers
-
   const onToggleFilters = () => {
     onToggleViewFilters();
   };

@@ -21,7 +21,7 @@ import { formatTimeSlot } from "../../helpers";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Icons
-import { ChevronLeftIcon } from "lucide-react";
+import { ChevronLeftIcon, ExternalLink } from "lucide-react";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -136,9 +136,16 @@ const ViewPubDetails = () => {
           <DynamicSunIconWithBorder sunPercent={bestSunPercent} />
           <div className="flex flex-col">
             <h3 className="text-md font-black font-poppins mb-1">{name}</h3>
-            <p className="text-xs font-normal text-gray-600 font-poppins">
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address_text)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs flex flex-row items-center font-normal text-gray-600 font-poppins hover:text-blue-600 hover:underline cursor-pointer"
+              aria-label="Open address in Google Maps"
+            >
               {formatShortAddress(address_text)}
-            </p>
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </a>
           </div>
         </div>
 
