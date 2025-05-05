@@ -8,6 +8,10 @@ export interface EarlyAccessState {
   showSignUpForEarlyAccess: boolean;
   showSignUpSuccess: boolean;
 
+  // Access code
+  enteredAccessCode: string;
+  showAccessCodeEnteredSuccess: boolean;
+
   // Has confirmed entry
   hasConfirmedEntry: boolean;
 
@@ -34,7 +38,11 @@ const defaultState: EarlyAccessState = {
   showSignUpForEarlyAccess: false,
   showSignUpSuccess: false,
 
-  // Access confimred
+  // Access code
+  enteredAccessCode: "",
+  showAccessCodeEnteredSuccess: false,
+
+  // Has confirmed entry
   hasConfirmedEntry: false,
 
   // Timestamp for localStorage

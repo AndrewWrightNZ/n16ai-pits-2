@@ -6,6 +6,7 @@ import {
 
 // Hooks
 import useCommunication from "../communication/useCommunication";
+import { VALID_ACCESS_CODES } from "./accessCodes";
 
 //
 
@@ -21,6 +22,7 @@ interface EarlyAccessOperations {
   onSignUpForEarlyAccess: (emailAddress: string) => void;
 
   // Attempt access
+  onUpdateAccessCode: (accessCode: string) => void;
   onAttemptEarlyAccess: () => void;
 }
 
@@ -56,6 +58,23 @@ const useEarlyAccess = (): EarlyAccessResponse => {
     updateEarlyAccessState({
       showAccessCodeForm: true,
     });
+  };
+
+  const onUpdateAccessCode = (accessCode: string) => {
+    updateEarlyAccessState({
+      enteredAccessCode: accessCode,
+    });
+
+    const isCodeValid = VALID_ACCESS_CODES.includes(accessCode);
+
+    //
+
+    // Hide the access code form and show the success message
+    if (isCodeValid) {
+      updateEarlyAccessState({
+        showAccessCodeEnteredSuccess: true,
+      });
+    }
   };
 
   const onAttemptEarlyAccess = () => {
@@ -108,6 +127,9 @@ const useEarlyAccess = (): EarlyAccessResponse => {
       // Show sign up for early access
       onToggleSignUpForEarlyAccess,
       onSignUpForEarlyAccess,
+
+      // Update access code
+      onUpdateAccessCode,
 
       // Attempt access
       onAttemptEarlyAccess,
