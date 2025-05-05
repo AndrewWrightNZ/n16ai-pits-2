@@ -59,7 +59,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
         getPixelPositionOffset={getPixelPositionOffset}
       >
         <div
-          className="w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
+          className="w-[44px] h-[44px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
           onClick={handleClick}
           style={{
             ...(bestSunPercent >= 75
@@ -92,7 +92,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
 
           <DynamicSunIcon
             sunPercent={bestSunPercent}
-            className="w-[22px] h-[22px]"
+            className="w-[20px] h-[20px]"
             aria-label="Sun"
           />
         </div>
