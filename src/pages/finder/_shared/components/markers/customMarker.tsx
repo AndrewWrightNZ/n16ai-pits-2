@@ -76,20 +76,26 @@ const CustomMarker = ({ mapMarker }: CustomMarkerProps) => {
   // Effect to clear wasRecentlyHovered state after transition completes
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
+    let isMounted = true;
 
     if (!isPubHovered && wasRecentlyHovered) {
       timeoutId = setTimeout(() => {
-        setWasRecentlyHovered(false);
+        // Only update state if component is still mounted
+        if (isMounted) {
+          setWasRecentlyHovered(false);
+        }
       }, 300); // 300ms is enough for both transitions to complete
     }
 
     return () => {
+      isMounted = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [isPubHovered, wasRecentlyHovered]);
 
   // Update wasRecentlyHovered when hover state changes
   useEffect(() => {
+    // Only update if the component is mounted
     if (isPubHovered) {
       setWasRecentlyHovered(false);
     }
