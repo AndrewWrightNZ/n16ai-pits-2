@@ -48,13 +48,13 @@ export const formatRealTime = (minutesLeftInSun: number) => {
 
 export const formatHumanized = (minutesLeftInSun: number) => {
   if (minutesLeftInSun > 120) {
-    return `Enough time for a few pints`;
+    return `Time for a few pints`;
   } else if (minutesLeftInSun > 60) {
-    return `Enough time for a couple of pints`;
+    return `Time for a couple of pints`;
   } else if (minutesLeftInSun > 30) {
-    return `Enough time for a pint`;
+    return `Time for a pint`;
   } else if (minutesLeftInSun > 0) {
-    return `Enough time for a quick pint`;
+    return `Time for a quick pint`;
   } else {
     return "No more sun today";
   }
