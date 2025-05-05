@@ -9,7 +9,7 @@ const DynamicSunIconWithBorder = ({
 }: DynamicSunIconWithBorderProps) => {
   return (
     <div
-      className={`w-[50px] h-[50px] bg-white rounded-full flex items-center justify-center relative cursor-pointer ${sunPercent >= 50 && sunPercent < 75 ? "sun-icon-gradient-border" : ""}`}
+      className={`w-[44px] h-[44px] bg-white rounded-full flex items-center justify-center relative cursor-pointer ${sunPercent >= 50 && sunPercent < 75 ? "sun-icon-gradient-border" : ""}`}
       style={{
         ...(sunPercent >= 75
           ? { border: "2px solid #FFCC00" }

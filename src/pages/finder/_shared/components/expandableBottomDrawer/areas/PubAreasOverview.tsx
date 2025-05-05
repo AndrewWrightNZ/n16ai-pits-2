@@ -21,16 +21,16 @@ const PubAreasOverview = ({ pubAreas }: PubAreasOverviewProps) => {
   // Render
   return (
     <div className="mb-6">
-      <h4 className="text-md font-semibold mb-2">Outdoor Areas</h4>
+      <h4 className="text-xs font-semibold mb-2">Outdoor Areas</h4>
 
       {orderedPubAreas && orderedPubAreas.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {orderedPubAreas.map((area) => (
             <PubAreaRow key={area.id} area={area} />
           ))}
         </div>
       ) : (
-        <p className="text-sm text-slate-500">No outdoor areas available</p>
+        <p className="text-xs text-slate-500">No outdoor areas available</p>
       )}
     </div>
   );

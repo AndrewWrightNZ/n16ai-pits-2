@@ -60,12 +60,16 @@ const LcoationDteails = () => {
     return "Location unavailable";
   }, [distanceFromUser]);
 
+  if (!distanceFromUser) {
+    return <></>;
+  }
+
   return (
-    <div className="mb-6">
-      <h4 className="text-md font-semibold mb-2">Location</h4>
+    <div className="mb-6 text-xs mb-16">
+      <h4 className="font-semibold mb-2">Location</h4>
       <div className="flex items-end gap-2">
         <span className="font-medium">{distanceFromUserFormatted}</span>
-        <span className="text-sm"> from you</span>
+        <span className="">from you</span>
       </div>
     </div>
   );
