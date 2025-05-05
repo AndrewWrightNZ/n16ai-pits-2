@@ -84,11 +84,6 @@ const useMapMarkers = (): MapMarkersResponse => {
     ])
   );
 
-  //
-
-  // Filter out areas from pubs based on Area Type filters
-  console.log({ areaTypeFilters });
-
   // Create map-ready markers with optimized lookups
   const mapReadyMarkers = pubsInMapBounds.map((pub) => {
     const areasForPub = areasInMapBounds.filter(
@@ -152,10 +147,6 @@ const useMapMarkers = (): MapMarkersResponse => {
     )
       return true;
     return false;
-  });
-
-  console.log({
-    filteredBySunQualityMarkers,
   });
 
   return {
