@@ -5,8 +5,21 @@ import {
   SunQuality,
   useFiltersContext,
 } from "../../providers/FiltersProvider";
+import { PubArea } from "../../types";
 
-interface FiltersData extends FiltersState {}
+// Hooks
+import useHeroMetrics from "../heroMetrics/useHeroMetrics";
+
+// Types
+import { MapReadyMarker } from "../mapMarkers/useMapMarkers";
+
+interface FiltersData extends FiltersState {
+  // Pubs to show
+  pubsToShowAfterFilteringBySunQuality: MapReadyMarker[];
+
+  // Area types to show
+  areaTypesToShowAfterFilteringBySunQuality: PubArea[];
+}
 
 interface FiltersOperations {
   // View
@@ -30,7 +43,38 @@ const useFilters = (): FiltersResponse => {
 
   //
 
+  // Hooks
+  const {
+    data: {
+      rawGoodSunPubs = [],
+      rawSomeSunPubs = [],
+      rawNoneSunPubs = [],
+      allMapReadyAreas = [],
+    },
+  } = useHeroMetrics();
+
+  //
+
   // Variables
+  const { sunQualityFilters = [] } = filtersState || {};
+
+  const pubsToShowAfterFilteringBySunQuality = sunQualityFilters.reduce(
+    (acc: MapReadyMarker[], option: SunQuality) => {
+      if (option === SunQuality.GOOD) return [...acc, ...rawGoodSunPubs];
+      if (option === SunQuality.SOME) return [...acc, ...rawSomeSunPubs];
+      if (option === SunQuality.NO) return [...acc, ...rawNoneSunPubs];
+      return acc;
+    },
+    []
+  );
+
+  // Filter to ensure the area is linked to one of these pubs: pubsToShowAfterFilteringBySunQuality
+  const areaTypesToShowAfterFilteringBySunQuality = allMapReadyAreas.filter(
+    (area) =>
+      pubsToShowAfterFilteringBySunQuality.some(
+        (pub) => pub.pub.id === area.pub_id
+      )
+  );
 
   //
 
@@ -75,6 +119,12 @@ const useFilters = (): FiltersResponse => {
   return {
     data: {
       ...filtersState,
+
+      // Pubs to show after filtering by sun quality
+      pubsToShowAfterFilteringBySunQuality,
+
+      // Area types to show after filtering by sun quality
+      areaTypesToShowAfterFilteringBySunQuality,
     },
     operations: {
       // View
