@@ -15,8 +15,8 @@ interface MobileMarkerProps {
 }
 
 const getPixelPositionOffset = (width: number, height: number) => ({
-  x: -(width / 2),
-  y: -(height / 2),
+  x: -30,
+  y: -30,
 });
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
@@ -31,7 +31,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
   useEffect(() => {
     // Component is mounted
     isMountedRef.current = true;
-    
+
     // Cleanup function to run when component unmounts
     return () => {
       isMountedRef.current = false;
@@ -69,7 +69,7 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
           lng: longitude,
         }}
         mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-        getPixelPositionOffset={getPixelPositionOffset}
+        getPixelPositionOffset={() => getPixelPositionOffset(44, 44)}
       >
         <div
           className="w-[44px] h-[44px] bg-white rounded-full flex items-center justify-center relative cursor-pointer"
