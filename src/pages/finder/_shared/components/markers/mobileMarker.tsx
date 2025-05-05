@@ -1,5 +1,4 @@
 import { Marker, OverlayView } from "@react-google-maps/api";
-import { useRef, useEffect } from "react";
 
 // Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";

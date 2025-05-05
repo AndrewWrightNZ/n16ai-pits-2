@@ -112,7 +112,7 @@ const TimeSlider = () => {
       <style dangerouslySetInnerHTML={{ __html: sliderStyles }} />
       <div className="flex w-full gap-4 mt-6">
         {/* Left div (15% width) with time display */}
-        <div className="w-[10%] flex flex-col justify-center">
+        <div className="w-[10%] md:w-[100px] flex flex-col justify-center">
           <div className="text-sm text-white mb-2">Today</div>
           <div className="font-black text-white">
             {formatTimeSlot(sliderValue)}
@@ -120,7 +120,7 @@ const TimeSlider = () => {
         </div>
 
         {/* Right div (83% width) with slider */}
-        <div className="w-[90%] flex items-center relative">
+        <div className="w-[90%] md:w-[calc(100%-100px)] flex items-center relative">
           {/* Tooltip - always visible with arrow */}
           <div
             className="absolute bottom-12 bg-white text-[#2962FF] px-2 py-1 rounded text-sm font-semibold transform -translate-x-1/2 tooltip-with-arrow"
