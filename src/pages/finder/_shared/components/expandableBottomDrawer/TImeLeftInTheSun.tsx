@@ -82,7 +82,7 @@ const TimeLeftInTheSun = ({ minutesLeftInSun }: TimeLeftInTheSunProps) => {
   return (
     <div>
       <p
-        className={`text-xs text-slate-600 transition-opacity duration-300 ease-in-out ${isVisible ? "opacity-100" : "opacity-0"}`}
+        className={`text-xs text-slate-600 transition-opacity duration-300 ease-in-out ${isVisible ? "opacity-100" : "opacity-0"} whitespace-nowrap overflow-hidden`}
       >
         {currentText}
       </p>

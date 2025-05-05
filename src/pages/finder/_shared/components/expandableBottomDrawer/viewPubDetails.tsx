@@ -16,10 +16,7 @@ import PubAreasOverview from "./areas/PubAreasOverview";
 import DynamicSunIconWithBorder from "../../../../../_shared/components/DynamicSunIconWithBorder";
 
 // Helpers
-import {
-  extractPostCodeFromAddress,
-  formatShortAddress,
-} from "../../../../lists/pubs/_shared/helpers";
+import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { formatTimeSlot } from "../../helpers";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
 
@@ -130,17 +127,16 @@ const ViewPubDetails = () => {
 
   return (
     <div
-      className={`flex h-full flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 pt-8 h-full overflow-y-auto`}
+      className={`flex h-[80vh] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
     >
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col h-[calc(80vh-74px)] overflow-y-auto pt-4">
         {/* Header with pub name and sun icon */}
         <div className="flex flex-row items-center gap-4 mb-8">
           <DynamicSunIconWithBorder sunPercent={bestSunPercent} />
           <div className="flex flex-col">
             <h3 className="text-lg font-black font-poppins">{name}</h3>
             <p className="text-sm font-normal text-gray-600 font-poppins">
-              {formatShortAddress(address_text)},{" "}
-              {extractPostCodeFromAddress(address_text)}
+              {formatShortAddress(address_text)}
             </p>
           </div>
         </div>
@@ -161,7 +157,7 @@ const ViewPubDetails = () => {
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
             <h4 className="text-sm font-semibold mb-1">In the sun until</h4>
             <div className="flex items-center gap-1">
-              <p className="font-medium">
+              <p className="font-medium whitespace-nowrap overflow-hidden">
                 {formatTimeSlot(latestSomeSunEval?.time || 0)}
               </p>
             </div>
@@ -176,13 +172,14 @@ const ViewPubDetails = () => {
         <LocationDetails />
       </div>
 
-      <div className="flex flex-col flex-1 justify-end pb-8">
-        {/* Close button */}
+      <div className="relative flex flex-col h-[74px] justify-start border-l-0 border-r-0 border-b-0 border-t border-2 border-gray-200 pt-2 shadow-[0_-6px_8px_-4px_rgba(0,0,0,0.1)]">
+        {/* White gradient fade effect for scrolling content */}
+        <div className="absolute -top-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none z-10 border-b-2 border-gray-200"></div>
         <button
-          className="w-full flex flex-row items-center justify-center gap-2 p-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors mt-4"
+          className="w-full flex text-xs flex-row items-center justify-center gap-2 p-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
           onClick={handleClose}
         >
-          <ChevronLeftIcon className="w-5 h-5" />
+          <ChevronLeftIcon className="w-4 h-4" />
           Back to map
         </button>
       </div>
