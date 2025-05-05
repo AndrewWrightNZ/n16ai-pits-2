@@ -73,3 +73,29 @@ export const formatHumanizedAreaSize = (value: number) => {
     return "Tiny";
   }
 };
+
+export const getSunPercentageFromOption = (option: string) => {
+  switch (option) {
+    case "NONE":
+      return 0;
+    case "SOME":
+      return 50;
+    case "GOOD":
+      return 75;
+    default:
+      return 0;
+  }
+};
+
+export const formatSunQualityFilterOption = (option: string) => {
+  switch (option) {
+    case "NONE":
+      return "None";
+    case "SOME":
+      return "Some";
+    case "GOOD":
+      return "Good";
+    default:
+      return "None";
+  }
+};

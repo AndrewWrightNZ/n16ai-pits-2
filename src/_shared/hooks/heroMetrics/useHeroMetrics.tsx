@@ -6,6 +6,9 @@ import usePubAreas from "../pubAreas/usePubAreas";
 // Constants
 import { MapReadyMarker, SUN_THRESHOLDS } from "../mapMarkers/useMapMarkers";
 
+// Types
+import { PubArea } from "../../types";
+
 // Type for area count by type
 interface AreaTypeCount {
   type: string;
@@ -17,12 +20,14 @@ interface HeroMetricsResponse {
     // Raw sun quality counts
     goodSunCount: number;
     someSunCount: number;
+    noneSunCount: number;
 
     // Areas with sun above threshold
     areaTypeCountsWithSomeSun: AreaTypeCount[];
 
     // All map ready pubs
     allMapReadyPubs: MapReadyMarker[];
+    allMapReadyAreas: PubArea[];
   };
 }
 
@@ -40,7 +45,7 @@ const useHeroMetrics = (): HeroMetricsResponse => {
     data: { sunEvalsForTimeslot = [] },
   } = useSunEvals();
 
-  const allAreasAvailable = allAvailableAreas.filter((area) =>
+  const allMapReadyAreas = allAvailableAreas.filter((area) =>
     allAvailablePubs.some((pub) => pub.id === area.pub_id)
   );
 
@@ -53,7 +58,7 @@ const useHeroMetrics = (): HeroMetricsResponse => {
   );
 
   const allMapReadyPubs = allAvailablePubs.map((pub) => {
-    const areasForPub = allAreasAvailable.filter(
+    const areasForPub = allMapReadyAreas.filter(
       (area) => area.pub_id === pub.id
     );
 
@@ -121,17 +126,23 @@ const useHeroMetrics = (): HeroMetricsResponse => {
     []
   );
 
+  const noneSunCount = allMapReadyPubs.length - goodSunCount - someSunCount;
+
   return {
     data: {
       // Raw counts
       goodSunCount,
       someSunCount,
+      noneSunCount,
 
       // Areas with sun above threshold
       areaTypeCountsWithSomeSun,
 
       // All map ready pubs
       allMapReadyPubs,
+
+      // All map ready areas
+      allMapReadyAreas,
     },
   };
 };
