@@ -20,6 +20,7 @@ import useSunEvals from "../../../../../_shared/hooks/sunEvals/useSunEvals";
 import { formatTimeSlot } from "../../helpers";
 import { ChevronLeftIcon } from "lucide-react";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
+import TimeLeftInTheSun from "./TImeLeftInTheSun";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -121,15 +122,14 @@ const ViewPubDetails = () => {
 
   // Find how many minutes left in the sun between now (selectedTimeslot) and the latestSomeSunEval's time
   const minutesLeftInSun = useMemo(() => {
-    if (!selectedTimeslot || !latestSomeSunEval) return null;
+    if (!latestSomeSunEval) return null;
     // Calculate the difference in timeslots
-    const timeslotDifference = latestSomeSunEval.time - selectedTimeslot;
+    const timeslotDifference = latestSomeSunEval.time - (selectedTimeslot || 0);
+
     // Each timeslot represents 15 minutes
     const minutesLeft = timeslotDifference * 15;
     return minutesLeft > 0 ? minutesLeft : null;
   }, [latestSomeSunEval, selectedTimeslot]);
-
-  console.log({ latestSomeSunEval });
 
   return (
     <div
@@ -171,7 +171,7 @@ const ViewPubDetails = () => {
         {/* Best sun percentage summary */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="text-sm font-semibold mb-2">In the sun now</h4>
+            <h4 className="text-sm font-semibold mb-2">Area in the sun</h4>
             <div className="flex items-center gap-1">
               <DynamicSunIcon
                 sunPercent={bestSunPercent}
@@ -183,20 +183,14 @@ const ViewPubDetails = () => {
             </div>
           </div>
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="text-sm font-semibold mb-2">Sun for another</h4>
+            <h4 className="text-sm font-semibold mb-2">In the sun until</h4>
             <div className="flex items-center gap-1">
               <p className="font-medium">
-                {minutesLeftInSun
-                  ? minutesLeftInSun >= 60
-                    ? `${Math.floor(minutesLeftInSun / 60)} hour${Math.floor(minutesLeftInSun / 60) !== 1 ? "s" : ""} ${minutesLeftInSun % 60 > 0 ? `${minutesLeftInSun % 60} mins` : ""}`
-                    : `${minutesLeftInSun} minutes`
-                  : "No more sun today"}
+                {formatTimeSlot(latestSomeSunEval?.time || 0)}
               </p>
             </div>
             {(latestSomeSunEval?.time || 0) > 0 && (
-              <p className="text-xs text-slate-600">
-                Until: {formatTimeSlot(latestSomeSunEval?.time || 0)}
-              </p>
+              <TimeLeftInTheSun minutesLeftInSun={minutesLeftInSun || 0} />
             )}
           </div>
         </div>

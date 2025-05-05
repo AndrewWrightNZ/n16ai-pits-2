@@ -31,3 +31,31 @@ export const getIconForAreaType = (type: string) => {
       return <Umbrella size={20} color="#1d293d" />;
   }
 };
+
+// Format the real time display
+export const formatRealTime = (minutesLeftInSun: number) => {
+  if (!minutesLeftInSun) return "No more sun today";
+
+  const hours = Math.floor(minutesLeftInSun / 60);
+  const minutes = minutesLeftInSun % 60;
+
+  if (minutesLeftInSun >= 60) {
+    return `Another ${hours} hour${hours !== 1 ? "s" : ""} ${minutes > 0 ? `${minutes} mins` : ""}`;
+  } else {
+    return `Another ${minutesLeftInSun} minutes`;
+  }
+};
+
+export const formatHumanized = (minutesLeftInSun: number) => {
+  if (minutesLeftInSun > 120) {
+    return `Enough time for a few pints`;
+  } else if (minutesLeftInSun > 60) {
+    return `Enough time for a couple of pints`;
+  } else if (minutesLeftInSun > 30) {
+    return `Enough time for a pint`;
+  } else if (minutesLeftInSun > 0) {
+    return `Enough time for a quick pint`;
+  } else {
+    return "No more sun today";
+  }
+};
