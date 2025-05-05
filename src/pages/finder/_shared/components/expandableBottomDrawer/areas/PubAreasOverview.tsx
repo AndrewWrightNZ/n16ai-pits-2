@@ -21,7 +21,7 @@ const PubAreasOverview = ({ pubAreas }: PubAreasOverviewProps) => {
   // Render
   return (
     <div className="mb-6">
-      <h4 className="text-md font-semibold mb-2">Outdoor Areas</h4>
+      <h4 className="text-sm font-semibold mb-2">Outdoor Areas</h4>
 
       {orderedPubAreas && orderedPubAreas.length > 0 ? (
         <div className="space-y-4">

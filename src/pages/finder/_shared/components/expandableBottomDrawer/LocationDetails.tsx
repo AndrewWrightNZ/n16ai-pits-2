@@ -62,7 +62,7 @@ const LcoationDteails = () => {
 
   return (
     <div className="mb-6">
-      <h4 className="text-md font-semibold mb-2">Location</h4>
+      <h4 className="text-sm font-semibold mb-2">Location</h4>
       <div className="flex items-end gap-2">
         <span className="font-medium">{distanceFromUserFormatted}</span>
         <span className="text-sm"> from you</span>

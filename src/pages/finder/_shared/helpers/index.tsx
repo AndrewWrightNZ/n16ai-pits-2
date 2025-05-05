@@ -59,3 +59,17 @@ export const formatHumanized = (minutesLeftInSun: number) => {
     return "No more sun today";
   }
 };
+
+export const formatHumanizedAreaSize = (value: number) => {
+  if (value > 200) {
+    return "Huge";
+  } else if (value > 100) {
+    return "Large";
+  } else if (value > 50) {
+    return "Medium";
+  } else if (value > 25) {
+    return "Small";
+  } else {
+    return "Tiny";
+  }
+};

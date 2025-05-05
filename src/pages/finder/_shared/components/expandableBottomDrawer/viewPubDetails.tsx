@@ -11,9 +11,8 @@ import { SUN_THRESHOLDS } from "../../../../../_shared/hooks/mapMarkers/useMapMa
 
 // Components
 import LocationDetails from "./LocationDetails";
-import PubAreasOverview from "./areas/PubAreasOverview";
 import TimeLeftInTheSun from "./TImeLeftInTheSun";
-import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
+import PubAreasOverview from "./areas/PubAreasOverview";
 import DynamicSunIconWithBorder from "../../../../../_shared/components/DynamicSunIconWithBorder";
 
 // Helpers
@@ -105,6 +104,19 @@ const ViewPubDetails = () => {
     }, initialEval);
   }, [sunEvalsForAllPubAreas]);
 
+  const highestSunPcEval = useMemo(() => {
+    if (!sunEvalsForAllPubAreas || sunEvalsForAllPubAreas.length === 0) {
+      return null;
+    }
+
+    return sunEvalsForAllPubAreas.reduce((prev, current) => {
+      if (current.pc_in_sun > prev.pc_in_sun) {
+        return current;
+      }
+      return prev;
+    }, sunEvalsForAllPubAreas[0]);
+  }, [sunEvalsForAllPubAreas]);
+
   // Find how many minutes left in the sun between now (selectedTimeslot) and the latestSomeSunEval's time
   const minutesLeftInSun = useMemo(() => {
     if (!latestSomeSunEval) return null;
@@ -122,7 +134,7 @@ const ViewPubDetails = () => {
     >
       <div className="flex flex-col flex-1">
         {/* Header with pub name and sun icon */}
-        <div className="flex flex-row items-center gap-4 mb-12">
+        <div className="flex flex-row items-center gap-4 mb-8">
           <DynamicSunIconWithBorder sunPercent={bestSunPercent} />
           <div className="flex flex-col">
             <h3 className="text-lg font-black font-poppins">{name}</h3>
@@ -135,19 +147,19 @@ const ViewPubDetails = () => {
         {/* Best sun percentage summary */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="text-sm font-semibold mb-2">Area in the sun</h4>
+            <h4 className="text-sm font-semibold mb-1">Area in the sun</h4>
             <div className="flex items-center gap-1">
-              <DynamicSunIcon
-                sunPercent={bestSunPercent}
-                className="w-[24px] h-[24px]"
-              />
               <span className="font-medium">
                 {formatSunPercentage(bestSunPercent)}%
               </span>
             </div>
+            <p className="text-xs text-slate-600">
+              Peak: {formatTimeSlot(highestSunPcEval?.time || 0)} (
+              {formatSunPercentage(highestSunPcEval?.pc_in_sun || 0)}%)
+            </p>
           </div>
           <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="text-sm font-semibold mb-2">In the sun until</h4>
+            <h4 className="text-sm font-semibold mb-1">In the sun until</h4>
             <div className="flex items-center gap-1">
               <p className="font-medium">
                 {formatTimeSlot(latestSomeSunEval?.time || 0)}
