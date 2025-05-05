@@ -4,7 +4,7 @@ import useSunEvals from "../sunEvals/useSunEvals";
 import usePubAreas from "../pubAreas/usePubAreas";
 
 // Constants
-import { SUN_THRESHOLDS } from "../mapMarkers/useMapMarkers";
+import { MapReadyMarker, SUN_THRESHOLDS } from "../mapMarkers/useMapMarkers";
 
 // Type for area count by type
 interface AreaTypeCount {
@@ -20,6 +20,9 @@ interface HeroMetricsResponse {
 
     // Areas with sun above threshold
     areaTypeCountsWithSomeSun: AreaTypeCount[];
+
+    // All map ready pubs
+    allMapReadyPubs: MapReadyMarker[];
   };
 }
 
@@ -126,6 +129,9 @@ const useHeroMetrics = (): HeroMetricsResponse => {
 
       // Areas with sun above threshold
       areaTypeCountsWithSomeSun,
+
+      // All map ready pubs
+      allMapReadyPubs,
     },
   };
 };

@@ -80,7 +80,7 @@ const ExpandableBottomDrawer = () => {
 
   return (
     <div
-      className={`transition-all duration-300 ease-in-out fixed bottom-[0px] left-[8px] right-[8px] p-4 bg-white shadow-lg border-1 border-slate-800 rounded-t-xl ${isExpanded ? "h-[80vh]" : "h-32"}`}
+      className={`transition-all duration-300 ease-in-out fixed bottom-[0px] left-[8px] right-[8px] p-4 bg-white shadow-lg border-2 border-slate-800 rounded-t-xl ${isExpanded ? "h-[80vh]" : "h-32"}`}
     >
       <div
         className={`${isContentVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200 overflow-hidden h-full`}
