@@ -60,7 +60,6 @@ const SelectFilterOptions = () => {
 
       <div className="relative flex flex-col items-start justify-start h-[calc(75vh-70px)] overflow-y-auto pb-20">
         {/* Fade-out effect at the bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
         <p className="text-xs font-bold mt-4 mb-4">Sun Quality</p>
 
         <div className="flex flex-row items-center justify-start gap-2 flex-wrap">
