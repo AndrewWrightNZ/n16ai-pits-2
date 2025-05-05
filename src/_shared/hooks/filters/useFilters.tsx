@@ -8,6 +8,7 @@ interface FiltersData extends FiltersState {}
 
 interface FiltersOperations {
   onToggleViewFilters: () => void;
+  onSunQualityFilterClick: (option: string) => void;
 }
 
 interface FiltersResponse {
@@ -33,12 +34,29 @@ const useFilters = (): FiltersResponse => {
     updateFiltersState({ viewFilters: !filtersState.viewFilters });
   };
 
+  const onSunQualityFilterClick = (option: string) => {
+    const isAlreadySelected = filtersState.sunQualityFilters.includes(option);
+
+    if (isAlreadySelected) {
+      updateFiltersState({
+        sunQualityFilters: filtersState.sunQualityFilters.filter(
+          (filter) => filter !== option
+        ),
+      });
+    } else {
+      updateFiltersState({
+        sunQualityFilters: [...filtersState.sunQualityFilters, option],
+      });
+    }
+  };
+
   return {
     data: {
       ...filtersState,
     },
     operations: {
       onToggleViewFilters,
+      onSunQualityFilterClick,
     },
   };
 };

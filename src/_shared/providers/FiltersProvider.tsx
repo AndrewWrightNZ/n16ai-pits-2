@@ -2,12 +2,12 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 
 export interface FiltersState {
   // Filters options
-  sunQualityOptions: [];
-  areaTypeOptions: [];
+  sunQualityOptions: string[];
+  areaTypeOptions: string[];
 
   // Filters
-  sunQualityFilters: [];
-  areaTypeFilters: [];
+  sunQualityFilters: string[];
+  areaTypeFilters: string[];
 
   // View
   viewFilters: boolean;
@@ -27,11 +27,11 @@ const LOCAL_STORAGE_KEY = "filtersState";
 
 const defaultState: FiltersState = {
   // Filters options
-  sunQualityOptions: [],
+  sunQualityOptions: ["GOOD", "SOME", "NO"],
   areaTypeOptions: [],
 
   // Filters
-  sunQualityFilters: [],
+  sunQualityFilters: ["GOOD", "SOME"],
   areaTypeFilters: [],
 
   // View

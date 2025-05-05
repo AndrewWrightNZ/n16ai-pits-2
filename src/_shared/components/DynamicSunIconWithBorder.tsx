@@ -2,14 +2,18 @@ import DynamicSunIcon from "./dynamicSunIcon";
 
 interface DynamicSunIconWithBorderProps {
   sunPercent: number;
+  parentClassName?: string;
+  childClassName?: string;
 }
 
 const DynamicSunIconWithBorder = ({
   sunPercent,
+  parentClassName,
+  childClassName,
 }: DynamicSunIconWithBorderProps) => {
   return (
     <div
-      className={`w-[44px] h-[44px] bg-white rounded-full flex items-center justify-center relative cursor-pointer ${sunPercent >= 50 && sunPercent < 75 ? "sun-icon-gradient-border" : ""}`}
+      className={`${parentClassName || "w-[44px] h-[44px]"} bg-white rounded-full flex items-center justify-center relative cursor-pointer ${sunPercent >= 50 && sunPercent < 75 ? "sun-icon-gradient-border" : ""}`}
       style={{
         ...(sunPercent >= 75
           ? { border: "2px solid #FFCC00" }
@@ -30,7 +34,10 @@ const DynamicSunIconWithBorder = ({
           }}
         />
       )}
-      <DynamicSunIcon sunPercent={sunPercent} className="w-[25px] h-[25px]" />
+      <DynamicSunIcon
+        sunPercent={sunPercent}
+        className={`${childClassName || "w-[25px] h-[25px]"}`}
+      />
     </div>
   );
 };
