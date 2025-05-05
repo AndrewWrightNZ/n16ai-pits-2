@@ -148,7 +148,9 @@ function App() {
     }
 
     if (showAccessCodeEnteredSuccess && !hasConfirmedEntry) {
-      onAttemptEarlyAccess();
+      setTimeout(() => {
+        onAttemptEarlyAccess();
+      }, 5000);
     }
   }, [showAccessCodeEnteredSuccess, hasConfirmedEntry]);
 
