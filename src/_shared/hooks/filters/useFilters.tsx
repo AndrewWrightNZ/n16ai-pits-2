@@ -1,14 +1,20 @@
 // Context
 import {
+  AreaType,
   FiltersState,
+  SunQuality,
   useFiltersContext,
 } from "../../providers/FiltersProvider";
 
 interface FiltersData extends FiltersState {}
 
 interface FiltersOperations {
+  // View
   onToggleViewFilters: () => void;
-  onSunQualityFilterClick: (option: string) => void;
+
+  // Select
+  onSunQualityFilterClick: (option: SunQuality) => void;
+  onAreaTypeFilterClick: (option: AreaType) => void;
 }
 
 interface FiltersResponse {
@@ -34,7 +40,7 @@ const useFilters = (): FiltersResponse => {
     updateFiltersState({ viewFilters: !filtersState.viewFilters });
   };
 
-  const onSunQualityFilterClick = (option: string) => {
+  const onSunQualityFilterClick = (option: SunQuality) => {
     const isAlreadySelected = filtersState.sunQualityFilters.includes(option);
 
     if (isAlreadySelected) {
@@ -50,13 +56,33 @@ const useFilters = (): FiltersResponse => {
     }
   };
 
+  const onAreaTypeFilterClick = (option: AreaType) => {
+    const isAlreadySelected = filtersState.areaTypeFilters.includes(option);
+
+    if (isAlreadySelected) {
+      updateFiltersState({
+        areaTypeFilters: filtersState.areaTypeFilters.filter(
+          (filter) => filter !== option
+        ),
+      });
+    } else {
+      updateFiltersState({
+        areaTypeFilters: [...filtersState.areaTypeFilters, option],
+      });
+    }
+  };
+
   return {
     data: {
       ...filtersState,
     },
     operations: {
+      // View
       onToggleViewFilters,
+
+      // Select
       onSunQualityFilterClick,
+      onAreaTypeFilterClick,
     },
   };
 };

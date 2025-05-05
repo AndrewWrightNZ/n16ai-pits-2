@@ -2,12 +2,12 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 
 export interface FiltersState {
   // Filters options
-  sunQualityOptions: string[];
-  areaTypeOptions: string[];
+  sunQualityOptions: SunQuality[];
+  areaTypeOptions: AreaType[];
 
   // Filters
-  sunQualityFilters: string[];
-  areaTypeFilters: string[];
+  sunQualityFilters: SunQuality[];
+  areaTypeFilters: AreaType[];
 
   // View
   viewFilters: boolean;
@@ -25,14 +25,49 @@ const FiltersContext = createContext<FiltersContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = "filtersState";
 
+export enum SunQuality {
+  GOOD = "GOOD",
+  SOME = "SOME",
+  NO = "NO",
+}
+
+export enum AreaType {
+  // { key: "pavement", label: "Pavement" },
+  // { key: "frontage-seating", label: "Frontage Seating" },
+  // { key: "terrace", label: "Terrace" },
+  // { key: "terrace-waterfront", label: "Waterfront Terrace" },
+  // { key: "beer-garden", label: "Beer Garden" },
+  // { key: "courtyard", label: "Courtyard" },
+  PAVEMENT = "pavement",
+  FRONTAGE_SEATING = "frontage-seating",
+  TERRACE = "terrace",
+  TERRACE_WATERFRONT = "terrace-waterfront",
+  BEER_GARDEN = "beer-garden",
+  COURTYARD = "courtyard",
+}
+
 const defaultState: FiltersState = {
   // Filters options
-  sunQualityOptions: ["GOOD", "SOME", "NO"],
-  areaTypeOptions: [],
+  sunQualityOptions: [SunQuality.GOOD, SunQuality.SOME, SunQuality.NO],
+  areaTypeOptions: [
+    AreaType.PAVEMENT,
+    AreaType.FRONTAGE_SEATING,
+    AreaType.TERRACE,
+    AreaType.TERRACE_WATERFRONT,
+    AreaType.BEER_GARDEN,
+    AreaType.COURTYARD,
+  ],
 
   // Filters
-  sunQualityFilters: ["GOOD", "SOME"],
-  areaTypeFilters: [],
+  sunQualityFilters: [SunQuality.GOOD, SunQuality.SOME],
+  areaTypeFilters: [
+    AreaType.PAVEMENT,
+    AreaType.FRONTAGE_SEATING,
+    AreaType.TERRACE,
+    AreaType.TERRACE_WATERFRONT,
+    AreaType.BEER_GARDEN,
+    AreaType.COURTYARD,
+  ],
 
   // View
   viewFilters: false,
