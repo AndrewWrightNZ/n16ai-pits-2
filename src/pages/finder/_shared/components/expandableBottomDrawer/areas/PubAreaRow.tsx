@@ -95,9 +95,9 @@ const PubAreaRow = ({ area }: PubAreaRowProps) => {
         <div className="flex items-center gap-1">
           <DynamicSunIcon
             sunPercent={area.pc_in_sun}
-            className="w-[20px] h-[20px]"
+            className="w-[30px] h-[30px] mr-2"
           />
-          {formatSunPercentage(area.pc_in_sun)}%
+          <p className="w-4 mr-2">{formatSunPercentage(area.pc_in_sun)}%</p>
         </div>
       </div>
     </div>

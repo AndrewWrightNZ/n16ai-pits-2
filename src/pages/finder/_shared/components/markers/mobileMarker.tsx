@@ -9,6 +9,7 @@ import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMa
 
 // Components
 import DynamicSunIcon from "../../../../../_shared/components/dynamicSunIcon";
+import useFilters from "../../../../../_shared/hooks/filters/useFilters";
 
 interface MobileMarkerProps {
   mapMarker: MapReadyMarker;
@@ -20,33 +21,23 @@ const getPixelPositionOffset = () => ({
 });
 
 const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
-  // Track component mounted state to prevent updates after unmount
-  const isMountedRef = useRef(true);
-
   // Variables
   const { bestSunPercent = 0, pub } = mapMarker || {};
   const { id: pubId, latitude, longitude } = pub || {};
-
-  // Set up effect to track component mounting state
-  useEffect(() => {
-    // Component is mounted
-    isMountedRef.current = true;
-
-    // Cleanup function to run when component unmounts
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
 
   // Hooks
   const {
     operations: { onSetSelectedPubById },
   } = usePubAreas();
+  const {
+    data: { viewFilters },
+    operations: { onToggleViewFilters },
+  } = useFilters();
 
   const handleClick = () => {
-    // Only update if component is still mounted
-    if (isMountedRef.current) {
-      onSetSelectedPubById(pubId);
+    onSetSelectedPubById(pubId);
+    if (viewFilters) {
+      onToggleViewFilters();
     }
   };
 

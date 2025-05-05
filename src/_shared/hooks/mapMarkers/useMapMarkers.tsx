@@ -6,13 +6,14 @@ import usePubs from "../pubs/usePubs";
 import useSunEvals from "../sunEvals/useSunEvals";
 import usePubAreas, { PubWithAreaAndSunEval } from "../pubAreas/usePubAreas";
 import useFilters from "../filters/useFilters";
-import { SunQuality } from "../../providers/FiltersProvider";
+import { AreaType, SunQuality } from "../../providers/FiltersProvider";
 
 export interface SimplePubAreaWithSunPc {
   id: number;
   type: string;
   pc_in_sun: number;
   floor_area: number;
+  pub_id?: number;
 }
 
 export interface MapReadyMarker {
@@ -91,7 +92,8 @@ const useMapMarkers = (): MapMarkersResponse => {
   // Create map-ready markers with optimized lookups
   const mapReadyMarkers = pubsInMapBounds.map((pub) => {
     const areasForPub = areasInMapBounds.filter(
-      (area) => area.pub_id === pub.id
+      ({ pub_id, type }) =>
+        pub_id === pub.id && areaTypeFilters.includes(type as AreaType)
     );
 
     const pubAreas = areasForPub.map((area) => ({
@@ -150,6 +152,10 @@ const useMapMarkers = (): MapMarkersResponse => {
     )
       return true;
     return false;
+  });
+
+  console.log({
+    filteredBySunQualityMarkers,
   });
 
   return {

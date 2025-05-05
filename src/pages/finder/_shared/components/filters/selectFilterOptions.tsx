@@ -104,9 +104,13 @@ const SelectFilterOptions = () => {
         {areaTypeOptions.map((option: AreaType) => {
           const isSelected = areaTypeFilters.includes(option);
 
-          const count = areaTypesToShowAfterFilteringBySunQuality.filter(
-            (area) => area.type === option
-          ).length;
+          const areasForType = areaTypesToShowAfterFilteringBySunQuality.filter(
+            ({ type }) => type === option
+          );
+
+          console.log({
+            areasForType,
+          });
 
           return (
             <button
@@ -124,7 +128,7 @@ const SelectFilterOptions = () => {
               </p>
 
               <p className="text-xs font-normal font-poppins">
-                ({count} Areas)
+                ({areasForType.length} Areas)
               </p>
             </button>
           );
