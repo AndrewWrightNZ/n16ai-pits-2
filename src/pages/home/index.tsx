@@ -35,7 +35,7 @@ function App() {
 
   // Initial button text shows total count
   const [primaryActionButtonText, setPrimaryActionButtonText] = useState(
-    `${totalInTheSun} in the sun now`
+    `See ${totalInTheSun} in the sun now`
   );
   const secondaryActionButtonText = `Missed one? Contact us`;
 
@@ -50,7 +50,7 @@ function App() {
 
   // Update button text when total count changes
   useEffect(() => {
-    setPrimaryActionButtonText(`${totalInTheSun} in the sun now`);
+    setPrimaryActionButtonText(`See ${totalInTheSun} in the sun now`);
   }, [totalInTheSun]);
 
   // Effect to cycle through area types
@@ -86,7 +86,7 @@ function App() {
       const currentType = areaTypeCountsWithSomeSun[currentAreaTypeIndex];
       if (currentType) {
         setPrimaryActionButtonText(
-          `${currentType.count} sunny ${formatAreaType(currentType.type)}s`
+          `See ${currentType.count} sunny ${formatAreaType(currentType.type)}s`
         );
       }
 
