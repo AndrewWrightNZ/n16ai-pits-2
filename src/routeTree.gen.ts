@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as VisionMaskImport } from './routes/vision-mask'
+import { Route as SubmitAPubImport } from './routes/submit-a-pub'
 import { Route as SessionImport } from './routes/session'
 import { Route as SceneImport } from './routes/scene'
 import { Route as PubLabelsImport } from './routes/pub-labels'
@@ -31,6 +32,12 @@ import { Route as AreasIdentifierImport } from './routes/areas/identifier'
 const VisionMaskRoute = VisionMaskImport.update({
   id: '/vision-mask',
   path: '/vision-mask',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SubmitAPubRoute = SubmitAPubImport.update({
+  id: '/submit-a-pub',
+  path: '/submit-a-pub',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -172,6 +179,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SessionImport
       parentRoute: typeof rootRoute
     }
+    '/submit-a-pub': {
+      id: '/submit-a-pub'
+      path: '/submit-a-pub'
+      fullPath: '/submit-a-pub'
+      preLoaderRoute: typeof SubmitAPubImport
+      parentRoute: typeof rootRoute
+    }
     '/vision-mask': {
       id: '/vision-mask'
       path: '/vision-mask'
@@ -228,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
+  '/submit-a-pub': typeof SubmitAPubRoute
   '/vision-mask': typeof VisionMaskRoute
   '/areas/identifier': typeof AreasIdentifierRoute
   '/areas/simulator': typeof AreasSimulatorRoute
@@ -245,6 +260,7 @@ export interface FileRoutesByTo {
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
+  '/submit-a-pub': typeof SubmitAPubRoute
   '/vision-mask': typeof VisionMaskRoute
   '/areas/identifier': typeof AreasIdentifierRoute
   '/areas/simulator': typeof AreasSimulatorRoute
@@ -263,6 +279,7 @@ export interface FileRoutesById {
   '/pub-labels': typeof PubLabelsRoute
   '/scene': typeof SceneRoute
   '/session': typeof SessionRoute
+  '/submit-a-pub': typeof SubmitAPubRoute
   '/vision-mask': typeof VisionMaskRoute
   '/areas/identifier': typeof AreasIdentifierRoute
   '/areas/simulator': typeof AreasSimulatorRoute
@@ -282,6 +299,7 @@ export interface FileRouteTypes {
     | '/pub-labels'
     | '/scene'
     | '/session'
+    | '/submit-a-pub'
     | '/vision-mask'
     | '/areas/identifier'
     | '/areas/simulator'
@@ -298,6 +316,7 @@ export interface FileRouteTypes {
     | '/pub-labels'
     | '/scene'
     | '/session'
+    | '/submit-a-pub'
     | '/vision-mask'
     | '/areas/identifier'
     | '/areas/simulator'
@@ -314,6 +333,7 @@ export interface FileRouteTypes {
     | '/pub-labels'
     | '/scene'
     | '/session'
+    | '/submit-a-pub'
     | '/vision-mask'
     | '/areas/identifier'
     | '/areas/simulator'
@@ -332,6 +352,7 @@ export interface RootRouteChildren {
   PubLabelsRoute: typeof PubLabelsRoute
   SceneRoute: typeof SceneRoute
   SessionRoute: typeof SessionRoute
+  SubmitAPubRoute: typeof SubmitAPubRoute
   VisionMaskRoute: typeof VisionMaskRoute
   AreasIdentifierRoute: typeof AreasIdentifierRoute
   AreasSimulatorRoute: typeof AreasSimulatorRoute
@@ -349,6 +370,7 @@ const rootRouteChildren: RootRouteChildren = {
   PubLabelsRoute: PubLabelsRoute,
   SceneRoute: SceneRoute,
   SessionRoute: SessionRoute,
+  SubmitAPubRoute: SubmitAPubRoute,
   VisionMaskRoute: VisionMaskRoute,
   AreasIdentifierRoute: AreasIdentifierRoute,
   AreasSimulatorRoute: AreasSimulatorRoute,
@@ -375,6 +397,7 @@ export const routeTree = rootRoute
         "/pub-labels",
         "/scene",
         "/session",
+        "/submit-a-pub",
         "/vision-mask",
         "/areas/identifier",
         "/areas/simulator",
@@ -406,6 +429,9 @@ export const routeTree = rootRoute
     },
     "/session": {
       "filePath": "session.tsx"
+    },
+    "/submit-a-pub": {
+      "filePath": "submit-a-pub.tsx"
     },
     "/vision-mask": {
       "filePath": "vision-mask.tsx"
