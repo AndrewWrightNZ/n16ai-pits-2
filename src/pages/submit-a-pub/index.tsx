@@ -81,7 +81,7 @@ const SubmitAPub = () => {
   }, [currentPubTypeIndex]);
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-screen items-start mt-[60vw] md:mt-[30vh] justify-center">
       {/* Big Bold Sun Image - positioned independently with its own opacity transition */}
       <div
         className={`fixed top-[20vw] md:top-[-0vh] right-[-40vw] md:right-[10vw] z-10 w-[100vw] md:w-[48vw] w-[100vw] md:h-[48vw] transition-all duration-1500 ease-in-out`}
@@ -115,7 +115,7 @@ const SubmitAPub = () => {
           <span className="font-bold text-white">Pubs In The Sun</span>?
         </p>
 
-        <div className="flex w-full flex-col items-start justify-start gap-4 mt-6 md:mt-22 max-w-[400px]">
+        <div className="flex w-full flex-col items-start justify-start gap-4 mt-6 md:mt-16 max-w-[400px]">
           <input
             type="text"
             autoFocus
