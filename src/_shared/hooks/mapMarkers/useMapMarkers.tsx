@@ -85,35 +85,49 @@ const useMapMarkers = (): MapMarkersResponse => {
   );
 
   // Create map-ready markers with optimized lookups
-  const mapReadyMarkers = pubsInMapBounds.map((pub) => {
-    const areasForPub = areasInMapBounds.filter(
-      ({ pub_id, type }) =>
-        pub_id === pub.id && areaTypeFilters.includes(type as AreaType)
-    );
+  const mapReadyMarkers = pubsInMapBounds
+    .map((pub) => {
+      const areasForPub = areasInMapBounds.filter(
+        ({ pub_id, type }) =>
+          pub_id === pub.id && areaTypeFilters.includes(type as AreaType)
+      );
 
-    const pubAreas = areasForPub.map((area) => ({
-      id: area.id,
-      type: area.type,
-      pc_in_sun: sunEvalLookup[area.id] || 0,
-      floor_area: area.floor_area,
-    }));
+      // Only include areas that have a sun evaluation (pc_in_sun >= 0)
+      const pubAreas = areasForPub
+        .map((area) => {
+          const sunPercentage =
+            sunEvalLookup[area.id] !== undefined ? sunEvalLookup[area.id] : -1;
+          return {
+            id: area.id,
+            type: area.type,
+            pc_in_sun: sunPercentage,
+            floor_area: area.floor_area,
+          };
+        })
+        .filter((area) => area.pc_in_sun >= 0); // Only include areas with sun evaluations
 
-    const bestSunPercent =
-      pubAreas.length > 0
-        ? Math.max(...pubAreas.map((area) => area.pc_in_sun))
-        : 0;
+      const bestSunPercent =
+        pubAreas.length > 0
+          ? Math.max(...pubAreas.map((area) => area.pc_in_sun))
+          : 0;
 
-    return {
-      pub: {
-        id: pub.id,
-        name: pub.name,
-        latitude: pub.latitude,
-        longitude: pub.longitude,
-      },
-      pubAreas,
-      bestSunPercent,
-    };
-  });
+      // Only return the pub if it has at least one area with a sun evaluation
+      if (pubAreas.length === 0) {
+        return null; // This pub has no areas with sun evaluations
+      }
+
+      return {
+        pub: {
+          id: pub.id,
+          name: pub.name,
+          latitude: pub.latitude,
+          longitude: pub.longitude,
+        },
+        pubAreas,
+        bestSunPercent,
+      };
+    })
+    .filter(Boolean) as MapReadyMarker[]; // Filter out null values
 
   // Count markers by sun quality using filter instead of multiple reduces
   const goodSunCount = mapReadyMarkers.filter(
@@ -147,6 +161,10 @@ const useMapMarkers = (): MapMarkersResponse => {
     )
       return true;
     return false;
+  });
+
+  console.log("filteredBySunQualityMarkers", {
+    filteredBySunQualityMarkers,
   });
 
   return {

@@ -2,13 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 
 export interface PubState {
-  selectedPubId: number;
-  hoveredPubId: number;
-
   timestamp: number;
-
-  // Filters
-  selectedFilters: string[];
 
   // Map Bounds
   mapBounds: google.maps.LatLngBoundsLiteral;
@@ -24,10 +18,7 @@ const PubContext = createContext<PubContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEY = "pubState";
 
 const defaultState: PubState = {
-  selectedPubId: 0,
-  hoveredPubId: 0,
   timestamp: Date.now(),
-  selectedFilters: ["full_sun", "partial_sun"],
   mapBounds: {
     north: 0,
     south: 0,

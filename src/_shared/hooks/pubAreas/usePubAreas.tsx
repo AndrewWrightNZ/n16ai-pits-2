@@ -16,6 +16,7 @@ import useCommunications from "../communication/useCommunication";
 // Hooks
 import usePubs from "../pubs/usePubs";
 import useDeviceDetect from "../useDeviceDetect";
+import { getCurrentJulianWeek } from "../../utils";
 
 // Interfaces
 interface SaveVisionMaskPayload {
@@ -203,31 +204,20 @@ const usePubAreas = (): PubAreasResponse => {
   };
 
   const fetchSimulationReadyPubs = async () => {
-    // Get today's date
-    const today = new Date();
+    const currentJulianWeek = getCurrentJulianWeek();
 
-    // Calculate date 7 days ago
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 7);
-
-    // Fetch records with has_vision_masks_added = true
+    // Fetch records with has_vision_masks_added = true and (last_processed_julian_week less than current week OR null)
     const { data, error } = await supabaseClient
       .from("pub")
       .select()
-      .eq("has_vision_masks_added", true);
+      .eq("has_vision_masks_added", true)
+      .or(
+        `last_processed_julian_week.lt.${currentJulianWeek},last_processed_julian_week.is.null`
+      );
 
     if (error) throw error;
 
-    // Filter records based on last_checked date
-    return data.filter((pub) => {
-      if (!pub.last_checked) return false;
-
-      // Parse the date in DD-MM-YYYY format
-      const [day, month, year] = pub.last_checked.split("-").map(Number);
-      const lastCheckedDate = new Date(year, month - 1, day); // Month is 0-indexed in JS Date
-
-      return lastCheckedDate < sevenDaysAgo;
-    });
+    return data;
   };
 
   // Queries

@@ -307,3 +307,25 @@ export const getFormattedTimeString = () => {
 
   return `${formattedHours}-${formattedMinutes}`;
 };
+
+// Calculate current Julian week
+export const getCurrentJulianWeek = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+
+  // Get start of year
+  const startOfYear = new Date(year, 0, 1);
+
+  // Calculate days since start of year
+  const daysSinceStartOfYear = Math.floor(
+    (now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000)
+  );
+
+  // Calculate week number (1-based)
+  const weekNumber = Math.ceil(
+    (daysSinceStartOfYear + startOfYear.getDay() + 1) / 7
+  );
+
+  // Format as YYYYWW
+  return parseInt(`${year}${weekNumber.toString().padStart(2, "0")}`);
+};
