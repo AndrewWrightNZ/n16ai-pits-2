@@ -1,9 +1,8 @@
 terraform {
   backend "s3" {
     bucket         = "n16-terraform-state-bucket"
-    key            = "n16-pits-terraform.tfstate"
+    key            = "n16-pits-azul-terraform.tfstate"
     region         = "us-east-1"
-    # dynamodb_table = "terraform-lock-table" # Optional, for state locking
     encrypt        = true
   }
 
@@ -33,15 +32,14 @@ data "aws_security_group" "shared_lb_security_group" {
   name = "n16_shared_security_group"
 }
 
-# Data source for shared HTTPS listener
 data "aws_lb_listener" "shared_https_listener" {
   load_balancer_arn = data.aws_lb.nsixteen_shared_lb.arn
   port              = 443
 }
 
 # Creating an ECR Repository
-resource "aws_ecr_repository" "n16-pubs-in-the-sun" {
-    name                 = "n16-pubs-in-the-sun"
+resource "aws_ecr_repository" "n16-pits-azul" {
+    name                 = "n16-pits-azul"
     image_tag_mutability = "MUTABLE"
     force_delete         = true
  
@@ -52,37 +50,77 @@ resource "aws_ecr_repository" "n16-pubs-in-the-sun" {
 
 # --- Build & push inintial image ---
 locals {
-  repo_url = aws_ecr_repository.n16-pubs-in-the-sun.repository_url
+  repo_url = aws_ecr_repository.n16-pits-azul.repository_url
+}
+
+variable "image_tag" {
+  description = "Specific Docker image tag to deploy"
+  default     = "latest"
+}
+
+variable "AWS_ACCESS_KEY_ID" {
+  description = "AWS Access Key ID"
+  sensitive   = true
+}
+
+variable "AWS_SECRET_ACCESS_KEY" {
+  description = "AWS Secret Access Key"
+  sensitive   = true
+}
+
+variable "VITE_SUPABASE_URL" {
+  description = "Supabase URL"
+  sensitive   = true
+}
+
+variable "VITE_SUPABASE_ANON_KEY" {
+  description = "Supabase Anonymous Key"
+  sensitive   = true
+}
+
+variable "VITE_GOOGLE_MAPS_API_KEY" {
+  description = "Google Maps API Key"
+  sensitive   = true
+}
+
+variable "VITE_ENCRYPTION_KEY" {
+  description = "Encryption Key"
+  sensitive   = true
 }
 
 resource "null_resource" "image" {
+  # Only run this when not in CI/CD (when var.image_tag is "latest")
+  count = var.image_tag == "latest" ? 1 : 0
+  
   triggers = {
-    hash = md5(join("-", [for x in fileset("", "./{*.py,*.tsx,Dockerfile}") : filemd5(x)]))
+    hash = md5(join("-", [for x in fileset("${path.module}/..", "{*.py,*.tsx,Dockerfile}") : filemd5("${path.module}/../${x}")]))
   }
 
   provisioner "local-exec" {
     command = <<EOT
+      # Print current directory and list files for debugging
+      pwd
+      ls -la
+      
+      # Print root directory and list files for debugging
+      pwd
+      ls -la
+      
       # Retrieve the ECR authentication token
       aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${local.repo_url}
       
       # Build and push the Docker image
-      docker build --platform linux/amd64 -t ${local.repo_url}:latest .
-      docker push ${local.repo_url}:latest
+      docker build --platform linux/amd64 -t ${local.repo_url}:${var.image_tag} .
+      docker push ${local.repo_url}:${var.image_tag}
     EOT
 
     interpreter = ["bash", "-c"]
   }
 }
 
-data "aws_ecr_image" "latest" {
-  repository_name = aws_ecr_repository.n16-pubs-in-the-sun.name
-  image_tag       = "latest"
-  depends_on      = [null_resource.image]
-}
-
 # Creating an ECS cluster
-resource "aws_ecs_cluster" "n16-pubs-in-the-sun-cluster" {
-  name = "n16-pubs-in-the-sun-cluster" # Naming the cluster
+resource "aws_ecs_cluster" "n16-pits-azul-cluster" {
+  name = "n16-pits-azul-cluster" 
 }
 
 # creating an iam policy document for ecsTaskExecutionRole
@@ -99,7 +137,7 @@ data "aws_iam_policy_document" "assume_role_policy" {
 
 # creating an iam role with needed permissions to execute tasks
 resource "aws_iam_role" "ecsTaskExecutionRole" {
-  name               = "n16-pubs-in-the-sun-ecsTaskExecutionRole"
+  name               = "n16-pits-azul-ecsTaskExecutionRole"
   assume_role_policy = data.aws_iam_policy_document.assume_role_policy.json
 }
 
@@ -110,12 +148,12 @@ resource "aws_iam_role_policy_attachment" "ecsTaskExecutionRole_policy" {
 }
 
 # Creating the task definition
-resource "aws_ecs_task_definition" "n16-pubs-in-the-sun-task" {
-  family                   = "n16-pubs-in-the-sun-task"
+resource "aws_ecs_task_definition" "n16-pits-azul-task" {
+  family                   = "n16-pits-azul-task"
   container_definitions    = jsonencode([
     {
-      name : "n16-pubs-in-the-sun-container",
-      image : "${aws_ecr_repository.n16-pubs-in-the-sun.repository_url}:latest",
+      name : "n16-pits-azul-container",
+      image : "${aws_ecr_repository.n16-pits-azul.repository_url}:${var.image_tag}",
       essential : true,
       portMappings : [
         {
@@ -128,6 +166,8 @@ resource "aws_ecs_task_definition" "n16-pubs-in-the-sun-task" {
       environment : [
         { name : "VITE_SUPABASE_URL", value : var.VITE_SUPABASE_URL },
         { name : "VITE_SUPABASE_ANON_KEY", value : var.VITE_SUPABASE_ANON_KEY },
+        { name : "VITE_GOOGLE_MAPS_API_KEY", value : var.VITE_GOOGLE_MAPS_API_KEY },
+        { name : "VITE_ENCRYPTION_KEY", value : var.VITE_ENCRYPTION_KEY },
       ]
     }
   ])
@@ -142,14 +182,14 @@ resource "aws_ecs_task_definition" "n16-pubs-in-the-sun-task" {
 resource "aws_appautoscaling_target" "ecs_target" {
   max_capacity       = 5
   min_capacity       = 1
-  resource_id        = "service/${aws_ecs_cluster.n16-pubs-in-the-sun-cluster.name}/${aws_ecs_service.n16-pubs-in-the-sun-service.name}"
+  resource_id        = "service/${aws_ecs_cluster.n16-pits-azul-cluster.name}/${aws_ecs_service.n16-pits-azul-service.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
 # Application Auto Scaling Policy
 resource "aws_appautoscaling_policy" "ecs_policy" {
-  name               = "n16-pubs-in-the-sun-autoscaling-policy"
+  name               = "n16-pits-azul-autoscaling-policy"
   policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.ecs_target.resource_id
   scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
@@ -159,7 +199,7 @@ resource "aws_appautoscaling_policy" "ecs_policy" {
     predefined_metric_specification {
       predefined_metric_type = "ECSServiceAverageCPUUtilization"
     }
-    target_value = 50.0
+    target_value = 80.0
   }
 }
 
@@ -180,76 +220,21 @@ resource "aws_default_subnet" "default_subnet_c" {
   availability_zone = "us-east-1c"
 }
 
-# Creating a target group for the load balancer
-resource "aws_lb_target_group" "n16-pubs-in-the-sun-target-group" {
-  name        = "n16-pubs-in-the-sun-tg"
-  port        = 80
-  protocol    = "HTTP"
-  target_type = "ip"
-  vpc_id      = aws_default_vpc.default_vpc.id
-
-  health_check {
-    matcher = "200,301,302"
-    path    = "/"
-  }
-
-  deregistration_delay = 300
-
-  stickiness {
-    type            = "lb_cookie"
-    cookie_duration = 86400
-    enabled         = false
-  }
-
-  tags = {
-    Name = "n16-pubs-in-the-sun-target-group"
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
+# Reference to the existing certificate
+data "aws_acm_certificate" "pubsinthesun" {
+  domain = "*.pubsinthesun.com"
+  statuses = ["ISSUED"]
+  most_recent = true
 }
 
-# Listener Rule
-resource "aws_lb_listener_rule" "n16_pubs_in_the_sun" {
-  listener_arn = data.aws_lb_listener.shared_https_listener.arn
-  priority     = 50
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.n16-pubs-in-the-sun-target-group.arn
-  }
-
-  condition {
-    host_header {
-      values = ["www.pubsinthesun.co.uk"]
-    }
-  }
-}
-
-# Creating the service
-resource "aws_ecs_service" "n16-pubs-in-the-sun-service" {
-  name            = "n16-pubs-in-the-sun-service"
-  cluster         = aws_ecs_cluster.n16-pubs-in-the-sun-cluster.id
-  task_definition = aws_ecs_task_definition.n16-pubs-in-the-sun-task.arn
-  launch_type     = "FARGATE"
-  desired_count   = 1
-
-  load_balancer {
-    target_group_arn = aws_lb_target_group.n16-pubs-in-the-sun-target-group.arn
-    container_name   = "n16-pubs-in-the-sun-container"
-    container_port   = 3000
-  }
-
-  network_configuration {
-    subnets          = [aws_default_subnet.default_subnet_a.id, aws_default_subnet.default_subnet_b.id, aws_default_subnet.default_subnet_c.id]
-    assign_public_ip = true
-    security_groups  = [aws_security_group.n16-pubs-in-the-sun-service_security_group.id]
-  }
+# Add certificate to the existing listener via SNI
+resource "aws_lb_listener_certificate" "azul_preview" {
+  listener_arn    = data.aws_lb_listener.shared_https_listener.arn
+  certificate_arn = data.aws_acm_certificate.pubsinthesun.arn
 }
 
 # Creating a security group for the load balancer:
-resource "aws_security_group" "n16-pubs-in-the-sun-lb_security_group" {
+resource "aws_security_group" "n16-pits-azul-lb_security_group" {
   ingress {
     from_port   = 80 
     to_port     = 80
@@ -272,8 +257,76 @@ resource "aws_security_group" "n16-pubs-in-the-sun-lb_security_group" {
   }
 }
 
+# Creating a target group for the load balancer
+resource "aws_lb_target_group" "n16-pits-azul-tg" {
+  name        = "n16-pits-azul-tg"
+  port        = 80
+  protocol    = "HTTP"
+  target_type = "ip"
+  vpc_id      = aws_default_vpc.default_vpc.id # Referencing the default VPC
+
+  health_check {
+    matcher = "200,301,302"
+    path    = "/"
+  }
+
+  deregistration_delay = 300
+
+  stickiness {
+    type            = "lb_cookie"
+    cookie_duration = 86400
+    enabled         = false
+  }
+
+  tags = {
+    Name = "n16-pits-azul-tg"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Listener Rule
+resource "aws_lb_listener_rule" "n16_pits_azul" {
+  listener_arn = data.aws_lb_listener.shared_https_listener.arn
+  priority     = 20
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.n16-pits-azul-tg.arn
+  }
+
+  condition {
+    host_header {
+      values = ["www.pubsinthesun.com"]
+    }
+  }
+}
+
+# Creating the service
+resource "aws_ecs_service" "n16-pits-azul-service" {
+  name            = "n16-pits-azul-service"
+  cluster         = aws_ecs_cluster.n16-pits-azul-cluster.id
+  task_definition = aws_ecs_task_definition.n16-pits-azul-task.arn
+  launch_type     = "FARGATE"
+  desired_count   = 1
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.n16-pits-azul-tg.arn
+    container_name   = "n16-pits-azul-container"
+    container_port   = 3000
+  }
+
+  network_configuration {
+    subnets          = [aws_default_subnet.default_subnet_a.id, aws_default_subnet.default_subnet_b.id, aws_default_subnet.default_subnet_c.id]
+    assign_public_ip = true
+    security_groups  = [aws_security_group.n16-pits-azul-service_security_group.id]
+  }
+}
+
 # Creating a security group for the service
-resource "aws_security_group" "n16-pubs-in-the-sun-service_security_group" {
+resource "aws_security_group" "n16-pits-azul-service_security_group" {
   ingress {
     from_port       = 0
     to_port         = 0
@@ -289,20 +342,90 @@ resource "aws_security_group" "n16-pubs-in-the-sun-service_security_group" {
   }
 }
 
-# Route 53 A Record
-resource "aws_route53_record" "www_pubsinthesun_co_uk" {
-  zone_id = "Z05108222H2EZWWRTK9Y2"  # Pubs in the Sun Hosted Zone
-  name    = "www.pubsinthesun.co.uk"
+# Update Route 53 record to point directly to the ALB
+resource "aws_route53_record" "preview_pubsinthesun_com" {
+  zone_id = "Z06588857HKEU14YCHXU" 
+  name    = "www.pubsinthesun.com"
   type    = "A"
 
   alias {
     name                   = data.aws_lb.nsixteen_shared_lb.dns_name
     zone_id                = data.aws_lb.nsixteen_shared_lb.zone_id
-    evaluate_target_health = true
+    evaluate_target_health = false
+  }
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
-output "website_url" {
-  value       = "https://www.pubsinthesun.co.uk"
-  description = "URL for Pubs in the Sun website"
+# Create S3 bucket for apex domain redirect
+resource "aws_s3_bucket" "apex_redirect" {
+  bucket = "pubsinthesun.com"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# Configure the bucket for website hosting with redirect
+resource "aws_s3_bucket_website_configuration" "apex_redirect_config" {
+  bucket = aws_s3_bucket.apex_redirect.id
+
+  redirect_all_requests_to {
+    host_name = "www.pubsinthesun.com"
+    protocol  = "https"
+  }
+}
+
+# Make the bucket publicly accessible
+resource "aws_s3_bucket_public_access_block" "apex_redirect_public" {
+  bucket = aws_s3_bucket.apex_redirect.id
+
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
+  restrict_public_buckets = false
+}
+
+# Add bucket policy to allow public access
+resource "aws_s3_bucket_policy" "apex_redirect_policy" {
+  bucket = aws_s3_bucket.apex_redirect.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.apex_redirect.arn}/*"
+      }
+    ]
+  })
+
+  depends_on = [aws_s3_bucket_public_access_block.apex_redirect_public]
+}
+
+# Add Route 53 record for apex domain pointing to S3 website
+resource "aws_route53_record" "apex_pubsinthesun_com" {
+  zone_id = "Z06588857HKEU14YCHXU"
+  name    = "pubsinthesun.com"
+  type    = "A"
+
+  alias {
+    name                   = aws_s3_bucket_website_configuration.apex_redirect_config.website_domain
+    zone_id                = "Z3AQBSTGFYJSTF" # This is the fixed S3 website hosted zone ID for us-east-1
+    evaluate_target_health = false
+  }
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# Update the output to only include the preview URL
+output "preview_url" {
+  value       = "https://www.pubsinthesun.com"
+  description = "URL for the main environment (served directly via ALB)"
 }
