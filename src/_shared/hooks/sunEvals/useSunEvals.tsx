@@ -141,8 +141,6 @@ const useSunEvals = (): SunEvalsResponse => {
     queryFn: fetchSunEvalsForTimeslot,
   });
 
-  console.log("sunEvalsForTimeslot", { sunEvalsForTimeslot });
-
   //
 
   // Handlers
