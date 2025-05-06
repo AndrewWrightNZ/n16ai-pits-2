@@ -24,6 +24,9 @@ export interface Pub {
   has_areas_measured: boolean;
   has_labels_added: boolean;
   has_vision_masks_added: boolean;
+
+  // Processing
+  last_processed_julian_week: number;
 }
 
 export interface SimpleCameraPosition {

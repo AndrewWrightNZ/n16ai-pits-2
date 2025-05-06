@@ -12,7 +12,7 @@ const AdminOverview = () => {
 
   // Hooks
   const {
-    data: { pubs = [] },
+    data: { pubs = [], pubsProcessedThisJulianWeek = [] },
   } = usePubs();
 
   // Effect to refetch pubs when component mounts
@@ -117,6 +117,17 @@ const AdminOverview = () => {
               Pubs with vision masks added: {pubsWithVisionMasksAdded.length} of{" "}
               {pubs.length} ({visionMasksAddedPercent}%)
             </p>
+          </div>
+        </div>
+
+        <div className="p-4 bg-white rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Sun Evaluation Metrics</h2>
+          <div className="space-y-4">
+            <ProgressBar
+              value={pubsProcessedThisJulianWeek.length}
+              max={pubsWithVisionMasksAdded.length}
+              label="Pubs processed for this week"
+            />
           </div>
         </div>
       </div>

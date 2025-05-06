@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 // Context
+import { usePubAreasContext } from "../../providers/PubAreasProvider";
 import { SunEvalsState, useSunEvalsContext } from "../../providers/useSunEvals";
 
 // Types
@@ -10,8 +11,7 @@ import { SunEval } from "../../types";
 import { supabaseClient } from "../../hooks/useSupabase";
 
 // Helpers
-import { getCurrentTimeSlot } from "../../utils";
-import { usePubAreasContext } from "../../providers/PubAreasProvider";
+import { getCurrentJulianWeek, getCurrentTimeSlot } from "../../utils";
 
 interface SunEvalsData extends SunEvalsState {
   // Loading
@@ -52,22 +52,27 @@ const useSunEvals = (): SunEvalsResponse => {
   const { selectedTimeslot, sunQualitySelected } = sunEvalsState || {};
   const { selectedPubArea, selectedPubId } = pubAreasState || {};
 
+  const julianWeek = getCurrentJulianWeek();
+
   //
 
   // Mutations
   const GET_SUN_EVALS_FOR_PUB_AREA_QUERY_KEY = [
     "getSunEvalsForPubArea",
     selectedPubArea?.id,
+    julianWeek,
   ];
 
   const GET_SUN_EVALS_FOR_ALL_PUB_AREAS_QUERY_KEY = [
     "getSunEvalsForAllPubAreas",
     selectedPubId,
+    julianWeek,
   ];
 
   const GET_SUN_EVALS_FOR_TIMESLOT_QUERY_KEY = [
     "getSunEvalsForTimeslot",
     selectedTimeslot,
+    julianWeek,
   ];
 
   //
@@ -78,7 +83,8 @@ const useSunEvals = (): SunEvalsResponse => {
     const { data, error } = await supabaseClient
       .from("sun_eval_reg")
       .select("*")
-      .eq("area_id", selectedPubArea?.id);
+      .eq("area_id", selectedPubArea?.id)
+      .eq("julian_week", julianWeek);
 
     if (error) throw error;
     return data;
@@ -89,7 +95,8 @@ const useSunEvals = (): SunEvalsResponse => {
     const { data, error } = await supabaseClient
       .from("sun_eval_reg")
       .select("*")
-      .eq("pub_id", selectedPubId);
+      .eq("pub_id", selectedPubId)
+      .eq("julian_week", julianWeek);
 
     if (error) throw error;
     return data;
@@ -100,7 +107,8 @@ const useSunEvals = (): SunEvalsResponse => {
     const { data, error } = await supabaseClient
       .from("sun_eval_reg")
       .select("*")
-      .eq("time", selectedTimeslot);
+      .eq("time", selectedTimeslot)
+      .eq("julian_week", julianWeek);
 
     if (error) throw error;
     return data;
@@ -132,6 +140,8 @@ const useSunEvals = (): SunEvalsResponse => {
     queryKey: GET_SUN_EVALS_FOR_TIMESLOT_QUERY_KEY,
     queryFn: fetchSunEvalsForTimeslot,
   });
+
+  console.log("sunEvalsForTimeslot", { sunEvalsForTimeslot });
 
   //
 
