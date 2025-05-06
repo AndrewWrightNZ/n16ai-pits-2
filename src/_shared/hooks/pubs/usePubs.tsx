@@ -1,15 +1,16 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 // Hooks
 import { supabaseClient } from "../useSupabase";
 
 // Contexts
+import { PubState } from "../../providers/PubProvider";
 import { usePubContext } from "../../providers/PubProvider";
 
 // Types
 import { Pub } from "../../types";
-import { PubState } from "../../providers/PubProvider";
+import { getCurrentJulianWeek } from "../../utils";
 
 //
 
@@ -29,7 +30,7 @@ interface PubsData extends PubState {
   uiReadyPubs: Pub[];
   pubsInMapBounds: Pub[];
 
-  selectedPub: Pub | null;
+  pubsProcessedThisJulianWeek: Pub[];
 
   // Filters
   availableFilters: string[];
@@ -39,18 +40,6 @@ interface HookShape {
   data: PubsData;
 
   operations: {
-    // Local state
-    onSetSelectedPubId: (
-      id: number,
-      force?: boolean,
-      autoPilot?: boolean
-    ) => void;
-
-    onSetHoveredPubId: (pubId: number) => void;
-
-    // Filtering
-    onSelectFilter: (newSelectedFilter: string) => void;
-
     // Map Bounds
     onSetMapBounds: (bounds: any) => void;
 
@@ -64,20 +53,6 @@ const usePubs = (): HookShape => {
 
   // Contexts
   const { pubState, updatePubState } = usePubContext();
-
-  const {
-    selectedPubId = 0,
-    hoveredPubId = 0,
-    selectedFilters = [],
-
-    // Map Bounds
-    mapBounds = {
-      north: 0,
-      south: 0,
-      east: -0,
-      west: -0,
-    },
-  } = pubState;
 
   //
 
@@ -119,12 +94,22 @@ const usePubs = (): HookShape => {
     queryFn: fetchUIReadyPubs,
   });
 
-  const selectedPub = uiReadyPubs.find((pub: Pub) => pub.id === selectedPubId);
-
   //
 
   // Variables
   const isAllDataLoaded = !isLoading;
+
+  const currentJulianWeek = getCurrentJulianWeek();
+
+  const {
+    // Map Bounds
+    mapBounds = {
+      north: 0,
+      south: 0,
+      east: -0,
+      west: -0,
+    },
+  } = pubState;
 
   //
 
@@ -145,56 +130,10 @@ const usePubs = (): HookShape => {
     });
   }, [uiReadyPubs, mapBounds, isAllDataLoaded]);
 
-  //
-
-  // Handlers
-
-  const onSetSelectedPubId = useCallback(
-    (id: number, force?: boolean, autoPilot: boolean = false) => {
-      if (selectedPubId === id && !force) {
-        updatePubState({ selectedPubId: 0 });
-      } else {
-        updatePubState({ selectedPubId: id });
-
-        const selectedPub = pubs.find((pub: Pub) => pub.id === id);
-        const isDev = import.meta.env.DEV;
-
-        if (!isDev && !autoPilot && selectedPub) {
-          //   onSendSlackMessage({
-          //     messageText: `🍻 ${selectedPub.name}, ${selectedPub.address_text} selected on Map - (${isMobile ? "M" : "D"})`,
-          //     channelName: "pubs-in-the-sun",
-          //   });
-        }
-      }
-    },
-    [selectedPubId, pubs, updatePubState]
-  );
-
-  const onSetHoveredPubId = useCallback(
-    (pubId: number) => {
-      updatePubState({ hoveredPubId: pubId === hoveredPubId ? 0 : pubId });
-    },
-    [hoveredPubId, updatePubState]
-  );
-
-  const onSelectFilter = (newSelectedFilter: string) => {
-    // Check if we're adding or removing the filter
-    const alreadySelected = selectedFilters.includes(newSelectedFilter);
-
-    let newSelectedFilters: string[] = [];
-
-    if (alreadySelected) {
-      // Remove the filter
-      newSelectedFilters = selectedFilters.filter(
-        (filter) => filter !== newSelectedFilter
-      );
-    } else {
-      // Add the filter
-      newSelectedFilters = [...selectedFilters, newSelectedFilter];
-    }
-
-    updatePubState({ selectedFilters: newSelectedFilters });
-  };
+  const pubsProcessedThisJulianWeek = uiReadyPubs.filter((pub: Pub) => {
+    const { last_processed_julian_week } = pub;
+    return last_processed_julian_week === currentJulianWeek;
+  });
 
   //
 
@@ -214,27 +153,18 @@ const usePubs = (): HookShape => {
       // Pubs
       pubs,
       uiReadyPubs,
-      selectedPub,
-      selectedPubId,
-      hoveredPubId,
 
       pubsInMapBounds,
+
+      pubsProcessedThisJulianWeek,
 
       // Map bounds
       mapBounds,
 
       // Filters
-      selectedFilters,
       availableFilters: AVAILABLE_FILTERS,
     },
     operations: {
-      // View
-      onSetSelectedPubId,
-      onSetHoveredPubId,
-
-      // Filtering
-      onSelectFilter,
-
       // Map Bounds
       onSetMapBounds,
 
