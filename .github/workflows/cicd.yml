@@ -1,0 +1,113 @@
+name: Auto deploy to AWS ECS with Terraform (Azul)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main # Explicitly checkout the main branch
+
+      - name: Check current branch
+        run: |
+          echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+          echo "Git SHA: ${{ github.sha }}"
+          echo "GitHub ref: ${{ github.ref }}"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.2.0
+
+      - name: Run Terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          TF_VAR_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          TF_VAR_VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          TF_VAR_VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          TF_VAR_VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          TF_VAR_VITE_ENCRYPTION_KEY: ${{ secrets.VITE_ENCRYPTION_KEY }}
+          TF_VAR_image_tag: ${{ github.sha }}
+        run: |
+          # Initialize Terraform
+          terraform init
+          # Plan Terraform changes
+          echo "Running terraform plan..."
+          terraform plan -out=tfplan -var="image_tag=${{ github.sha }}"
+          # Apply Terraform changes
+          echo "Applying terraform changes..."
+          terraform apply -auto-approve "tfplan"
+
+  build:
+    needs: infra
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: main # Explicitly checkout the main branch
+
+      - name: Check current branch
+        run: |
+          echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+          echo "Git SHA: ${{ github.sha }}"
+          echo "GitHub ref: ${{ github.ref }}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: n16-pits-azul
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 \
+          --build-arg VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }} \
+          --build-arg VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }} \
+          --build-arg VITE_GOOGLE_MAPS_API_KEY=${{ secrets.VITE_GOOGLE_MAPS_API_KEY }} \
+          --build-arg VITE_ENCRYPTION_KEY=${{ secrets.VITE_ENCRYPTION_KEY }} \
+          -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Force ECS service update
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: aws ecs update-service --cluster n16-pits-azul-cluster --service n16-pits-azul-service --force-new-deployment
+
+      # Wait for deployment to complete before invalidating cache
+      - name: Wait for service to stabilize
+        run: |
+          aws ecs wait services-stable \
+            --cluster n16-pits-azul-cluster \
+            --services n16-pits-azul-service

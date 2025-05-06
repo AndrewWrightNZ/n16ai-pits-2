@@ -4,6 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Hide any loading text that might appear during initial load -->
+    <style>
+      /* Hide any element that contains only 'Loading...' text */
+      body > *:not(#root):empty + *:not(script):not(style),
+      body > div:not(#root),
+      #root > div:empty + div:only-child {
+        display: none !important;
+      }
+    </style>
+    <script>
+      // This script will run immediately and remove any element with text content of only 'Loading...'
+      (function () {
+        function hideLoadingText() {
+          const allElements = document.querySelectorAll("*");
+          for (let i = 0; i < allElements.length; i++) {
+            const el = allElements[i];
+            if (
+              el.childNodes.length === 1 &&
+              el.childNodes[0].nodeType === Node.TEXT_NODE &&
+              el.textContent.trim() === "Loading..."
+            ) {
+              el.style.display = "none";
+            }
+          }
+        }
+
+        // Run immediately
+        hideLoadingText();
+
+        // Also run when DOM is loaded
+        document.addEventListener("DOMContentLoaded", hideLoadingText);
+
+        // And run shortly after load to catch any dynamically added elements
+        setTimeout(hideLoadingText, 100);
+      })();
+    </script>
     <title>Pubs in the Sun | Find Sunny Beer Gardens Near You</title>
     <meta
       name="description"
@@ -104,7 +140,7 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
       rel="stylesheet"
     />
-    <link rel="preload" href="/assets/bigBoldSun.svg" as="image" />
+    <link rel="preload" href="/assets/biggerBolderSun.svg" as="image" />
 
     <!-- Google Analytics -->
     <script
@@ -122,9 +158,6 @@
     </script>
   </head>
   <body>
-    <!-- Skip to main content link for accessibility -->
-    <a href="#main" class="sr-only focus:not-sr-only">Skip to main content</a>
-
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 

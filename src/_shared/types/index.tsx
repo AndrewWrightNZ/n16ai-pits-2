@@ -1,5 +1,15 @@
 import * as THREE from "three";
-import { PolygonCoordinate } from "../../pages/area-identifier/_shared/hooks/usePubAreas";
+import { PolygonCoordinate } from "../hooks/pubAreas/usePubAreas";
+
+// Types
+
+// Define a type for the partial pub data returned from Supabase
+export type PartialPub = Pick<
+  Pub,
+  "id" | "name" | "latitude" | "longitude" | "address_text"
+> & {
+  created_at: string;
+};
 
 export interface Pub {
   id: number;
@@ -8,12 +18,12 @@ export interface Pub {
   latitude: number;
   longitude: number;
   camera_details: CameraPosition;
-  vision_mask_points: number[];
 
   // Areas
   has_areas_added: boolean;
   has_areas_measured: boolean;
   has_labels_added: boolean;
+  has_vision_masks_added: boolean;
 }
 
 export interface SimpleCameraPosition {
@@ -41,6 +51,7 @@ export interface PubArea {
   created_at: string;
   floor_area: number;
   coordinates: PolygonCoordinate[];
+  vision_mask_points: { x: number; y: number }[];
 }
 
 export interface PubLabel {
@@ -77,4 +88,13 @@ export interface SunEvalReport {
     no_sun_count: number;
     total_count: number;
   };
+}
+
+export interface SunEval {
+  id: number;
+  pub_id: number;
+  area_id: number;
+  date: string;
+  time: number;
+  pc_in_sun: number;
 }

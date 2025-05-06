@@ -1,22 +1,19 @@
 import { useState, useMemo } from "react";
-import { ArrowUpDown, Filter } from "lucide-react";
+import { ArrowUpDown, Check, Filter, Sun } from "lucide-react";
 
 // Hooks
-import usePubAreas from "../../area-identifier/_shared/hooks/usePubAreas";
-import usePubs from "../../finder/_shared/hooks/usePubs";
+import usePubs from "../../../_shared/hooks/pubs/usePubs";
+import usePubAreas from "../../../_shared/hooks/pubAreas/usePubAreas";
+
+// Components
+import ViewSelectedArea from "./selectedArea";
+import AreaTableRow from "./selectedArea/areaTableRow";
 
 // Types
 import { PubArea } from "../../../_shared/types";
 
-// Define the area types that can be filtered
-export const AREA_TYPES = [
-  { key: "pavement", label: "Pavement" },
-  { key: "frontage-seating", label: "Frontage seating" },
-  { key: "terrace", label: "Terrace" },
-  { key: "terrace-waterfront", label: "Waterfront Terrace" },
-  { key: "beer-garden", label: "Beer garden" },
-  { key: "courtyard", label: "Courtyard" },
-];
+// Helpers
+import { AREA_TYPES } from "../_shared";
 
 // Define a type for the sortable keys
 type SortableKey = keyof Pick<
@@ -39,8 +36,8 @@ type SortConfig = {
 const AreasList = () => {
   // Hooks
   const {
-    data: { areasOfTypes, selectedAreaTypes },
-    operations: { onToggleAreaTypeFilter },
+    data: { allAvailableAreas, selectedAreaTypes, selectedPubArea },
+    operations: { onToggleAreaTypeFilter, onSelectPubArea },
   } = usePubAreas();
 
   const {
@@ -49,14 +46,14 @@ const AreasList = () => {
 
   // Augment areas with pub details
   const areasWithPubDetails = useMemo(() => {
-    return areasOfTypes.map((area) => {
+    return allAvailableAreas.map((area) => {
       const pub = pubs.find((p) => p.id === area.pub_id);
       return {
         ...area,
         pub_name: pub?.name || "Unknown Pub",
       };
     });
-  }, [areasOfTypes, pubs]);
+  }, [allAvailableAreas, pubs]);
 
   // State for sorting with proper typing
   const [sortConfig, setSortConfig] = useState<SortConfig>({
@@ -111,33 +108,43 @@ const AreasList = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="px-4 sm:px-6 lg:px-8 py-4 bg-white shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-3xl font-extrabold text-gray-900">Pub Areas</h1>
+    <div className="h-screen flex flex-col px-8 py-16">
+      {selectedPubArea && (
+        <div className="bg-white shadow-md rounded-xl p-6 w-[90vw] mx-auto mb-8">
+          <ViewSelectedArea />
+        </div>
+      )}
+      <div className="flex flex-col bg-none w-[90vw] mx-auto rounded-t-xl gap-6 mb-8">
+        <div className="flex justify-between items-center text-white">
+          <h1 className="text-5xl font-bold font-poppins">
+            London's Sunniest Pub Areas
+          </h1>
           <div className="flex items-center">
-            <Filter className="mr-2 text-gray-500" />
-            <span className="text-gray-600">
-              Filtered Areas: {areasOfTypes.length || "0"}
+            <Filter className="mr-2" />
+            <span className="">
+              Filtered Areas: {allAvailableAreas.length || "0"}
             </span>
           </div>
         </div>
 
         {/* Area Type Filters */}
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex w-full">
           {AREA_TYPES.map(({ key, label }) => (
             <button
               key={key}
               onClick={() => onToggleAreaTypeFilter(key)}
               className={`
-                px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ease-in-out
+                px-4 py-2 flex fle rounded-full text-sm font-medium transition-all duration-200 ease-in-out mr-2
                 ${
                   selectedAreaTypes?.includes(key)
-                    ? "bg-blue-500 text-white hover:bg-blue-600 shadow-md"
-                    : "bg-gray-200 text-gray-700 hover:bg-gray-300 hover:shadow-sm"
+                    ? "bg-white text-blue-600 border-2 border-blue-600 hover:shadow-sm hover:opacity-60"
+                    : "bg-none text-white border-2 border-white hover:shadow-sm hover:opacity-60"
                 }
               `}
             >
+              {selectedAreaTypes?.includes(key) ? (
+                <Check className="mr-2" />
+              ) : null}
               {label}
             </button>
           ))}
@@ -145,19 +152,19 @@ const AreasList = () => {
       </div>
 
       {/* Areas Table */}
-      <div className="flex-grow overflow-auto">
-        {areasOfTypes.length > 0 && (
+      <div className="bg-white shadow-sm w-[90vw] mx-auto rounded-xl overflow-scroll">
+        {allAvailableAreas.length > 0 && (
           <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
                 {[
-                  { key: "pub_name", label: "Pub", width: "15%" },
-                  { key: "name", label: "Name", width: "15%" },
-                  { key: "type", label: "Type", width: "15%" },
-                  { key: "description", label: "Description", width: "25%" },
+                  { key: "pub_name", label: "Pub", width: "14%" },
+                  { key: "name", label: "Name", width: "14%" },
+                  { key: "type", label: "Type", width: "14%" },
+                  { key: "description", label: "Description", width: "24%" },
                   { key: "floor_area", label: "Floor Area", width: "10%" },
-                  { key: "latitude", label: "Latitude", width: "10%" },
-                  { key: "longitude", label: "Longitude", width: "10%" },
+                  { key: "latitude", label: "Latitude", width: "8%" },
+                  { key: "longitude", label: "Longitude", width: "8%" },
                 ].map(({ key, label, width }) => (
                   <th
                     key={key}
@@ -171,37 +178,29 @@ const AreasList = () => {
                     </div>
                   </th>
                 ))}
+                <th
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-100 transition-colors"
+                  style={{ width: "10%" }}
+                >
+                  <Sun className="h-4 w-4 text-amber-500" />
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sortedAreas.map((area, index) => (
-                <tr
+                <AreaTableRow
                   key={area.id || index}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  {[
-                    area.pub_name,
-                    area.name,
-                    area.type,
-                    area.description,
-                    area.floor_area?.toFixed(2),
-                    area.latitude?.toFixed(4),
-                    area.longitude?.toFixed(4),
-                  ].map((value, idx) => (
-                    <td
-                      key={idx}
-                      className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 truncate"
-                    >
-                      {value}
-                    </td>
-                  ))}
-                </tr>
+                  area={area}
+                  index={index}
+                  selectedPubArea={selectedPubArea}
+                  onSelectPubArea={onSelectPubArea}
+                />
               ))}
             </tbody>
           </table>
         )}
 
-        {areasOfTypes.length === 0 && (
+        {allAvailableAreas.length === 0 && (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
             <p className="text-xl text-gray-600">No areas found</p>
             <p className="text-sm text-gray-500 mt-2">

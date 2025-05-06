@@ -2,8 +2,9 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Hooks
-import usePubs from "../finder/_shared/hooks/usePubs";
+
 import ProgressBar from "./_shared/components/ProgressBar";
+import usePubs from "../../_shared/hooks/pubs/usePubs";
 
 const AdminOverview = () => {
   // Add query client
@@ -32,6 +33,10 @@ const AdminOverview = () => {
     return has_labels_added;
   });
 
+  const pubsWithVisionMasksAdded = pubs.filter(({ has_vision_masks_added }) => {
+    return has_vision_masks_added;
+  });
+
   // Targets
   const pubsTarget = 1000;
 
@@ -44,6 +49,9 @@ const AdminOverview = () => {
     : 0;
   const labelsAddedPercent = pubs.length
     ? Math.round((pubsWithLabelsAdded.length / pubs.length) * 100)
+    : 0;
+  const visionMasksAddedPercent = pubs.length
+    ? Math.round((pubsWithVisionMasksAdded.length / pubs.length) * 100)
     : 0;
 
   return (
@@ -78,6 +86,12 @@ const AdminOverview = () => {
             />
 
             <ProgressBar
+              value={pubsWithVisionMasksAdded.length}
+              max={pubs.length}
+              label="Pubs with Vision Masks Added"
+            />
+
+            <ProgressBar
               value={pubsWithLabelsAdded.length}
               max={pubs.length}
               label="Pubs with Labels added"
@@ -97,6 +111,11 @@ const AdminOverview = () => {
             <p>
               Pubs with labels added: {pubsWithLabelsAdded.length} of{" "}
               {pubs.length} ({labelsAddedPercent}%)
+            </p>
+
+            <p>
+              Pubs with vision masks added: {pubsWithVisionMasksAdded.length} of{" "}
+              {pubs.length} ({visionMasksAddedPercent}%)
             </p>
           </div>
         </div>

@@ -5,4 +5,39 @@ body {
   margin: 0;
   padding: 0;
   background-color: #2962ff;
+  /* Removed hardcoded background color to allow Tailwind classes to work properly */
+}
+
+/* Styles for the collapsible filter buttons */
+.hover-trigger {
+  position: relative;
+}
+
+.hover-trigger::before {
+  content: "";
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  bottom: -20px;
+  left: -20px;
+  z-index: -1;
+}
+
+/* Gradient border for sun icon (middle tier) */
+.sun-icon-gradient-border {
+  position: relative;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.sun-icon-gradient-border::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  bottom: -2px;
+  left: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(45deg, #ffcc00, #ff9500);
 }

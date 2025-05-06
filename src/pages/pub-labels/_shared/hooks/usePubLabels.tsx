@@ -5,13 +5,13 @@ import {
   PubLabelsState,
   usePubLabelsContext,
 } from "../providers/PubLabelsProvider";
-import { usePubAreasContext } from "../../../area-identifier/_shared/providers/PubAreasProvider";
 
 // Hooks
 import { supabaseClient } from "../../../../_shared/hooks/useSupabase";
 
 // Types
 import { Pub, PubLabel } from "../../../../_shared/types";
+import { usePubAreasContext } from "../../../../_shared/providers/PubAreasProvider";
 
 interface SetPubLabelsAddedPayload {
   pub_id: number;

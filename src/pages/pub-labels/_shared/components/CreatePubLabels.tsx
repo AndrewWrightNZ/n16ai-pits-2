@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 // Hooks
 import usePubLabels from "../hooks/usePubLabels";
-import usePubAreas from "../../../area-identifier/_shared/hooks/usePubAreas";
 
 // Types
 import { PubArea, PubLabel } from "../../../../_shared/types";
+import usePubAreas from "../../../../_shared/hooks/pubAreas/usePubAreas";
 
 interface CreatePubLabelsProps {
   tilesSceneRef: React.RefObject<any>;
