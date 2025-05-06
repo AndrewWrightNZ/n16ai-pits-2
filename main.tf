@@ -359,63 +359,15 @@ resource "aws_route53_record" "preview_pubsinthesun_com" {
   }
 }
 
-# Create S3 bucket for apex domain redirect
-resource "aws_s3_bucket" "apex_redirect" {
-  bucket = "pubsinthesun.com"
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-# Configure the bucket for website hosting with redirect
-resource "aws_s3_bucket_website_configuration" "apex_redirect_config" {
-  bucket = aws_s3_bucket.apex_redirect.id
-
-  redirect_all_requests_to {
-    host_name = "www.pubsinthesun.com"
-    protocol  = "https"
-  }
-}
-
-# Make the bucket publicly accessible
-resource "aws_s3_bucket_public_access_block" "apex_redirect_public" {
-  bucket = aws_s3_bucket.apex_redirect.id
-
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
-
-# Add bucket policy to allow public access
-resource "aws_s3_bucket_policy" "apex_redirect_policy" {
-  bucket = aws_s3_bucket.apex_redirect.id
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.apex_redirect.arn}/*"
-      }
-    ]
-  })
-
-  depends_on = [aws_s3_bucket_public_access_block.apex_redirect_public]
-}
-
-# Add Route 53 record for apex domain pointing to S3 website
+# Add Route 53 record for apex domain pointing directly to the ALB (same as www subdomain)
 resource "aws_route53_record" "apex_pubsinthesun_com" {
   zone_id = "Z06588857HKEU14YCHXU"
   name    = "pubsinthesun.com"
   type    = "A"
 
   alias {
-    name                   = aws_s3_bucket_website_configuration.apex_redirect_config.website_domain
-    zone_id                = "Z3AQBSTGFYJSTF" # This is the fixed S3 website hosted zone ID for us-east-1
+    name                   = data.aws_lb.nsixteen_shared_lb.dns_name
+    zone_id                = data.aws_lb.nsixteen_shared_lb.zone_id
     evaluate_target_health = false
   }
 
