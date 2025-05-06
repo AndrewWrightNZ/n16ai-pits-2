@@ -163,10 +163,6 @@ const useMapMarkers = (): MapMarkersResponse => {
     return false;
   });
 
-  console.log("filteredBySunQualityMarkers", {
-    filteredBySunQualityMarkers,
-  });
-
   return {
     data: {
       // Totals

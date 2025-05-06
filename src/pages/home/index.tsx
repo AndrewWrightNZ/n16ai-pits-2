@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 
 // Icons
 import { ChevronRight } from "lucide-react";
@@ -31,6 +31,11 @@ function App() {
   const [isSunFadingOut, setIsSunFadingOut] = useState(false);
   const cycleTimerRef = useRef<number | null>(null);
 
+  //
+
+  // Query params
+  const { search } = useLocation();
+
   // Hooks
   const {
     data: {
@@ -49,7 +54,7 @@ function App() {
       showAccessCodeEnteredSuccess,
       hasConfirmedEntry,
     },
-    operations: { onShowAccessForm, onUnlockEarlyAccess },
+    operations: { onShowAccessForm, onUnlockEarlyAccess, onUpdateAccessCode },
   } = useEarlyAccess();
   const navigate = useNavigate();
 
@@ -63,6 +68,20 @@ function App() {
   );
 
   const secondaryActionButtonText = `Know a sunny pub? Contact us`;
+
+  const accessCode = (search as { ea: string }).ea || "";
+  //
+
+  // Effects
+  useEffect(() => {
+    if (accessCode) {
+      console.log("access code from URL: ", accessCode);
+      onShowAccessForm();
+      setTimeout(() => {
+        onUpdateAccessCode(accessCode);
+      }, 300);
+    }
+  }, [accessCode]);
 
   useEffect(() => {
     // Show the content after a delay (simulating your original timeout)
@@ -316,8 +335,9 @@ function App() {
                       animationFillMode: "forwards",
                     }}
                   >
-                    <span className="font-normal">Welcome to</span> Pubs in the
-                    Sun
+                    <span className="font-normal">Welcome to</span>
+                    <br />
+                    Pubs in the Sun
                   </h1>
                 </>
               ) : (
