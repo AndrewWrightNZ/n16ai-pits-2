@@ -1,8 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 
-// Hooks
-import useCommunications from "../../_shared/hooks/communication/useCommunication";
-
 // Utility function for debouncing
 const debounce = <F extends (...args: any[]) => any>(
   func: F,
@@ -20,6 +17,7 @@ import { ChevronRight } from "lucide-react";
 
 // Assets
 import sunLogo from "../../assets/biggerBolderSun.svg";
+import usePubs from "../../_shared/hooks/pubs/usePubs";
 
 // Constants
 const PUB_TYPES = [
@@ -33,10 +31,9 @@ const PUB_TYPES = [
 ];
 
 const SubmitAPub = () => {
-  // Hooks
   const {
-    operations: { onSendSlackMessage },
-  } = useCommunications();
+    operations: { onSaveNewPub },
+  } = usePubs();
 
   // Refs
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -134,17 +131,32 @@ const SubmitAPub = () => {
   };
 
   const handleSubmitAPub = () => {
-    // Include more place details if available
-    let messageText = `:mailbox_with_mail: New pub to add: ${enteredPubName}`;
+    // Extract latitude and longitude if a place is selected
+    let latitude: number | null = null;
+    let longitude: number | null = null;
 
-    if (selectedPlace) {
-      console.log(selectedPlace);
+    if (
+      selectedPlace &&
+      selectedPlace.geometry &&
+      selectedPlace.geometry.location
+    ) {
+      // Extract coordinates from the place object
+      latitude = selectedPlace.geometry.location.lat();
+      longitude = selectedPlace.geometry.location.lng();
+
+      const firstPartOfName = enteredPubName.split(",")[0];
+
+      const newPubToSave = {
+        id: Date.now(),
+        name: firstPartOfName,
+        address_text: selectedPlace.formatted_address || "",
+        latitude,
+        longitude,
+        user_submitted: true,
+      };
+
+      onSaveNewPub(newPubToSave);
     }
-
-    onSendSlackMessage({
-      channelName: "#azul-pubs-to-add",
-      messageText,
-    });
 
     setEnteredPubName("");
     setSelectedPlace(null);
@@ -274,7 +286,17 @@ const SubmitAPub = () => {
           <span className="font-bold text-white">Pubs In The Sun</span>?
         </p>
 
-        <div className="flex w-full flex-col items-start justify-start gap-4 mt-6 md:mt-16 max-w-[400px]">
+        <div className="flex w-full flex-col items-start justify-start gap-4 mt-12 md:mt-16 max-w-[400px]">
+          <p className="text-white text-left text-sm">
+            Search for your{" "}
+            <span
+              className={`inline-block font-black ${
+                isVisible ? "opacity-100" : "opacity-0"
+              } transition-opacity duration-300 ease-in-out`}
+            >
+              {currentPubType.split(" ")[1]} {currentPubType.split(" ")[2]}
+            </span>
+          </p>
           <div className="relative w-full">
             <input
               ref={inputRef}
@@ -301,16 +323,15 @@ const SubmitAPub = () => {
               </div>
             )}
           </div>
-          <p className="text-xs text-white mb-2">
-            Please add the post code if you can!
-          </p>
-          <button
-            onClick={handleSubmitAPub}
-            disabled={enteredPubName.trim() === ""}
-            className="flex flex-row items-center justify-center h-16 p-4 w-full bg-white text-[#2962FF] font-poppins cursor-pointer font-bold rounded-md transition-all duration-300 hover:opacity-70 disabled:opacity-50"
-          >
-            Submit <ChevronRight className="w-6 h-6" />
-          </button>
+          {selectedPlace && (
+            <button
+              onClick={handleSubmitAPub}
+              disabled={enteredPubName.trim() === ""}
+              className="flex flex-row items-center justify-center h-16 p-4 w-full bg-white text-[#2962FF] font-poppins cursor-pointer font-bold rounded-md transition-all duration-300 hover:opacity-70 disabled:opacity-50"
+            >
+              Submit <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
         </div>
 
         {showSuccess && (
