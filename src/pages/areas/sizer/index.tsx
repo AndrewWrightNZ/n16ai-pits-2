@@ -20,12 +20,10 @@ import { Pub } from "../../../_shared/types";
 const PubAreaSizer: React.FC = () => {
   // State
   const [area, setArea] = useState<number>(0);
-  const [isMapReady, setIsMapReady] = useState(false);
   const [selectedAreaId, setSelectedAreaId] = useState<number | null>(null);
   const [currentPolygon, setCurrentPolygon] = useState<
     PolygonCoordinate[] | null
   >(null);
-  const [isPendingAreaUpdate, setIsPendingAreaUpdate] = useState(false);
   const [showStaticMap, setShowStaticMap] = useState<boolean>(false);
 
   // Refs
@@ -55,9 +53,6 @@ const PubAreaSizer: React.FC = () => {
 
     setCurrentPolygon(coordinates);
 
-    // Mark that we're not waiting for an area update anymore
-    setIsPendingAreaUpdate(false);
-
     // Show the polygon
     toggleMapView();
   };
@@ -68,7 +63,6 @@ const PubAreaSizer: React.FC = () => {
     setSelectedAreaId(null);
     setCurrentPolygon(null);
     setArea(0);
-    setIsPendingAreaUpdate(false);
     setShowStaticMap(false);
 
     // Set the selected pub
@@ -107,9 +101,6 @@ const PubAreaSizer: React.FC = () => {
     // Set the selected area ID
     setSelectedAreaId(areaId);
 
-    // Mark that we're waiting for an area update
-    setIsPendingAreaUpdate(true);
-
     // Find the selected area
     const selectedArea = areasForPub.find((area) => area.id === areaId);
 
@@ -120,11 +111,29 @@ const PubAreaSizer: React.FC = () => {
     }
   };
 
+  const onGoToNextPub = () => {
+    // Second filter: Only show pubs that need measurement (optional)
+    const unMeaseredPubs = pubs.filter(
+      ({ has_areas_measured, has_areas_added }) =>
+        !has_areas_measured && has_areas_added
+    );
+
+    console.log("unMeaseredPubs", unMeaseredPubs);
+
+    const nextPub = unMeaseredPubs[0];
+
+    if (nextPub) {
+      handleSelectPub(nextPub);
+    }
+  };
+
+  // Variables
+  const { has_areas_measured = false } = selectedPub || {};
+
   // Check map readiness on mount
   useEffect(() => {
     const checkMapReady = setInterval(() => {
       if (mapRef.current && mapRef.current.isMapReady) {
-        setIsMapReady(true);
         clearInterval(checkMapReady);
 
         // If we have a selected pub, center the map on it once it's ready
@@ -138,15 +147,6 @@ const PubAreaSizer: React.FC = () => {
     return () => clearInterval(checkMapReady);
   }, [selectedPub]);
 
-  // We still need to use isMapReady in other parts of the component
-  // For example, when determining if we can show certain UI elements
-  useEffect(() => {
-    if (isMapReady && selectedPub) {
-      // This ensures we have the latest state when the map becomes ready
-      console.log("Map is ready and pub is selected");
-    }
-  }, [isMapReady, selectedPub]);
-
   // Clear the current area
   const clearArea = (): void => {
     if (mapRef.current) {
@@ -154,7 +154,6 @@ const PubAreaSizer: React.FC = () => {
     }
     setArea(0);
     setCurrentPolygon(null);
-    setIsPendingAreaUpdate(true);
     setShowStaticMap(false);
   };
 
@@ -182,6 +181,12 @@ const PubAreaSizer: React.FC = () => {
 
     // Clear the current area
     clearArea();
+
+    // Go to the next area if there is one
+    const nextArea = areasForPub.find((area) => area.id === selectedAreaId + 1);
+    if (nextArea) {
+      handleSelectArea(nextArea.id);
+    }
   };
 
   return (
@@ -192,12 +197,6 @@ const PubAreaSizer: React.FC = () => {
           {/* Area measurement panel */}
           <div className="bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold mb-2">Area Measurement</h2>
-
-            {selectedAreaId && isPendingAreaUpdate ? (
-              <div className="bg-blue-50 p-3 rounded mb-3 text-sm text-blue-700">
-                Draw a polygon on the map to calculate the area
-              </div>
-            ) : null}
 
             <div className="bg-gray-50 p-3 rounded mb-3">
               <p className="text-gray-700">Calculated Area Size:</p>
@@ -233,17 +232,26 @@ const PubAreaSizer: React.FC = () => {
               >
                 Clear
               </button>
-              <button
-                onClick={handleSaveFloorArea}
-                disabled={!selectedAreaId || area === 0 || !currentPolygon}
-                className={`px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 flex-1 ${
-                  !selectedAreaId || area === 0 || !currentPolygon
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                }`}
-              >
-                Save Area
-              </button>
+              {has_areas_measured ? (
+                <button
+                  onClick={onGoToNextPub}
+                  className={`px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 flex-1`}
+                >
+                  Next Pub
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveFloorArea}
+                  disabled={!selectedAreaId || area === 0 || !currentPolygon}
+                  className={`px-4 py-2 bg-blue-600 text-white rounded cursor-pointer hover:bg-blue-700 flex-1 ${
+                    !selectedAreaId || area === 0 || !currentPolygon
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  Save Area
+                </button>
+              )}
             </div>
           </div>
 
