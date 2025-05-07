@@ -113,4 +113,6 @@ export const VALID_ACCESS_CODES = [
   // Post first pass
   "sophie",
   "kurtis",
+  "phebec",
+  "tannah",
 ];

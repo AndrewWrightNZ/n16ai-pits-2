@@ -6,7 +6,7 @@ interface GoogleMapsProviderProps {
 }
 
 // Define the libraries we want to load
-const libraries: Libraries = ["places"];
+const libraries: Libraries = ["places", "drawing"];
 
 const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
