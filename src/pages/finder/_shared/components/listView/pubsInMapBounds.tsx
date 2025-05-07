@@ -38,7 +38,7 @@ const ViewPubsInMapBoundsAsList = () => {
         <strong>{formatTimeSlot(selectedTimeslot || 0)}</strong> today
       </p>
 
-      <div className="relative flex flex-col items-start justify-start h-[calc(75vh-70px)] border-t border-slate-200 overflow-y-auto pb-20 pt-4">
+      <div className="relative flex flex-col items-start justify-start h-[calc(75vh-70px)] border-t border-slate-200 overflow-y-auto pb-20 pt-2">
         {sortedMarkers.map((marker) => {
           return <PubListRow key={marker.pub.id} marker={marker} />;
         })}
