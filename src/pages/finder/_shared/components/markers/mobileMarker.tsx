@@ -27,14 +27,17 @@ const MobileMarker = ({ mapMarker }: MobileMarkerProps) => {
     operations: { onSetSelectedPubById },
   } = usePubAreas();
   const {
-    data: { viewFilters },
+    data: { viewFilters, viewAsList },
     operations: { onToggleViewFilters },
   } = useFilters();
 
   const handleClick = () => {
-    onSetSelectedPubById(pubId);
-    if (viewFilters) {
-      onToggleViewFilters();
+    if (!viewAsList) {
+      onSetSelectedPubById(pubId);
+
+      if (viewFilters) {
+        onToggleViewFilters();
+      }
     }
   };
 

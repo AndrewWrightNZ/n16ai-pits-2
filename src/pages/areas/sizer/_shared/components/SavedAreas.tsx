@@ -31,8 +31,6 @@ const SavedAreas: React.FC<SavedAreaProps> = ({
     operations: { onSetPubAreasMeasuredForPub },
   } = usePubAreas();
 
-  console.log("selectedPub", selectedPub);
-
   // Variables
   const { has_areas_measured = false } = selectedPub || {};
 
