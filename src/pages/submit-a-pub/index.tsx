@@ -175,8 +175,6 @@ const SubmitAPub = () => {
       return;
     }
 
-    console.log(window.google.maps.places);
-
     // Get predictions from Google Places API
     if (window.google && window.google.maps && window.google.maps.places) {
       const autocompleteService =
@@ -227,7 +225,6 @@ const SubmitAPub = () => {
           fields: ["name", "formatted_address", "geometry", "place_id"],
         },
         (place, status) => {
-          console.log({ place });
           if (
             status === window.google.maps.places.PlacesServiceStatus.OK &&
             place

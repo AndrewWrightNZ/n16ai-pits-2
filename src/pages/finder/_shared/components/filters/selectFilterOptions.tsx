@@ -58,7 +58,7 @@ const SelectFilterOptions = () => {
     <div className="flex flex-col gap-2 pt-4">
       <p className="text-lg font-black font-poppins">Filter Pubs</p>
 
-      <div className="relative flex flex-col items-start justify-start h-[calc(75vh-70px)] overflow-y-auto pb-20">
+      <div className="relative flex flex-col items-start justify-start h-[calc(75vh-70px)] border-t border-slate-200 overflow-y-auto pb-20">
         {/* Fade-out effect at the bottom */}
         <p className="text-xs font-bold mt-4 mb-4">Sun Quality</p>
 

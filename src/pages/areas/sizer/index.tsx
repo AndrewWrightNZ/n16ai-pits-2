@@ -118,8 +118,6 @@ const PubAreaSizer: React.FC = () => {
         !has_areas_measured && has_areas_added
     );
 
-    console.log("unMeaseredPubs", unMeaseredPubs);
-
     const nextPub = unMeaseredPubs[0];
 
     if (nextPub) {

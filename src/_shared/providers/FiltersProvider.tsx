@@ -12,6 +12,9 @@ export interface FiltersState {
   // View
   viewFilters: boolean;
 
+  // List View
+  viewAsList: boolean;
+
   // Timestamp for localStorage
   timestamp: number;
 }
@@ -71,6 +74,9 @@ const defaultState: FiltersState = {
 
   // View
   viewFilters: false,
+
+  // View as list
+  viewAsList: false,
 
   // Timestamp for localStorage
   timestamp: Date.now(),

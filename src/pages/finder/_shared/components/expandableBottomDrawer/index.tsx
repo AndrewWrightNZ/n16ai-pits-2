@@ -11,16 +11,19 @@ import { Pub } from "../../../../../_shared/types";
 import ViewPubDetails from "./viewPubDetails";
 import TimeSliderInternals from "../timeSlider/SliderInternals";
 import SelectFilterOptions from "../../components/filters/selectFilterOptions";
+import ViewPubsInMapBoundsAsList from "../listView/pubsInMapBounds";
 
 const ExpandableBottomDrawer = () => {
   // State for animations
   const [isContentVisible, setIsContentVisible] = useState(true);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeContent, setActiveContent] = useState<
-    "pub" | "slider" | "filters" | null
+    "pub" | "slider" | "filters" | "pubsInMapBounds" | null
   >(null);
+
   const prevSelectedPubRef = useRef<Pub | null>(null);
   const prevViewFiltersRef = useRef<boolean>(false);
+  const prevShowPubsInMapBoundsRef = useRef<boolean>(false);
 
   // Hooks
   const {
@@ -28,7 +31,7 @@ const ExpandableBottomDrawer = () => {
   } = usePubAreas();
 
   const {
-    data: { viewFilters },
+    data: { viewFilters, viewAsList },
   } = useFilters();
 
   // Animation timing constants
@@ -40,6 +43,9 @@ const ExpandableBottomDrawer = () => {
     try {
       const hadPub = prevSelectedPubRef.current !== null;
       const hasPub = selectedPub !== null;
+      const hadPubsInMapBounds = prevShowPubsInMapBoundsRef.current;
+      const hasPubsInMapBounds = viewAsList;
+
       const hadFilters = prevViewFiltersRef.current;
       const hasFilters = viewFilters;
 
@@ -47,16 +53,19 @@ const ExpandableBottomDrawer = () => {
       if (
         hadPub === hasPub &&
         hadFilters === hasFilters &&
-        hasPub === hasFilters
+        hadPubsInMapBounds === hasPubsInMapBounds
       ) {
         return;
       }
 
       // Determine the transition type
       const transitionType =
-        !hadPub && !hadFilters && (hasPub || hasFilters)
+        !hadPub && !hadFilters && (hasPub || hasFilters || hasPubsInMapBounds)
           ? "expand"
-          : (hadPub || hadFilters) && !hasPub && !hasFilters
+          : (hadPub || hadFilters || hadPubsInMapBounds) &&
+              !hasPub &&
+              !hasFilters &&
+              !hasPubsInMapBounds
             ? "collapse"
             : "update";
 
@@ -76,14 +85,18 @@ const ExpandableBottomDrawer = () => {
                 newContent = "filters";
               } else if (hasPub) {
                 newContent = "pub";
+              } else if (hasPubsInMapBounds) {
+                newContent = "pubsInMapBounds";
               }
 
               // Update content type
-              setActiveContent(newContent as "pub" | "slider" | "filters");
+              setActiveContent(
+                newContent as "pub" | "slider" | "filters" | "pubsInMapBounds"
+              );
 
               // Update height if needed
               if (transitionType !== "update") {
-                setIsExpanded(hasPub || hasFilters);
+                setIsExpanded(hasPub || hasFilters || hasPubsInMapBounds);
               }
 
               // Step 3: After height transition completes (if any), show content
@@ -119,6 +132,7 @@ const ExpandableBottomDrawer = () => {
       // Update refs for next comparison
       prevSelectedPubRef.current = selectedPub;
       prevViewFiltersRef.current = viewFilters;
+      prevShowPubsInMapBoundsRef.current = viewAsList;
     } catch (error) {
       console.error("Error in transition effect:", error);
       // Reset to a safe state
@@ -126,16 +140,17 @@ const ExpandableBottomDrawer = () => {
       setActiveContent("slider");
       setIsExpanded(false);
     }
-  }, [selectedPub, viewFilters]);
+  }, [selectedPub, viewFilters, viewAsList]);
 
   // Initialize states based on initial values
   useEffect(() => {
     // Set initial states based on whether we have a selectedPub or filters view
     const hasPub = !!selectedPub;
     const hasFilters = viewFilters;
+    const hasPubsInMapBounds = viewAsList;
 
     // Determine initial expanded state and content type
-    setIsExpanded(hasPub || hasFilters);
+    setIsExpanded(hasPub || hasFilters || hasPubsInMapBounds);
 
     // Priority: filters > pub > slider
     let initialContent = "slider";
@@ -143,14 +158,19 @@ const ExpandableBottomDrawer = () => {
       initialContent = "filters";
     } else if (hasPub) {
       initialContent = "pub";
+    } else if (hasPubsInMapBounds) {
+      initialContent = "pubsInMapBounds";
     }
 
-    setActiveContent(initialContent as "pub" | "slider" | "filters");
+    setActiveContent(
+      initialContent as "pub" | "slider" | "filters" | "pubsInMapBounds"
+    );
     setIsContentVisible(true); // Start with content visible
 
     // Set initial ref values
     prevSelectedPubRef.current = selectedPub;
     prevViewFiltersRef.current = viewFilters;
+    prevShowPubsInMapBoundsRef.current = viewAsList;
   }, []);
 
   return (
@@ -164,6 +184,7 @@ const ExpandableBottomDrawer = () => {
         {activeContent === "pub" && <ViewPubDetails />}
         {activeContent === "slider" && <TimeSliderInternals />}
         {activeContent === "filters" && <SelectFilterOptions />}
+        {activeContent === "pubsInMapBounds" && <ViewPubsInMapBoundsAsList />}
       </div>
     </div>
   );
