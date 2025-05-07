@@ -16,12 +16,12 @@ import PubAreasOverview from "./areas/PubAreasOverview";
 import DynamicSunIconWithBorder from "../../../../../_shared/components/DynamicSunIconWithBorder";
 
 // Helpers
-import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { formatTimeSlot } from "../../helpers";
+import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Icons
-import { ChevronLeftIcon, ExternalLink } from "lucide-react";
+import { ExternalLink, X } from "lucide-react";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -129,69 +129,68 @@ const ViewPubDetails = () => {
     <div
       className={`flex h-[calc(75vh-12px)] flex-col space-between ${isVisible ? "opacity-100" : "opacity-0"} transition-opacity duration-200`}
     >
-      <div className="flex flex-col h-[calc(75vh-72px)] overflow-y-auto pt-4">
+      <div className="flex flex-col pt-4">
         {/* Header with pub name and sun icon */}
-
-        <div className="flex flex-row items-center gap-4 mb-8">
-          <DynamicSunIconWithBorder sunPercent={bestSunPercent} />
-          <div className="flex flex-col">
-            <h3 className="text-md font-black font-poppins mb-1">{name}</h3>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address_text)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs flex flex-row items-center font-normal text-gray-600 font-poppins hover:text-blue-600 hover:underline cursor-pointer"
-              aria-label="Open address in Google Maps"
+        <div className="flex flex-row items-center justify-between gap-4 pb-4 mb-0 border-b border-slate-200">
+          <div className="flex flex-row items-center gap-2">
+            <DynamicSunIconWithBorder sunPercent={bestSunPercent} />
+            <div className="flex flex-col">
+              <h3 className="text-md font-black font-poppins mb-1">{name}</h3>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address_text)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs flex flex-row items-center font-normal text-gray-600 font-poppins hover:text-blue-600 hover:underline cursor-pointer"
+                aria-label="Open address in Google Maps"
+              >
+                {formatShortAddress(address_text)}
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </a>
+            </div>
+          </div>
+          <div className="flex flex-row items-center justify-end w-[46px]">
+            <button
+              onClick={handleClose}
+              className="bg-gray-50 border-gray-400 p-1 rounded-full text-gray-400"
             >
-              {formatShortAddress(address_text)}
-              <ExternalLink className="w-4 h-4 ml-2" />
-            </a>
+              <X className="w-6 h-6 mr-2" />
+            </button>
           </div>
         </div>
 
         {/* Best sun percentage summary */}
-        <h4 className="text-xs font-semibold mb-2">Sun Quality</h4>
-        <div className="grid grid-cols-2 gap-2 mb-6 text-xs">
-          <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="font-bold mb-1">Area in the sun</h4>
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-bold font-poppins">
-                {formatSunPercentage(bestSunPercent)}%
+        <div className="flex flex-col h-[calc(75vh-72px)] overflow-y-auto pt-4">
+          <h4 className="text-xs font-semibold mb-2">Sun Quality</h4>
+          <div className="grid grid-cols-2 gap-2 mb-6 text-xs">
+            <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
+              <h4 className="font-bold mb-1">Area in the sun</h4>
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-bold font-poppins">
+                  {formatSunPercentage(bestSunPercent)}%
+                </p>
+              </div>
+              <p className="text-xs text-slate-600">
+                Peak: {formatTimeSlot(highestSunPcEval?.time || 0)} (
+                {formatSunPercentage(highestSunPcEval?.pc_in_sun || 0)}%)
               </p>
             </div>
-            <p className="text-xs text-slate-600">
-              Peak: {formatTimeSlot(highestSunPcEval?.time || 0)} (
-              {formatSunPercentage(highestSunPcEval?.pc_in_sun || 0)}%)
-            </p>
-          </div>
-          <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
-            <h4 className="font-bold mb-1">In the sun until</h4>
-            <div className="flex items-center gap-1">
-              <p className="text-sm font-bold font-poppins whitespace-nowrap overflow-hidden">
-                {formatTimeSlot(latestSomeSunEval?.time || 0)}
-              </p>
+            <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
+              <h4 className="font-bold mb-1">In the sun until</h4>
+              <div className="flex items-center gap-1">
+                <p className="text-sm font-bold font-poppins whitespace-nowrap overflow-hidden">
+                  {formatTimeSlot(latestSomeSunEval?.time || 0)}
+                </p>
+              </div>
+              {(latestSomeSunEval?.time || 0) > 0 && (
+                <TimeLeftInTheSun minutesLeftInSun={minutesLeftInSun || 0} />
+              )}
             </div>
-            {(latestSomeSunEval?.time || 0) > 0 && (
-              <TimeLeftInTheSun minutesLeftInSun={minutesLeftInSun || 0} />
-            )}
           </div>
+
+          <PubAreasOverview pubAreas={pubAreas} />
+
+          <LocationDetails />
         </div>
-
-        <PubAreasOverview pubAreas={pubAreas} />
-
-        <LocationDetails />
-      </div>
-
-      <div className="relative flex flex-col h-[50px] justify-start border-l-0 border-r-0 border-b-0 border-t border-2 border-gray-200 shadow-[0_-6px_8px_-4px_rgba(0,0,0,0.1)]">
-        {/* White gradient fade effect for scrolling content */}
-        <div className="absolute -top-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none z-10 border-b-2 border-gray-200"></div>
-        <button
-          className="w-full flex font-bold text-xs flex-row items-center border-2 border-[#2962ff] justify-center gap-2 p-3 bg-white text-[#2962ff] rounded hover:bg-[#2962ff] hover:text-white transition-colors"
-          onClick={handleClose}
-        >
-          <ChevronLeftIcon className="w-4 h-4" />
-          Back to Map
-        </button>
       </div>
     </div>
   );
