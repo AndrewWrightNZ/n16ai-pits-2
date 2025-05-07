@@ -31,6 +31,8 @@ const SavedAreas: React.FC<SavedAreaProps> = ({
     operations: { onSetPubAreasMeasuredForPub },
   } = usePubAreas();
 
+  console.log("selectedPub", selectedPub);
+
   // Variables
   const { has_areas_measured = false } = selectedPub || {};
 
@@ -46,11 +48,6 @@ const SavedAreas: React.FC<SavedAreaProps> = ({
 
   // Auto-trigger effect: When area status becomes complete
   useEffect(() => {
-    // Only proceed if:
-    // 1. Areas are complete
-    // 2. There are areas
-    // 3. Areas are not already marked as measured
-    // 4. We're not currently in the process of setting areas as measured
     if (
       areaStatus === "complete" &&
       areas.length > 0 &&
@@ -79,6 +76,16 @@ const SavedAreas: React.FC<SavedAreaProps> = ({
       year: "numeric",
     }).format(date);
   };
+
+  //
+
+  // Effects
+
+  useEffect(() => {
+    if (!selectedAreaId && areas.length > 0) {
+      onSelectArea(areas[0].id);
+    }
+  }, [areas.length]);
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">

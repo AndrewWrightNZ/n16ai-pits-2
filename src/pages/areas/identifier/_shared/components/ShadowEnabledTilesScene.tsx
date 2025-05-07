@@ -38,10 +38,14 @@ export interface TilesSceneRef {
     target: THREE.Vector3;
     rotation: THREE.Euler;
   } | null;
-  // New methods for camera control
+  // Camera control methods
   setCameraPosition: (position: { x: number; y: number; z: number }) => void;
   setCameraTarget: (target: { x: number; y: number; z: number }) => void;
   toggleWhiteTiles?: () => void;
+  // Zoom control methods
+  zoomIn: () => void;
+  zoomOut: () => void;
+  setZoomSpeed: (speed: number) => void;
 }
 
 // Main scene component
@@ -64,7 +68,8 @@ const ShadowEnabledTilesScene = forwardRef<
     100, 100, 50,
   ]);
 
-  const allowFineTunedControls = false;
+  const allowFineTunedControls = false; // Controls sun position adjustments
+  const allowZoomControls = true; // Controls W/S zoom functionality
 
   // Refs for service instances
   const tilesRendererServiceRef = useRef<TilesRendererService | null>(null);
@@ -169,26 +174,81 @@ const ShadowEnabledTilesScene = forwardRef<
     cameraRef.current = camera;
   }, [camera]);
 
-  // Handle keyboard events for adjusting north offset and height offset
+  // Function to handle camera zoom
+  const handleZoom = useCallback(
+    (zoomIn: boolean) => {
+      if (!orbitControlsRef.current || !cameraRef.current) return;
+
+      const camera = cameraRef.current as THREE.PerspectiveCamera;
+      const controls = orbitControlsRef.current;
+
+      // Get current distance from target
+      const currentPosition = new THREE.Vector3();
+      camera.getWorldPosition(currentPosition);
+      const targetPosition = controls.target;
+      const currentDistance = currentPosition.distanceTo(targetPosition);
+
+      // Calculate new distance
+      const zoomFactor = zoomIn ? 0.9 : 1.1; // Zoom in reduces distance, zoom out increases it
+      const newDistance = currentDistance * zoomFactor;
+
+      // Calculate direction vector from target to camera
+      const direction = new THREE.Vector3()
+        .subVectors(currentPosition, targetPosition)
+        .normalize();
+
+      // Set new camera position
+      const newPosition = new THREE.Vector3()
+        .copy(targetPosition)
+        .add(direction.multiplyScalar(newDistance));
+
+      // Update camera position
+      camera.position.copy(newPosition);
+      controls.update();
+
+      // Update the camera state reference
+      if (lastCameraStateRef.current) {
+        lastCameraStateRef.current.position = camera.position.clone();
+        lastCameraStateRef.current.target = controls.target.clone();
+      }
+    },
+    [orbitControlsRef, cameraRef]
+  );
+
+  // Handle keyboard events for adjusting north offset, height offset, and zoom
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Handle zoom with W/S keys (always enabled if allowZoomControls is true)
+      if (allowZoomControls) {
+        if (event.key.toLowerCase() === "w") {
+          console.log("W pressed - Zooming in");
+          handleZoom(true); // Zoom in
+          return;
+        } else if (event.key.toLowerCase() === "s") {
+          console.log("S pressed - Zooming out");
+          handleZoom(false); // Zoom out
+          return;
+        }
+      }
+
+      // Only proceed with sun position adjustments if allowFineTunedControls is true
       if (!allowFineTunedControls) return;
 
-      // Adjust north offset with W/S keys
-      if (event.key.toLowerCase() === "w") {
-        console.log("W pressed");
+      // Adjust north offset with A/D keys (changed from W/S)
+      if (event.key.toLowerCase() === "a") {
+        console.log("A pressed");
         setNorthOffset((prev) => prev + 0.1); // Increase by 0.1 radians (approx. 5.7 degrees)
-      } else if (event.key.toLowerCase() === "s") {
-        console.log("S pressed");
+      } else if (event.key.toLowerCase() === "d") {
+        console.log("D pressed");
         setNorthOffset((prev) => prev - 0.1); // Decrease by 0.1 radians
       }
 
-      // Adjust height offset with E/D keys
+      // Adjust height offset with E/Q keys (changed D to Q)
       else if (event.key.toLowerCase() === "e") {
         console.log("E pressed");
         setHeightOffset((prev) => prev + 10); // Increase height by 10 units
-      } else if (event.key.toLowerCase() === "d") {
-        console.log("D pressed");
+      } else if (event.key.toLowerCase() === "q") {
+        console.log("Q pressed");
         setHeightOffset((prev) => prev - 10); // Decrease height by 10 units
       }
     };
@@ -364,7 +424,7 @@ const ShadowEnabledTilesScene = forwardRef<
     return tilesRendererServiceRef.current?.getTilesRenderer() || null;
   };
 
-  // Expose the TilesRendererService and camera tracking methods via ref
+  // Expose the TilesRendererService, camera tracking methods, and zoom functionality via ref
   useImperativeHandle(ref, () => ({
     getTilesService: () => tilesRendererServiceRef.current,
     toggleWhiteTiles: () => {
@@ -407,16 +467,15 @@ const ShadowEnabledTilesScene = forwardRef<
     // New methods for camera control
     setCameraPosition: (position) => {
       const camera = cameraRef.current;
-      if (camera) {
+      const controls = orbitControlsRef.current;
+      if (camera && controls) {
         camera.position.set(position.x, position.y, position.z);
         // Update the camera state reference
         if (lastCameraStateRef.current) {
           lastCameraStateRef.current.position = camera.position.clone();
         }
-        // Update controls if needed
-        if (orbitControlsRef.current) {
-          orbitControlsRef.current.update();
-        }
+        // Update the controls
+        controls.update();
       }
     },
     setCameraTarget: (target) => {
@@ -431,6 +490,10 @@ const ShadowEnabledTilesScene = forwardRef<
         controls.update();
       }
     },
+    // Zoom control methods
+    zoomIn: () => handleZoom(true),
+    zoomOut: () => handleZoom(false),
+    setZoomSpeed: () => {},
   }));
 
   const showWhiteMaterial =

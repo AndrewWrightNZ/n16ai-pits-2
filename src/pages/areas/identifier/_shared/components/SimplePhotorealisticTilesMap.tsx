@@ -21,7 +21,7 @@ import DraggableLocationsModal from "./DraggableLocationsModal";
 import SelectPubArea from "../../../../scene/_shared/components/SelectPubArea";
 import ControlsPanel from "../../../../scene/_shared/components/ControlsPanel";
 import CreatePubLabels from "../../../../pub-labels/_shared/components/CreatePubLabels";
-import EnhancedMemoryMonitor from "../../../../scene/_shared/components/EnhancedMemoryMonitor";
+// import EnhancedMemoryMonitor from "../../../../scene/_shared/components/EnhancedMemoryMonitor";
 
 // Types
 import { Pub } from "../../../../../_shared/types";
@@ -211,7 +211,7 @@ export default function SimplePhotorealisticTilesMap({
           </div>
         )}
 
-        {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />}
+        {/* {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />} */}
       </div>
     </div>
   );
