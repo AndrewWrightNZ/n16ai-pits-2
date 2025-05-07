@@ -22,6 +22,7 @@
     "@tanstack/react-router": "^1.115.2",
     "@tanstack/router-devtools": "^1.115.2",
     "@types/three": "^0.174.0",
+    "@vis.gl/react-google-maps": "^1.5.2",
     "3d-tiles-renderer": "^0.4.7",
     "chart.js": "^4.4.9",
     "clsx": "^2.1.1",
