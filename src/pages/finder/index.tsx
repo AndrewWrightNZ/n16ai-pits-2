@@ -11,6 +11,8 @@ import RenderFilteredMarkers from "./_shared/components/markers";
 import PubInTheSunMapHeader from "./_shared/components/PubsInTheSunMapHeader";
 import ExpandableBottomDrawer from "./_shared/components/expandableBottomDrawer";
 import OpenCloseFiltersButton from "./_shared/components/filters/openCloseFiltersButton";
+import OpenCloseListViewButton from "./_shared/components/listView/openCloseListView";
+import useFilters from "../../_shared/hooks/filters/useFilters";
 
 // Default center (London)
 const defaultCenter = {
@@ -37,6 +39,10 @@ function Finder() {
   const {
     data: { selectedPub = null },
   } = usePubAreas();
+
+  const {
+    data: { viewAsList, viewFilters },
+  } = useFilters();
 
   // Handle map load
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -137,7 +143,12 @@ function Finder() {
           }}
         >
           <PubInTheSunMapHeader />
-          {!selectedPub?.id && <OpenCloseFiltersButton />}
+          {!selectedPub?.id && (
+            <>
+              <OpenCloseFiltersButton />
+              {!viewFilters && !viewAsList && <OpenCloseListViewButton />}
+            </>
+          )}
           <RenderFilteredMarkers />
           {userLocation && (
             <Marker

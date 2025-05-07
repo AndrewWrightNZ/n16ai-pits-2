@@ -29,6 +29,7 @@ interface FiltersData extends FiltersState {
 interface FiltersOperations {
   // View
   onToggleViewFilters: () => void;
+  onToggleViewAsList: () => void;
 
   // Select
   onSunQualityFilterClick: (option: SunQuality) => void;
@@ -128,6 +129,10 @@ const useFilters = (): FiltersResponse => {
     updateFiltersState({ viewFilters: !filtersState.viewFilters });
   };
 
+  const onToggleViewAsList = () => {
+    updateFiltersState({ viewAsList: !filtersState.viewAsList });
+  };
+
   const onSunQualityFilterClick = (option: SunQuality) => {
     const isAlreadySelected = filtersState.sunQualityFilters.includes(option);
 
@@ -174,6 +179,7 @@ const useFilters = (): FiltersResponse => {
     operations: {
       // View
       onToggleViewFilters,
+      onToggleViewAsList,
 
       // Select
       onSunQualityFilterClick,
