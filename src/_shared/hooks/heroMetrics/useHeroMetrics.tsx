@@ -85,6 +85,7 @@ const useHeroMetrics = (): HeroMetricsResponse => {
         name: pub.name,
         latitude: pub.latitude,
         longitude: pub.longitude,
+        address_text: pub.address_text,
       },
       pubAreas,
       bestSunPercent,
