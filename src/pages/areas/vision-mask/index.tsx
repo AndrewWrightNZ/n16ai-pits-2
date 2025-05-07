@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 
 // Icons
 import { Check, ChevronLeft, ChevronRight, Circle } from "lucide-react";
@@ -93,23 +93,51 @@ const PubAreaVisionMask = () => {
     setPoints([...points, { x, y }]);
   };
 
-  const handleReset = () => setPoints([]);
+  // Define handleReset with useCallback to avoid dependency issues
+  const handleReset = useCallback(() => setPoints([]), []);
 
-  const handleSaveMask = () => {
+  const handleSaveMask = useCallback(() => {
     // Save the mask
     onSaveMask(points);
 
     // Reset points
     handleReset();
-  };
+  }, [onSaveMask, points, handleReset]);
 
-  const handleGoToNextPub = () => {
+  // Keyboard event handler for 'S' key to save mask
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Check if 'S' key is pressed and mask is valid (at least 3 points)
+      if (e.key.toLowerCase() === "a" && !isSaveDisabled) {
+        handleSaveMask();
+      }
+
+      if (e.key.toLowerCase() === "z") {
+        if (!points.length) {
+          onGoToNextArea();
+        }
+      }
+    },
+    [isSaveDisabled, handleSaveMask]
+  );
+
+  // Set up keyboard event listener
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Clean up event listener on component unmount
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  const handleGoToNextPub = useCallback(() => {
     // Update the pub to show that it has been masked
     onGoToNextPub();
 
     // Reset points
     handleReset();
-  };
+  }, [onGoToNextPub, handleReset]);
 
   return (
     <div className="w-full h-[100vh] bg-black text-white p-4 rounded">
