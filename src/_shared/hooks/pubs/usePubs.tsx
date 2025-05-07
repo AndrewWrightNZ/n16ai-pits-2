@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 // Hooks
 import { supabaseClient } from "../useSupabase";
@@ -11,6 +11,7 @@ import { usePubContext } from "../../providers/PubProvider";
 // Types
 import { Pub } from "../../types";
 import { getCurrentJulianWeek } from "../../utils";
+import useCommunications from "../communication/useCommunication";
 
 //
 
@@ -20,6 +21,14 @@ const AVAILABLE_FILTERS = ["full_sun", "partial_sun", "no_sun"];
 //
 
 // Types
+interface DraftPubOutline {
+  name: string;
+  address_text: string;
+  latitude: number;
+  longitude: number;
+  user_submitted: boolean;
+}
+
 interface PubsData extends PubState {
   // Loading
   isLoading: boolean;
@@ -45,6 +54,9 @@ interface HookShape {
 
     // Queries
     onRefetchPubs: () => void;
+
+    // Svae new pub
+    onSaveNewPub: (pub: DraftPubOutline) => void;
   };
 }
 
@@ -53,6 +65,13 @@ const usePubs = (): HookShape => {
 
   // Contexts
   const { pubState, updatePubState } = usePubContext();
+
+  //
+
+  // Hooks
+  const {
+    operations: { onSendSlackMessage },
+  } = useCommunications();
 
   //
 
@@ -92,6 +111,16 @@ const usePubs = (): HookShape => {
   const { data: uiReadyPubs = [], isLoading: isLoadingUIReadyPubs } = useQuery({
     queryKey: GET_UI_READY_PUBS_QUERY_KEY,
     queryFn: fetchUIReadyPubs,
+  });
+
+  const { mutate: handleSaveNewPub } = useMutation({
+    mutationFn: async (draftPubOutline: DraftPubOutline) => {
+      const { data, error } = await supabaseClient
+        .from("pub")
+        .insert([draftPubOutline]);
+      if (error) throw error;
+      return data;
+    },
   });
 
   //
@@ -142,6 +171,31 @@ const usePubs = (): HookShape => {
     updatePubState({ mapBounds: bounds });
   };
 
+  const onSaveNewPub = (draftPubOutline: DraftPubOutline) => {
+    handleSaveNewPub(
+      { ...draftPubOutline },
+      {
+        onSuccess: () => {
+          onRefetchPubs();
+
+          const { name = "", address_text = "" } = draftPubOutline;
+
+          // Include more place details if available
+          let messageText = `:mailbox_with_mail: New pub to set up: ${name}`;
+
+          if (address_text) {
+            messageText += ` (${address_text})`;
+          }
+
+          onSendSlackMessage({
+            messageText,
+            channelName: "azul-pubs-to-add",
+          });
+        },
+      }
+    );
+  };
+
   return {
     data: {
       ...pubState,
@@ -170,6 +224,9 @@ const usePubs = (): HookShape => {
 
       // Queries
       onRefetchPubs,
+
+      // Save new pub
+      onSaveNewPub,
     },
   };
 };
