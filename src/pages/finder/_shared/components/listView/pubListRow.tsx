@@ -3,6 +3,8 @@ import { MapReadyMarker } from "../../../../../_shared/hooks/mapMarkers/useMapMa
 import { useGeoLocationContext } from "../../../../../_shared/providers/useGeolocationContext";
 import { useMemo } from "react";
 import { formatAreaType } from "../../../../lists/_shared";
+import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
+import { ExternalLink } from "lucide-react";
 
 interface PubListRowProps {
   marker: MapReadyMarker;
@@ -54,11 +56,23 @@ const PubListRow = ({ marker }: PubListRowProps) => {
   }, [userLatitude, userLongitude, marker.pub.latitude, marker.pub.longitude]);
 
   return (
-    <div className="flex flex-col gap-2 w-full border-b border-slate-200 pb-4 pt-4">
+    <div className="flex flex-col gap-4 w-full border-b border-slate-200 pb-4 pt-8">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <DynamicSunIcon sunPercent={marker.bestSunPercent} />
-          <p className="font-black font-poppins">{marker.pub.name}</p>
+          <div className="flex flex-col justify-center items-start">
+            <p className="font-black text-sm font-poppins">{marker.pub.name}</p>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(marker.pub.address_text)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs mt-1 flex flex-row items-center font-normal text-gray-600 font-poppins hover:text-blue-600 hover:underline cursor-pointer"
+              aria-label="Open address in Google Maps"
+            >
+              {formatShortAddress(marker.pub.address_text)}
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </a>
+          </div>
         </div>
         {distance !== null && (
           <p className="text-xs font-normal text-slate-600">
