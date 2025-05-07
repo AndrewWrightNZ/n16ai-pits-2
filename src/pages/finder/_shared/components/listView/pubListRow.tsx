@@ -58,7 +58,7 @@ const PubListRow = ({ marker }: PubListRowProps) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <DynamicSunIcon sunPercent={marker.bestSunPercent} />
-          <p className="font-black font-poppins">{marker.pub.name}</p>
+          <p className="font-black text-sm font-poppins">{marker.pub.name}</p>
         </div>
         {distance !== null && (
           <p className="text-xs font-normal text-slate-600">
