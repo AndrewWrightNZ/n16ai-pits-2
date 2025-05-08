@@ -92,7 +92,7 @@ const PubListRow = ({ marker }: PubListRowProps) => {
             }}
           ></div>
         </div>
-        <p className="text-xs font-medium ml-2">
+        <p className="text-xs font-medium ml-4">
           {formatSunPercentage(marker.bestSunPercent)}% sun
         </p>
       </div>
