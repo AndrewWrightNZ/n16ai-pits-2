@@ -101,9 +101,9 @@ const PubListRow = ({ marker }: PubListRowProps) => {
           {marker.pubAreas.map((area) => (
             <span
               key={area.id}
-              className="text-xs bg-slate-100 px-2 py-1 rounded-md flex items-center gap-1"
+              className="text-xs bg-slate-100 px-2 py-2 rounded-md flex items-center gap-1"
             >
-              <span>{formatAreaType(area.type)}</span>
+              <span className="font-medium">{formatAreaType(area.type)}</span>
               <span className="text-slate-500">
                 {formatSunPercentage(area.pc_in_sun)}% sun
               </span>
