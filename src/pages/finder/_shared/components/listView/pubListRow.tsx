@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { formatAreaType } from "../../../../lists/_shared";
 import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { ExternalLink } from "lucide-react";
+import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 interface PubListRowProps {
   marker: MapReadyMarker;
@@ -90,7 +91,7 @@ const PubListRow = ({ marker }: PubListRowProps) => {
           ></div>
         </div>
         <p className="text-xs font-medium">
-          {marker.bestSunPercent.toFixed(0)}% sun
+          {formatSunPercentage(marker.bestSunPercent)}% sun
         </p>
       </div>
 
@@ -100,11 +101,11 @@ const PubListRow = ({ marker }: PubListRowProps) => {
           {marker.pubAreas.map((area) => (
             <span
               key={area.id}
-              className="text-xs bg-slate-100 px-2 py-1 rounded-md flex items-center gap-1"
+              className="text-xs bg-slate-100 px-2 py-2 rounded-md flex items-center gap-1"
             >
-              <span>{formatAreaType(area.type)}</span>
+              <span className="font-medium">{formatAreaType(area.type)}</span>
               <span className="text-slate-500">
-                {area.pc_in_sun.toFixed(0)}% sun
+                {formatSunPercentage(area.pc_in_sun)}% sun
               </span>
             </span>
           ))}
