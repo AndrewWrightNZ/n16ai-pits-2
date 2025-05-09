@@ -335,12 +335,37 @@ const usePubAreas = (): PubAreasResponse => {
   const { mutate: setPubAreasPresent, isPending: isSettingPubAreasPresent } =
     useMutation({
       mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
-        // Update floor area for the pub area
+        // First verify the pub exists
+        const { data: pubData, error: pubError } = await supabaseAuthClient
+          .from("pub")
+          .select("*")
+          .eq("id", pub_id)
+          .single();
+
+        if (pubError) {
+          console.error("Error finding pub:", pubError);
+          throw pubError;
+        }
+
+        if (!pubData) {
+          const notFoundError = new Error(`Pub with ID ${pub_id} not found`);
+          console.error(notFoundError);
+          throw notFoundError;
+        }
+
+        // Update the pub record
         const { data, error } = await supabaseAuthClient
           .from("pub")
           .update({ has_areas_added: true })
-          .eq("id", pub_id);
-        if (error) throw error;
+          .eq("id", pub_id)
+          .select()
+          .single(); // Use single() to get the object instead of an array
+
+        if (error) {
+          console.error("Error setting pub areas present: ", error);
+          throw error;
+        }
+
         return data;
       },
     });
@@ -436,13 +461,29 @@ const usePubAreas = (): PubAreasResponse => {
   };
 
   const onSetPubAreasPresentForPub = () => {
+    if (!selectedPubId) {
+      console.error("Cannot set pub areas present: No pub selected");
+      return;
+    }
+
     setPubAreasPresent(
       {
-        pub_id: selectedPubId || 0,
+        pub_id: selectedPubId,
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           // Manually update the query
+          if (data) {
+            // Update the cache with the returned data
+            queryClient.setQueryData(
+              ["pub", selectedPubId],
+              (oldData: Pub | undefined) => {
+                if (!oldData) return data;
+                return { ...oldData, has_areas_added: true };
+              }
+            );
+          }
+
           onRefetchSelectedPub();
 
           // Get the next pub which needs areas added
@@ -464,6 +505,9 @@ const usePubAreas = (): PubAreasResponse => {
           queryClient.refetchQueries({
             queryKey: ["pubs"],
           });
+        },
+        onError: (error) => {
+          console.error("Error setting pub areas present: ", error);
         },
       }
     );

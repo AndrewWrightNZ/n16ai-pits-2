@@ -14,6 +14,9 @@ export const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 // Create a context for storing the auth client globally
 let globalAuthClient: SupabaseClient | null = null;
 
+// Admin emails for authorization
+const ADMIN_EMAILS = ["andrew@outerlands.co"];
+
 type HookShape = {
   data: {
     isLoading: boolean;
@@ -38,37 +41,74 @@ export const useSupabaseAuth = (): HookShape => {
     globalAuthClient || supabaseClient
   );
 
-  // Check if the user is the authorized user with specific ID
-  const isAuthorizedUser = user?.id === "b7914936-cd8e-4a07-a1a1-0a2f4ef38bf0";
+  // Check if the user is an authorized admin
+  const isAuthorizedUser = user?.email
+    ? ADMIN_EMAILS.includes(user.email)
+    : false;
 
   /**
    * Initialize the client and check for existing session
    */
   const initializeClient = useCallback(async () => {
-    if (!globalAuthClient) {
-      globalAuthClient = supabaseClient;
-    }
+    try {
+      // Always start with a fresh client
+      const freshClient = createClient(supabaseUrl, supabaseAnonKey);
+      globalAuthClient = freshClient;
+      setClient(freshClient);
 
-    setClient(globalAuthClient);
+      // Check for existing session
+      const { data, error } = await freshClient.auth.getSession();
 
-    // Check for existing session
-    const { data } = await globalAuthClient.auth.getSession();
-    if (data && data.session) {
-      setUser(data.session.user);
-    }
+      if (error) {
+        console.error("Error getting session:", error);
+        setUser(null);
+      } else if (data && data.session) {
+        setUser(data.session.user);
+        console.log("Existing session found:", {
+          user: data.session.user,
+          isAdmin: data.session.user?.email
+            ? ADMIN_EMAILS.includes(data.session.user.email)
+            : false,
+        });
 
-    setIsLoading(false);
-
-    // Set up auth state change listener
-    const { data: authListener } = globalAuthClient.auth.onAuthStateChange(
-      async (_, session) => {
-        setUser(session?.user || null);
+        // Test if the session is valid with a simple query
+        const { error: testError } = await freshClient
+          .from("pub")
+          .select("count")
+          .limit(1);
+        if (testError) {
+          console.error("Session test failed:", testError);
+        } else {
+          console.log("Session test succeeded");
+        }
+      } else {
+        console.log("No existing session found");
+        setUser(null);
       }
-    );
 
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
+      // Set up auth state change listener
+      const { data: authListener } = freshClient.auth.onAuthStateChange(
+        async (event, session) => {
+          setUser(session?.user || null);
+
+          // If we get a signed_in event, refresh the client
+          if (event === "SIGNED_IN" && session) {
+            console.log("User signed in, refreshing client");
+          }
+        }
+      );
+
+      setIsLoading(false);
+
+      return () => {
+        authListener?.subscription.unsubscribe();
+      };
+    } catch (e) {
+      console.error("Error initializing Supabase client:", e);
+      setClient(supabaseClient);
+      setUser(null);
+      setIsLoading(false);
+    }
   }, []);
 
   // Initialize on mount
@@ -82,13 +122,23 @@ export const useSupabaseAuth = (): HookShape => {
   const onSignIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const { error } = await client.auth.signInWithPassword({
+      const { data, error } = await client.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
         throw error;
+      }
+
+      if (data && data.user) {
+        setUser(data.user);
+        console.log("Signed in successfully:", {
+          user: data.user,
+          isAdmin: data.user?.email
+            ? ADMIN_EMAILS.includes(data.user.email)
+            : false,
+        });
       }
     } catch (error) {
       console.error("Error signing in:", error);
@@ -105,6 +155,8 @@ export const useSupabaseAuth = (): HookShape => {
     setIsLoading(true);
     try {
       await client.auth.signOut();
+      setUser(null);
+      console.log("Signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {

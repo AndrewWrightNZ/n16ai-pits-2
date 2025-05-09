@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 // Hooks
-import { supabaseClient } from "../useSupabase";
+import { useSupabase } from "../useSupabase";
 
 // Contexts
 import { PubState } from "../../providers/PubProvider";
@@ -69,6 +69,7 @@ const usePubs = (): HookShape => {
   //
 
   // Hooks
+  const { client: supabaseClient } = useSupabase();
   const {
     operations: { onSendSlackMessage },
   } = useCommunications();
@@ -77,21 +78,44 @@ const usePubs = (): HookShape => {
 
   // Query functions
   const fetchPubs = async () => {
-    const { data, error } = await supabaseClient.from("pub").select();
-    if (error) throw error;
-    return data;
+    try {
+      // Use the Supabase client directly
+      const { data, error } = await supabaseClient
+        .from("pub")
+        .select("*")
+        .limit(100);
+      
+      if (error) {
+        console.error("Error fetching pubs:", error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (e) {
+      console.error("Exception in fetchPubs:", e);
+      return [];
+    }
   };
 
   const fetchUIReadyPubs = async () => {
-    //
-
-    // Get pubs where the has_areas_measured is true
-    const { data, error } = await supabaseClient
-      .from("pub")
-      .select()
-      .eq("has_vision_masks_added", true);
-    if (error) throw error;
-    return data;
+    try {
+      // Get pubs where the has_vision_masks_added is true
+      const { data, error } = await supabaseClient
+        .from("pub")
+        .select("*")
+        .eq("has_vision_masks_added", true)
+        .limit(100);
+      
+      if (error) {
+        console.error("Error fetching UI ready pubs:", error);
+        return [];
+      }
+      
+      return data || [];
+    } catch (e) {
+      console.error("Exception in fetchUIReadyPubs:", e);
+      return [];
+    }
   };
 
   //
@@ -115,13 +139,20 @@ const usePubs = (): HookShape => {
 
   const { mutate: handleSaveNewPub } = useMutation({
     mutationFn: async (draftPubOutline: DraftPubOutline) => {
+      console.log("Saving new pub:", draftPubOutline);
       const { data, error } = await supabaseClient
         .from("pub")
         .insert([draftPubOutline]);
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving new pub:", error);
+        throw error;
+      }
+      console.log("Saved new pub:", data);
       return data;
     },
   });
+
+  console.log("Pubs:", pubs);
 
   //
 

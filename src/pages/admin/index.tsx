@@ -1,22 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Hooks
-
 import ProgressBar from "./_shared/components/ProgressBar";
 import usePubs from "../../_shared/hooks/pubs/usePubs";
-import useAuth from "../../_shared/hooks/auth/useAuth";
+import { useSupabase } from "../../_shared/hooks/useSupabase";
+import { supabaseClient } from "../../_shared/hooks/useSupabaseAuth";
 
 const AdminOverview = () => {
-  //
+  // State
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Hooks
-  const {
-    data: { isAuthenticated, isAdmin },
-    operations: { onSignIn },
-  } = useAuth();
-
-  // Add query client
+  const { isAuthenticated, isAuthorizedUser } = useSupabase();
   const queryClient = useQueryClient();
 
   // Hooks
@@ -30,8 +29,6 @@ const AdminOverview = () => {
   }, [queryClient]);
 
   // Variables
-
-  const isAuthenticatedAsAdmin = isAuthenticated && isAdmin;
 
   const pubsWithAreasAdded = pubs.filter(({ has_areas_added }) => {
     return has_areas_added;
@@ -66,11 +63,56 @@ const AdminOverview = () => {
     ? Math.round((pubsWithVisionMasksAdded.length / pubs.length) * 100)
     : 0;
 
+  // Login function
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      // Refresh the page data after login
+      queryClient.refetchQueries({ queryKey: ["pubs"] });
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in");
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Logout function
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      await supabaseClient.auth.signOut();
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex w-full h-full flex-col items-center justify-center gap-6 p-4 max-w-3xl mx-auto">
-      {isAuthenticatedAsAdmin ? (
+      {isAuthenticated && isAuthorizedUser ? (
         <>
-          <h1 className="text-2xl font-bold">Admin Overview</h1>
+          <div className="flex justify-between items-center w-full max-w-3xl mb-4">
+            <h1 className="text-2xl font-bold">Admin Overview</h1>
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              disabled={loading}
+            >
+              {loading ? "Logging out..." : "Log out"}
+            </button>
+          </div>
 
           <div className="space-y-6">
             <div className="p-4 bg-white rounded-lg shadow">
@@ -150,14 +192,67 @@ const AdminOverview = () => {
           </div>
         </>
       ) : (
-        <>
-          <button
-            className="bg-transparent text-white px-4 py-2 rounded border-2 border-white w-72 font-poppins"
-            onClick={() => onSignIn()}
-          >
-            Log in
-          </button>
-        </>
+        <div className="flex flex-col items-center gap-6 p-8 bg-blue-500 bg-opacity-10 rounded-lg backdrop-blur-sm max-w-md w-full">
+          <h1 className="text-2xl font-bold text-white">
+            Admin Authentication Required
+          </h1>
+          <p className="text-white text-center mb-4">
+            You need to log in with an admin account to access this page and
+            perform administrative actions.
+          </p>
+
+          <form onSubmit={handleLogin} className="w-full space-y-4">
+            {error && (
+              <div className="bg-red-500 bg-opacity-80 text-white p-3 rounded text-sm">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="text-white text-sm block mb-1">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 rounded bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="text-white text-sm block mb-1"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 rounded bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="bg-white text-blue-900 px-6 py-3 rounded-md font-semibold shadow-lg hover:bg-opacity-90 transition-all w-full disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? "Logging in..." : "Log in with Supabase"}
+            </button>
+          </form>
+
+          <p className="text-white text-sm text-center mt-4">
+            Only authorized administrators can perform actions that modify data
+            in the database.
+          </p>
+        </div>
       )}
     </div>
   );
