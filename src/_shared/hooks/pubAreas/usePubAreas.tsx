@@ -10,7 +10,7 @@ import {
   usePubAreasContext,
 } from "../../providers/PubAreasProvider";
 
-import { useSupabaseAuth } from "../../../_shared/hooks/useSupabase";
+import { useSupabase } from "../../../_shared/hooks/useSupabase";
 import useCommunications from "../communication/useCommunication";
 
 // Hooks
@@ -133,7 +133,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
-  const { client: supabaseAuthClient } = useSupabaseAuth();
+  const { client: supabaseAuthClient } = useSupabase();
 
   //
 
@@ -276,14 +276,12 @@ const usePubAreas = (): PubAreasResponse => {
     enabled: !!selectedPubId,
   });
 
-  console.log("selectedPub form query: ", { selectedPub });
-
   //
 
   // Internal hooks
 
   const {
-    data: { uiReadyPubs = [] },
+    data: { uiReadyPubs = [], pubs: allPubs = [] },
   } = usePubs();
   const { isMobile } = useDeviceDetect();
 
@@ -291,7 +289,8 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Variables
   const currentSimulationPubIndex =
-    simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
+    simulationReadyPubs.findIndex((pub: Pub) => pub.id === selectedPub?.id) ||
+    0;
 
   //
 
@@ -446,6 +445,21 @@ const usePubAreas = (): PubAreasResponse => {
           // Manually update the query
           onRefetchSelectedPub();
 
+          // Get the next pub which needs areas added
+          const pubsNeedingAreasAdded = allPubs.filter(
+            ({ has_areas_added }) => !has_areas_added
+          );
+
+          // Set the next pub as selected
+          if (pubsNeedingAreasAdded.length > 0) {
+            const indexOfCurrentPub = pubsNeedingAreasAdded.findIndex(
+              ({ id }) => id === selectedPubId
+            );
+
+            const nextPub = pubsNeedingAreasAdded[indexOfCurrentPub + 1];
+            onSetSelectedPub(nextPub);
+          }
+
           // Refetch the 'pubs' query
           queryClient.refetchQueries({
             queryKey: ["pubs"],
@@ -484,7 +498,6 @@ const usePubAreas = (): PubAreasResponse => {
   };
 
   const onSetSelectedPub = (pub: Pub | null) => {
-    console.log("onSetSelectedPub - in hook", { pub });
     updatePubAreasState({
       selectedPubId: pub?.id || 0,
       name: "",
@@ -604,7 +617,7 @@ const usePubAreas = (): PubAreasResponse => {
     //
     // Go to the next pub in the maskReadyPubs list
     const indexOfCurrentPub = maskReadyPubs.findIndex(
-      (pub) => pub.id === selectedPubId
+      (pub: Pub) => pub.id === selectedPubId
     );
 
     const nextPub = maskReadyPubs[indexOfCurrentPub + 1];
@@ -617,7 +630,8 @@ const usePubAreas = (): PubAreasResponse => {
     //
     // Go to the next pub in the simulationReadyPubs list
     const indexOfCurrentPub =
-      simulationReadyPubs.findIndex((pub) => pub.id === selectedPubId) || 0;
+      simulationReadyPubs.findIndex((pub: Pub) => pub.id === selectedPubId) ||
+      0;
 
     const nextPub = simulationReadyPubs[indexOfCurrentPub + 1];
     if (nextPub) {
