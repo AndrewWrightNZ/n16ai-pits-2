@@ -10,7 +10,7 @@ import {
   usePubAreasContext,
 } from "../../providers/PubAreasProvider";
 
-import { supabaseClient } from "../../../_shared/hooks/useSupabase";
+import { useSupabaseAuth } from "../../../_shared/hooks/useSupabase";
 import useCommunications from "../communication/useCommunication";
 
 // Hooks
@@ -133,6 +133,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
+  const { client: supabaseAuthClient } = useSupabaseAuth();
 
   //
 
@@ -163,7 +164,7 @@ const usePubAreas = (): PubAreasResponse => {
   // Query functions
   const fetchAreasForPub = async (): Promise<PubArea[]> => {
     // Fetch where pubId is selectedPubId and the date is today
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub_area")
       .select()
       .eq("pub_id", selectedPubId);
@@ -174,7 +175,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   const fetchAllAvailableAreas = async (): Promise<PubArea[]> => {
     // Fetch all available pub areas
-    const { data, error } = await supabaseClient.from("pub_area").select();
+    const { data, error } = await supabaseAuthClient.from("pub_area").select();
 
     if (error) throw error;
     return data;
@@ -182,7 +183,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Query functions
   const fetchPubById = async () => {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub")
       .select("*")
       .eq("id", selectedPubId);
@@ -193,7 +194,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   const fetchMaskReadyPubs = async () => {
     // Get pubs where the has_areas_measured is true
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub")
       .select()
       // has areas measured but doesn't have vision mask
@@ -207,7 +208,7 @@ const usePubAreas = (): PubAreasResponse => {
     const currentJulianWeek = getCurrentJulianWeek();
 
     // Fetch records with has_vision_masks_added = true and (last_processed_julian_week less than current week OR null)
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub")
       .select()
       .eq("has_vision_masks_added", true)
@@ -275,6 +276,8 @@ const usePubAreas = (): PubAreasResponse => {
     enabled: !!selectedPubId,
   });
 
+  console.log("selectedPub form query: ", { selectedPub });
+
   //
 
   // Internal hooks
@@ -298,12 +301,14 @@ const usePubAreas = (): PubAreasResponse => {
       mutationFn: async ({ draftPubArea }: CreateNewPubAreaProps) => {
         const id = Date.now();
 
-        const { data, error } = await supabaseClient.from("pub_area").insert([
-          {
-            ...draftPubArea,
-            id,
-          },
-        ]);
+        const { data, error } = await supabaseAuthClient
+          .from("pub_area")
+          .insert([
+            {
+              ...draftPubArea,
+              id,
+            },
+          ]);
 
         if (error) throw error;
 
@@ -319,7 +324,7 @@ const usePubAreas = (): PubAreasResponse => {
       coordinates,
     }: SaveFloorAreaPayload) => {
       // Update floor area for the pub area
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAuthClient
         .from("pub_area")
         .update({ floor_area, coordinates })
         .eq("id", pub_area_id);
@@ -332,7 +337,7 @@ const usePubAreas = (): PubAreasResponse => {
     useMutation({
       mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
         // Update floor area for the pub area
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseAuthClient
           .from("pub")
           .update({ has_areas_added: true })
           .eq("id", pub_id);
@@ -345,7 +350,7 @@ const usePubAreas = (): PubAreasResponse => {
     useMutation({
       mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
         // Update floor area for the pub area
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseAuthClient
           .from("pub")
           .update({ has_areas_measured: true })
           .eq("id", pub_id);
@@ -357,7 +362,7 @@ const usePubAreas = (): PubAreasResponse => {
   const { mutate: setVisionMasksAdded } = useMutation({
     mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
       // Update floor area for the pub area
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAuthClient
         .from("pub")
         .update({ has_vision_masks_added: true })
         .eq("id", pub_id);
@@ -373,7 +378,7 @@ const usePubAreas = (): PubAreasResponse => {
         visionMaskPoints,
       }: SaveVisionMaskPayload) => {
         // Update floor area for the pub area
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseAuthClient
           .from("pub_area")
           .update({ vision_mask_points: visionMaskPoints })
           .eq("id", pubAreaId);
@@ -479,6 +484,7 @@ const usePubAreas = (): PubAreasResponse => {
   };
 
   const onSetSelectedPub = (pub: Pub | null) => {
+    console.log("onSetSelectedPub - in hook", { pub });
     updatePubAreasState({
       selectedPubId: pub?.id || 0,
       name: "",

@@ -21,7 +21,7 @@ import DraggableLocationsModal from "./DraggableLocationsModal";
 import SelectPubArea from "../../../../scene/_shared/components/SelectPubArea";
 import ControlsPanel from "../../../../scene/_shared/components/ControlsPanel";
 import CreatePubLabels from "../../../../pub-labels/_shared/components/CreatePubLabels";
-// import EnhancedMemoryMonitor from "../../../../scene/_shared/components/EnhancedMemoryMonitor";
+import EnhancedMemoryMonitor from "../../../../scene/_shared/components/EnhancedMemoryMonitor";
 
 // Types
 import { Pub } from "../../../../../_shared/types";
@@ -60,7 +60,7 @@ export default function SimplePhotorealisticTilesMap({
   } = useMapSettings();
 
   const {
-    data: { selectedPubArea },
+    data: { selectedPubArea, selectedPub },
     operations: { onSetSelectedPub },
   } = usePubAreas();
 
@@ -112,10 +112,60 @@ export default function SimplePhotorealisticTilesMap({
 
   // Function to jump to pub location using lat/lng
   const handleJumpToPub = (pub: Pub) => {
+    console.log("handleJumpToPub", { pub });
     if (!pub.latitude || !pub.longitude) return;
+
+    console.log("selectedPub", { selectedPub });
 
     // Store the selected pub for later use
     onSetSelectedPub(pub);
+
+    console.log("onSetSelectedPub", { pub });
+
+    // Get the tiles renderer service to position the camera
+    if (tilesSceneRef.current) {
+      // First, get the tiles service to make sure it's initialized
+      const tilesService = tilesSceneRef.current.getTilesService();
+      if (tilesService) {
+        console.log(
+          "Positioning camera for pub:",
+          pub.name,
+          pub.latitude,
+          pub.longitude
+        );
+
+        // Use the setLatLonPosition method to center the map on the pub's lat/lng
+        // This method is available on the TilesRendererService
+        tilesService.setLatLonPosition(pub.latitude, pub.longitude);
+
+        // After centering the map on the pub's location, set up a 45-degree viewing angle
+        // Create a camera position at a 45-degree angle (approximately)
+        const cameraHeight = 200; // Height above ground
+        const distanceFromCenter = 200; // Distance from center point for 45-degree view
+
+        const defaultPosition = {
+          x: distanceFromCenter, // Offset in x direction for angled view
+          y: cameraHeight, // Height above ground
+          z: distanceFromCenter, // Offset in z direction for angled view
+        };
+
+        // Target is at ground level (y=0) directly below camera
+        const defaultTarget = {
+          x: 0,
+          y: 0,
+          z: 0,
+        };
+
+        // Set camera position and target
+        tilesSceneRef.current.setCameraPosition(defaultPosition);
+        tilesSceneRef.current.setCameraTarget(defaultTarget);
+
+        // Force a camera update
+        if (tilesSceneRef.current.saveCameraState) {
+          tilesSceneRef.current.saveCameraState();
+        }
+      }
+    }
 
     // Show camera panel after a short delay
     setTimeout(() => {
@@ -211,7 +261,7 @@ export default function SimplePhotorealisticTilesMap({
           </div>
         )}
 
-        {/* {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />} */}
+        {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />}
       </div>
     </div>
   );

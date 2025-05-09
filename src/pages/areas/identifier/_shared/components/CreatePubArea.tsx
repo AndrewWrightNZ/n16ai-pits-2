@@ -124,6 +124,8 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
     onSetPubAreasPresentForPub,
   ]);
 
+  console.log("selectedPub", selectedPub);
+
   return (
     <div className="absolute top-24 right-2 bg-black/70 text-white p-3 rounded z-20 w-64">
       <h3 className="text-sm font-bold mb-2">
