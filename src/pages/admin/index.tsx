@@ -2,10 +2,13 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Hooks
-import ProgressBar from "./_shared/components/ProgressBar";
 import usePubs from "../../_shared/hooks/pubs/usePubs";
 import { useSupabase } from "../../_shared/hooks/useSupabase";
 import { supabaseClient } from "../../_shared/hooks/useSupabaseAuth";
+
+// Components
+import ProgressBar from "./_shared/components/ProgressBar";
+import { ChevronRight } from "lucide-react";
 
 const AdminOverview = () => {
   // State
@@ -192,15 +195,10 @@ const AdminOverview = () => {
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center gap-6 p-8 bg-blue-500 bg-opacity-10 rounded-lg backdrop-blur-sm max-w-md w-full">
-          <h1 className="text-2xl font-bold text-white">
-            Admin Authentication Required
+        <div className="flex flex-col items-center gap-6 p-8 bg-none rounded-lg backdrop-blur-sm max-w-md w-full">
+          <h1 className="text-md font-bold text-white">
+            Log in to go behind the bar
           </h1>
-          <p className="text-white text-center mb-4">
-            You need to log in with an admin account to access this page and
-            perform administrative actions.
-          </p>
-
           <form onSubmit={handleLogin} className="w-full space-y-4">
             {error && (
               <div className="bg-red-500 bg-opacity-80 text-white p-3 rounded text-sm">
@@ -217,7 +215,7 @@ const AdminOverview = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 rounded bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                className="w-full px-4 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
                 required
               />
             </div>
@@ -234,24 +232,20 @@ const AdminOverview = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 rounded bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+                className="w-full px-4 py-2 rounded bg-white text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300"
                 required
               />
             </div>
 
             <button
               type="submit"
-              className="bg-white text-blue-900 px-6 py-3 rounded-md font-semibold shadow-lg hover:bg-opacity-90 transition-all w-full disabled:opacity-50"
+              className="bg-transparent flex flex-row items-center justify-center text-white border-2 border-white px-6 py-3 rounded-md font-semibold shadow-lg hover:bg-opacity-90 transition-all w-full disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? "Logging in..." : "Log in with Supabase"}
+              {loading ? "Logging in..." : "Log in"}{" "}
+              <ChevronRight className="ml-2" />
             </button>
           </form>
-
-          <p className="text-white text-sm text-center mt-4">
-            Only authorized administrators can perform actions that modify data
-            in the database.
-          </p>
         </div>
       )}
     </div>
