@@ -10,7 +10,7 @@ import {
   usePubAreasContext,
 } from "../../providers/PubAreasProvider";
 
-import { supabaseClient } from "../../../_shared/hooks/useSupabase";
+import { useSupabase } from "../../../_shared/hooks/useSupabase";
 import useCommunications from "../communication/useCommunication";
 
 // Hooks
@@ -133,6 +133,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Hooks
   const queryClient = useQueryClient();
+  const { client: supabaseAuthClient } = useSupabase();
 
   //
 
@@ -163,7 +164,7 @@ const usePubAreas = (): PubAreasResponse => {
   // Query functions
   const fetchAreasForPub = async (): Promise<PubArea[]> => {
     // Fetch where pubId is selectedPubId and the date is today
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub_area")
       .select()
       .eq("pub_id", selectedPubId);
@@ -174,7 +175,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   const fetchAllAvailableAreas = async (): Promise<PubArea[]> => {
     // Fetch all available pub areas
-    const { data, error } = await supabaseClient.from("pub_area").select();
+    const { data, error } = await supabaseAuthClient.from("pub_area").select();
 
     if (error) throw error;
     return data;
@@ -182,7 +183,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Query functions
   const fetchPubById = async () => {
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub")
       .select("*")
       .eq("id", selectedPubId);
@@ -193,7 +194,7 @@ const usePubAreas = (): PubAreasResponse => {
 
   const fetchMaskReadyPubs = async () => {
     // Get pubs where the has_areas_measured is true
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub")
       .select()
       // has areas measured but doesn't have vision mask
@@ -207,7 +208,7 @@ const usePubAreas = (): PubAreasResponse => {
     const currentJulianWeek = getCurrentJulianWeek();
 
     // Fetch records with has_vision_masks_added = true and (last_processed_julian_week less than current week OR null)
-    const { data, error } = await supabaseClient
+    const { data, error } = await supabaseAuthClient
       .from("pub")
       .select()
       .eq("has_vision_masks_added", true)
@@ -280,7 +281,7 @@ const usePubAreas = (): PubAreasResponse => {
   // Internal hooks
 
   const {
-    data: { uiReadyPubs = [] },
+    data: { uiReadyPubs = [], pubs: allPubs = [] },
   } = usePubs();
   const { isMobile } = useDeviceDetect();
 
@@ -288,7 +289,8 @@ const usePubAreas = (): PubAreasResponse => {
 
   // Variables
   const currentSimulationPubIndex =
-    simulationReadyPubs.findIndex((pub) => pub.id === selectedPub?.id) || 0;
+    simulationReadyPubs.findIndex((pub: Pub) => pub.id === selectedPub?.id) ||
+    0;
 
   //
 
@@ -298,12 +300,14 @@ const usePubAreas = (): PubAreasResponse => {
       mutationFn: async ({ draftPubArea }: CreateNewPubAreaProps) => {
         const id = Date.now();
 
-        const { data, error } = await supabaseClient.from("pub_area").insert([
-          {
-            ...draftPubArea,
-            id,
-          },
-        ]);
+        const { data, error } = await supabaseAuthClient
+          .from("pub_area")
+          .insert([
+            {
+              ...draftPubArea,
+              id,
+            },
+          ]);
 
         if (error) throw error;
 
@@ -319,7 +323,7 @@ const usePubAreas = (): PubAreasResponse => {
       coordinates,
     }: SaveFloorAreaPayload) => {
       // Update floor area for the pub area
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAuthClient
         .from("pub_area")
         .update({ floor_area, coordinates })
         .eq("id", pub_area_id);
@@ -331,12 +335,37 @@ const usePubAreas = (): PubAreasResponse => {
   const { mutate: setPubAreasPresent, isPending: isSettingPubAreasPresent } =
     useMutation({
       mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
-        // Update floor area for the pub area
-        const { data, error } = await supabaseClient
+        // First verify the pub exists
+        const { data: pubData, error: pubError } = await supabaseAuthClient
+          .from("pub")
+          .select("*")
+          .eq("id", pub_id)
+          .single();
+
+        if (pubError) {
+          console.error("Error finding pub:", pubError);
+          throw pubError;
+        }
+
+        if (!pubData) {
+          const notFoundError = new Error(`Pub with ID ${pub_id} not found`);
+          console.error(notFoundError);
+          throw notFoundError;
+        }
+
+        // Update the pub record
+        const { data, error } = await supabaseAuthClient
           .from("pub")
           .update({ has_areas_added: true })
-          .eq("id", pub_id);
-        if (error) throw error;
+          .eq("id", pub_id)
+          .select()
+          .single(); // Use single() to get the object instead of an array
+
+        if (error) {
+          console.error("Error setting pub areas present: ", error);
+          throw error;
+        }
+
         return data;
       },
     });
@@ -345,7 +374,7 @@ const usePubAreas = (): PubAreasResponse => {
     useMutation({
       mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
         // Update floor area for the pub area
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseAuthClient
           .from("pub")
           .update({ has_areas_measured: true })
           .eq("id", pub_id);
@@ -357,7 +386,7 @@ const usePubAreas = (): PubAreasResponse => {
   const { mutate: setVisionMasksAdded } = useMutation({
     mutationFn: async ({ pub_id }: SetPubAreasPresentPayload) => {
       // Update floor area for the pub area
-      const { data, error } = await supabaseClient
+      const { data, error } = await supabaseAuthClient
         .from("pub")
         .update({ has_vision_masks_added: true })
         .eq("id", pub_id);
@@ -373,7 +402,7 @@ const usePubAreas = (): PubAreasResponse => {
         visionMaskPoints,
       }: SaveVisionMaskPayload) => {
         // Update floor area for the pub area
-        const { data, error } = await supabaseClient
+        const { data, error } = await supabaseAuthClient
           .from("pub_area")
           .update({ vision_mask_points: visionMaskPoints })
           .eq("id", pubAreaId);
@@ -432,19 +461,53 @@ const usePubAreas = (): PubAreasResponse => {
   };
 
   const onSetPubAreasPresentForPub = () => {
+    if (!selectedPubId) {
+      console.error("Cannot set pub areas present: No pub selected");
+      return;
+    }
+
     setPubAreasPresent(
       {
-        pub_id: selectedPubId || 0,
+        pub_id: selectedPubId,
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           // Manually update the query
+          if (data) {
+            // Update the cache with the returned data
+            queryClient.setQueryData(
+              ["pub", selectedPubId],
+              (oldData: Pub | undefined) => {
+                if (!oldData) return data;
+                return { ...oldData, has_areas_added: true };
+              }
+            );
+          }
+
           onRefetchSelectedPub();
+
+          // Get the next pub which needs areas added
+          const pubsNeedingAreasAdded = allPubs.filter(
+            ({ has_areas_added }) => !has_areas_added
+          );
+
+          // Set the next pub as selected
+          if (pubsNeedingAreasAdded.length > 0) {
+            const indexOfCurrentPub = pubsNeedingAreasAdded.findIndex(
+              ({ id }) => id === selectedPubId
+            );
+
+            const nextPub = pubsNeedingAreasAdded[indexOfCurrentPub + 1];
+            onSetSelectedPub(nextPub);
+          }
 
           // Refetch the 'pubs' query
           queryClient.refetchQueries({
             queryKey: ["pubs"],
           });
+        },
+        onError: (error) => {
+          console.error("Error setting pub areas present: ", error);
         },
       }
     );
@@ -598,7 +661,7 @@ const usePubAreas = (): PubAreasResponse => {
     //
     // Go to the next pub in the maskReadyPubs list
     const indexOfCurrentPub = maskReadyPubs.findIndex(
-      (pub) => pub.id === selectedPubId
+      (pub: Pub) => pub.id === selectedPubId
     );
 
     const nextPub = maskReadyPubs[indexOfCurrentPub + 1];
@@ -611,7 +674,8 @@ const usePubAreas = (): PubAreasResponse => {
     //
     // Go to the next pub in the simulationReadyPubs list
     const indexOfCurrentPub =
-      simulationReadyPubs.findIndex((pub) => pub.id === selectedPubId) || 0;
+      simulationReadyPubs.findIndex((pub: Pub) => pub.id === selectedPubId) ||
+      0;
 
     const nextPub = simulationReadyPubs[indexOfCurrentPub + 1];
     if (nextPub) {
