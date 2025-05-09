@@ -80,16 +80,13 @@ const usePubs = (): HookShape => {
   const fetchPubs = async () => {
     try {
       // Use the Supabase client directly
-      const { data, error } = await supabaseClient
-        .from("pub")
-        .select("*")
-        .limit(100);
-      
+      const { data, error } = await supabaseClient.from("pub").select("*");
+
       if (error) {
         console.error("Error fetching pubs:", error);
         return [];
       }
-      
+
       return data || [];
     } catch (e) {
       console.error("Exception in fetchPubs:", e);
@@ -103,14 +100,13 @@ const usePubs = (): HookShape => {
       const { data, error } = await supabaseClient
         .from("pub")
         .select("*")
-        .eq("has_vision_masks_added", true)
-        .limit(100);
-      
+        .eq("has_vision_masks_added", true);
+
       if (error) {
         console.error("Error fetching UI ready pubs:", error);
         return [];
       }
-      
+
       return data || [];
     } catch (e) {
       console.error("Exception in fetchUIReadyPubs:", e);
