@@ -1,4 +1,5 @@
 // import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Auth0Provider } from "@auth0/auth0-react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Providers
@@ -13,6 +14,16 @@ import { PubLabelsProvider } from "../pages/pub-labels/_shared/providers/PubLabe
 import { EarlyAccessProvider } from "../_shared/providers/EarlyAccessProvider";
 
 export const GeneralProviders = ({ children }: any) => {
+  // Variables
+  const AUTH_0_DOMAIN = "pubs-in-the-sun.uk.auth0.com";
+  const AUTH_0_CLIENT_ID = "SdRToWH6TgoSYWmujdlxNUS0PrUftc53";
+
+  // Check if window is defined (client-side) or not (server-side)
+  const redirectUri =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "http://localhost:5173";
+
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -22,24 +33,34 @@ export const GeneralProviders = ({ children }: any) => {
   });
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleMapsProvider>
-        <PubProvider>
-          <PubAreasProvider>
-            <PubLabelsProvider>
-              <GeoLocationProvider>
-                <SunEvalsProvider>
-                  <FiltersProvider>
-                    <EarlyAccessProvider>
-                      <MapSettingsProvider>{children}</MapSettingsProvider>
-                    </EarlyAccessProvider>
-                  </FiltersProvider>
-                </SunEvalsProvider>
-              </GeoLocationProvider>
-              {/* <ReactQueryDevtools /> */}
-            </PubLabelsProvider>
-          </PubAreasProvider>
-        </PubProvider>
-      </GoogleMapsProvider>
+      <Auth0Provider
+        domain={AUTH_0_DOMAIN}
+        clientId={AUTH_0_CLIENT_ID}
+        authorizationParams={{
+          redirect_uri: redirectUri,
+          audience: `https://${AUTH_0_DOMAIN}/userinfo`,
+          scope: "openid profile email",
+        }}
+      >
+        <GoogleMapsProvider>
+          <PubProvider>
+            <PubAreasProvider>
+              <PubLabelsProvider>
+                <GeoLocationProvider>
+                  <SunEvalsProvider>
+                    <FiltersProvider>
+                      <EarlyAccessProvider>
+                        <MapSettingsProvider>{children}</MapSettingsProvider>
+                      </EarlyAccessProvider>
+                    </FiltersProvider>
+                  </SunEvalsProvider>
+                </GeoLocationProvider>
+                {/* <ReactQueryDevtools /> */}
+              </PubLabelsProvider>
+            </PubAreasProvider>
+          </PubProvider>
+        </GoogleMapsProvider>
+      </Auth0Provider>
     </QueryClientProvider>
   );
 };
