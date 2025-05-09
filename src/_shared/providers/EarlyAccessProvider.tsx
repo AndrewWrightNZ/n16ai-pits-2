@@ -1,20 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 
 export interface EarlyAccessState {
-  // Show access code form
-  showAccessCodeForm: boolean;
-
-  // Sign up for early access
-  showSignUpForEarlyAccess: boolean;
-  showSignUpSuccess: boolean;
-
-  // Access code
-  enteredAccessCode: string;
-  showAccessCodeEnteredSuccess: boolean;
-
   // Has confirmed entry
   hasConfirmedEntry: boolean;
-  showDeniedEntry: boolean;
 
   // Timestamp for localStorage
   timestamp: number;
@@ -32,20 +20,8 @@ const EarlyAccessContext = createContext<EarlyAccessContextType | undefined>(
 const LOCAL_STORAGE_KEY = "earlyAccessState";
 
 const defaultState: EarlyAccessState = {
-  // Show access code form
-  showAccessCodeForm: false,
-
-  // Sign up for early access
-  showSignUpForEarlyAccess: false,
-  showSignUpSuccess: false,
-
-  // Access code
-  enteredAccessCode: "",
-  showAccessCodeEnteredSuccess: false,
-
   // Has confirmed entry
   hasConfirmedEntry: false,
-  showDeniedEntry: false,
 
   // Timestamp for localStorage
   timestamp: Date.now(),
