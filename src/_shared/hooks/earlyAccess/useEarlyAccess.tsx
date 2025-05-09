@@ -1,5 +1,3 @@
-import { useNavigate } from "@tanstack/react-router";
-
 // Providers
 import {
   EarlyAccessState,
@@ -7,9 +5,8 @@ import {
 } from "../../providers/EarlyAccessProvider";
 
 // Hooks
-import useCommunication from "../communication/useCommunication";
-import { VALID_ACCESS_CODES } from "./accessCodes";
 import useDeviceDetect from "../useDeviceDetect";
+import useCommunication from "../communication/useCommunication";
 
 //
 
@@ -17,17 +14,8 @@ import useDeviceDetect from "../useDeviceDetect";
 interface EarlyAccessData extends EarlyAccessState {}
 
 interface EarlyAccessOperations {
-  // Show form
-  onShowAccessForm: () => void;
-
-  // Show sign up for early access
-  onToggleSignUpForEarlyAccess: () => void;
-  onSignUpForEarlyAccess: (emailAddress: string) => void;
-
-  // Attempt access
-  onUpdateAccessCode: (accessCode: string) => void;
-  onUnlockEarlyAccess: () => void;
-  onAttemptEarlyAccess: () => void;
+  // Public access
+  onUnlockPublicAccess: () => void;
 }
 
 interface EarlyAccessResponse {
@@ -41,13 +29,7 @@ const useEarlyAccess = (): EarlyAccessResponse => {
   //
 
   // Context
-  const { earlyAccessState, updateEarlyAccessState } = useEarlyAccessContext();
-
-  //
-
-  // Variables
-  const { showSignUpForEarlyAccess, enteredAccessCode } =
-    earlyAccessState || {};
+  const { earlyAccessState } = useEarlyAccessContext();
 
   //
 
@@ -55,101 +37,18 @@ const useEarlyAccess = (): EarlyAccessResponse => {
   const {
     operations: { onSendSlackMessage },
   } = useCommunication();
-  const navigate = useNavigate();
+
   const { isMobile } = useDeviceDetect();
 
   //
 
   // Handlers
-  const onShowAccessForm = () => {
-    updateEarlyAccessState({
-      showAccessCodeForm: true,
-    });
-  };
-
-  const onUpdateAccessCode = (accessCode: string) => {
-    updateEarlyAccessState({
-      enteredAccessCode: accessCode,
-    });
-
-    const accessCodesToLower = VALID_ACCESS_CODES.map((code) =>
-      code.toLowerCase()
-    );
-
-    const isCodeValid = accessCodesToLower.includes(accessCode.toLowerCase());
-
-    //
-
-    // Hide the access code form and show the success message
-    if (isCodeValid) {
-      updateEarlyAccessState({
-        showAccessCodeEnteredSuccess: true,
-      });
-    }
-  };
-
-  const onUnlockEarlyAccess = () => {
-    updateEarlyAccessState({
-      hasConfirmedEntry: true,
-    });
-
-    //
-
+  const onUnlockPublicAccess = () => {
     // Ping slack about access code used
     onSendSlackMessage({
-      messageText: `:key: Early Access code used: ${enteredAccessCode} - ${isMobile ? "(Mobile)" : "(Desktop)"}`,
-      channelName: "azul-early-access",
+      messageText: `:key: Public Access used - ${isMobile ? "(Mobile)" : "(Desktop)"}`,
+      channelName: "azul-usage",
     });
-
-    // Redirect to /finder with tansatck router
-    navigate({
-      to: "/finder",
-    });
-  };
-
-  const onAttemptEarlyAccess = () => {
-    updateEarlyAccessState({
-      showDeniedEntry: true,
-    });
-
-    setTimeout(() => {
-      updateEarlyAccessState({
-        showDeniedEntry: false,
-      });
-    }, 5000);
-  };
-
-  const onToggleSignUpForEarlyAccess = () => {
-    updateEarlyAccessState({
-      showSignUpForEarlyAccess: !showSignUpForEarlyAccess,
-    });
-  };
-
-  const onSignUpForEarlyAccess = (emailAddress: string) => {
-    //
-
-    // Send the slack ping off
-    onSendSlackMessage({
-      messageText: `:eyes: New early access sign up: ${emailAddress}`,
-      channelName: "azul-waitlist",
-    });
-
-    //
-
-    // Show temporary success message
-    updateEarlyAccessState({
-      showSignUpSuccess: true,
-    });
-
-    //
-
-    // After 5 seconds, flip back to adding the code
-    setTimeout(() => {
-      updateEarlyAccessState({
-        showSignUpSuccess: false,
-        showSignUpForEarlyAccess: false,
-      });
-    }, 5000);
   };
 
   return {
@@ -157,19 +56,8 @@ const useEarlyAccess = (): EarlyAccessResponse => {
       ...earlyAccessState,
     },
     operations: {
-      // Show access form
-      onShowAccessForm,
-
-      // Show sign up for early access
-      onToggleSignUpForEarlyAccess,
-      onSignUpForEarlyAccess,
-
-      // Update access code
-      onUpdateAccessCode,
-
-      // Attempt access
-      onUnlockEarlyAccess,
-      onAttemptEarlyAccess,
+      // Unlock public access
+      onUnlockPublicAccess,
     },
   };
 };
