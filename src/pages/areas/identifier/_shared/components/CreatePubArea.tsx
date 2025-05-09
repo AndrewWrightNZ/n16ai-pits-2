@@ -1,13 +1,12 @@
-import { useEffect } from "react";
-
 // Hooks
+import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
 
 // Constants
+import { AREA_TYPES } from "../../../../lists/_shared";
 
 // Types
 import { PubArea } from "../../../../../_shared/types";
-import { AREA_TYPES } from "../../../../lists/_shared";
-import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
+import { useEffect } from "react";
 
 interface CreatePubAreaProps {
   cameraInfo: {
@@ -17,7 +16,7 @@ interface CreatePubAreaProps {
   tilesSceneRef: React.RefObject<any>;
 }
 
-const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
+const CreatePubArea = ({ tilesSceneRef }: CreatePubAreaProps) => {
   //
 
   // Hooks
@@ -101,53 +100,30 @@ const CreatePubArea = ({ cameraInfo, tilesSceneRef }: CreatePubAreaProps) => {
 
   //
 
-  // Effects
+  // Listn for "C" keydown, use it to copy address to clipboard
   useEffect(() => {
-    // Only proceed if:
-    // 1. We have a selected pub
-    // 2. The pub doesn't already have areas_added flag set
-    // 3. There's at least one area for this pub
-    // 4. We're not currently in the process of setting areas as present
-    if (
-      selectedPub &&
-      !has_areas_added &&
-      areasForPub.length > 0 &&
-      !isSettingPubAreasPresent
-    ) {
-      onSetPubAreasPresentForPub();
-    }
-  }, [
-    selectedPub,
-    has_areas_added,
-    areasForPub.length,
-    isSettingPubAreasPresent,
-    onSetPubAreasPresentForPub,
-  ]);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === "c" && selectedPub?.name) {
+        navigator.clipboard.writeText(
+          `${selectedPub?.name} - ${selectedPub?.address_text}`
+        );
+      }
+    };
+
+    // Add event listener
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Remove event listener on cleanup
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   return (
     <div className="absolute top-24 right-2 bg-black/70 text-white p-3 rounded z-20 w-64">
-      <h3 className="text-sm font-bold mb-2">
-        Pub Areas {selectedPub && `- ${selectedPub.name}`}
-      </h3>
-      <div className="text-xs space-y-1">
-        <div>
-          <strong>Position: </strong>
-          X: {cameraInfo.position.x}, Y: {cameraInfo.position.y}, Z:{" "}
-          {cameraInfo.position.z}
-        </div>
-        <div>
-          <strong>Target: </strong>
-          X: {cameraInfo.target.x}, Y: {cameraInfo.target.y}, Z:{" "}
-          {cameraInfo.target.z}
-        </div>
-        {selectedPub && (
-          <div>
-            <strong>Location: </strong>
-            Lat: {selectedPub.latitude.toFixed(4)}, Lng:{" "}
-            {selectedPub.longitude.toFixed(4)}
-          </div>
-        )}
-      </div>
+      <h3 className="text-sm font-bold mb-2">{selectedPub?.name || "n/a"}</h3>
+      <h3 className="text-xs mb-2">{selectedPub?.address_text || "n/a"}</h3>
+
       <div className="mt-3 flex flex-col space-y-2">
         <input
           type="text"

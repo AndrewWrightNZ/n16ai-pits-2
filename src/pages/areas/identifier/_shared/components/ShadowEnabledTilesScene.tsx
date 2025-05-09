@@ -262,8 +262,8 @@ const ShadowEnabledTilesScene = forwardRef<
     };
   }, []);
 
-  console.log("North offset: ", northOffset);
-  console.log("Height offset: ", heightOffset);
+  // console.log("North offset: ", northOffset);
+  // console.log("Height offset: ", heightOffset);
 
   // Callback for handling camera movement events
   const handleCameraChange = useCallback(() => {
