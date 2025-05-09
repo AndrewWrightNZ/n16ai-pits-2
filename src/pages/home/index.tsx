@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet";
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
 // Icons
 import { ChevronRight } from "lucide-react";
@@ -17,9 +17,6 @@ import useEarlyAccess from "../../_shared/hooks/earlyAccess/useEarlyAccess";
 // Helpers
 import { formatAreaType } from "../lists/_shared";
 
-// Components
-import EnterEarlyAccessCode from "./_shared/components/EnterEarlyAccessCode";
-
 function App() {
   //
 
@@ -29,12 +26,12 @@ function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
   const [isSunFadingOut, setIsSunFadingOut] = useState(false);
-  const cycleTimerRef = useRef<number | null>(null);
 
   //
 
-  // Query params
-  const { search } = useLocation();
+  // Refs
+  const cycleTimerRef = useRef<number | null>(null);
+  const navigate = useNavigate();
 
   // Hooks
   const {
@@ -44,19 +41,14 @@ function App() {
       areaTypeCountsWithSomeSun = [],
     },
   } = useHeroMetrics();
+
   const {
     operations: { onSeedCurrentTimeSlot },
   } = useSunEvals();
 
   const {
-    data: {
-      showAccessCodeForm,
-      showAccessCodeEnteredSuccess,
-      hasConfirmedEntry,
-    },
-    operations: { onShowAccessForm, onUnlockEarlyAccess, onUpdateAccessCode },
+    operations: { onUnlockPublicAccess },
   } = useEarlyAccess();
-  const navigate = useNavigate();
 
   //
 
@@ -68,20 +60,6 @@ function App() {
   );
 
   const secondaryActionButtonText = `Know a sunny pub? Contact us`;
-
-  const accessCode = (search as { ea: string }).ea || "";
-  //
-
-  // Effects
-  useEffect(() => {
-    if (accessCode) {
-      console.log("access code from URL: ", accessCode);
-      onShowAccessForm();
-      setTimeout(() => {
-        onUpdateAccessCode(accessCode);
-      }, 300);
-    }
-  }, [accessCode]);
 
   useEffect(() => {
     // Show the content after a delay (simulating your original timeout)
@@ -145,7 +123,15 @@ function App() {
   };
 
   const handleSeePubs = () => {
-    onShowAccessForm();
+    // Fade out elements
+    setIsFadingOut(true);
+    setIsSunFadingOut(true);
+    onUnlockPublicAccess();
+
+    // Navigate to finder after a delay
+    setTimeout(() => {
+      navigate({ to: '/finder' });
+    }, 1000); // 1 second delay for the fade-out animation
   };
 
   const handleContactUs = () => {
@@ -163,43 +149,6 @@ function App() {
     // Seed the current timeslot
     onSeedCurrentTimeSlot();
   }, []);
-
-  useEffect(() => {
-    // Show the welcome message and then redirect with fade-out animation
-    if (hasConfirmedEntry) {
-      // Start fade-in animation
-      const fadeInTimer = setTimeout(() => {
-        // After fade-in completes, start fade-out
-        setIsFadingOut(true);
-        setIsSunFadingOut(true); // Start fading out the sun
-
-        // Redirect after fade-out animation completes
-        const redirectTimer = setTimeout(() => {
-          navigate({
-            to: "/finder",
-          });
-        }, 1500); // Wait for fade-out to complete
-
-        return () => clearTimeout(redirectTimer);
-      }, 2000); // Show welcome message for 2 seconds
-
-      return () => clearTimeout(fadeInTimer);
-    }
-
-    if (showAccessCodeEnteredSuccess && !hasConfirmedEntry) {
-      // First show the success message for a few seconds
-      setTimeout(() => {
-        // Then fade out the elements before unlocking
-        setIsFadingOut(true);
-        setIsSunFadingOut(true);
-
-        // After fade-out completes, unlock early access
-        setTimeout(() => {
-          onUnlockEarlyAccess();
-        }, 1500);
-      }, 3500);
-    }
-  }, [showAccessCodeEnteredSuccess, hasConfirmedEntry, navigate]);
 
   return (
     <>
@@ -320,59 +269,36 @@ function App() {
               }`}
             >
               {/* Heading */}
-              {showAccessCodeEnteredSuccess ? (
-                <>
-                  <h1
-                    className={`text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px] transition-all duration-500 ease-in-out ${isFadingOut ? "animate-[fadeOutUp_1000ms_ease-in-out_forwards]" : "animate-[fadeOutUp_500ms_ease-in-out_forwards]"}`}
-                    style={{ animationFillMode: "forwards" }}
-                  >
-                    Pubs in the
-                  </h1>
-                  <h1
-                    className={`text-[2.5rem] md:text-[4.5rem] mt-[-10vh] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.2] max-w-[90vw] md:max-w-[700px] opacity-0 transition-all duration-500 ease-in-out ${isFadingOut ? "animate-[fadeOutUp_1000ms_ease-in-out_forwards]" : "animate-[slideInUp_500ms_ease-in-out_forwards]"}`}
-                    style={{
-                      animationDelay: isFadingOut ? "0ms" : "1000ms",
-                      animationFillMode: "forwards",
-                    }}
-                  >
-                    <span className="font-normal">Welcome to</span>
-                    <br />
-                    Pubs in the Sun
-                  </h1>
-                </>
-              ) : (
-                <h1 className="text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px]">
-                  Pubs in the
-                </h1>
-              )}
+              <h1
+                className={`text-[6.5rem] md:text-[12.5rem] font-black text-white font-poppins mb-4 md:mb-2 leading-[1.1] max-w-[80vw] md:max-w-[700px] transition-all duration-500 ease-in-out ${isFadingOut ? "animate-[fadeOutUp_1000ms_ease-in-out_forwards]" : ""}`}
+                style={{ animationFillMode: "forwards" }}
+              >
+                Pubs in the
+              </h1>
 
               {/* Call to action buttons */}
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 mt-12 md:mt-6">
-                {showAccessCodeForm ? (
-                  <EnterEarlyAccessCode />
-                ) : (
-                  <>
-                    <button
-                      onClick={handleSeePubs}
-                      className="white-shadow bg-[#2962FF] transition-all duration-500 md:text-lg flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 md:py-4 md:px-8 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
-                    >
-                      <span
-                        className={`transition-all w-full md:w-fit-content text-left duration-600 ease-in-out ${isTransitioning ? "opacity-0 transform -translate-y-4" : "opacity-100 transform translate-y-0"}`}
-                      >
-                        {primaryActionButtonText}
-                      </span>
-                      <ChevronRight className="h-6 w-6 ml-2" />
-                    </button>
+              <div
+                className={`flex flex-col gap-4 md:flex-row md:items-center md:gap-6 mb-8 mt-12 md:mt-6 transition-all duration-500 ease-in-out ${isFadingOut ? "animate-[fadeOut_1000ms_ease-in-out_forwards]" : ""}`}
+              >
+                <button
+                  onClick={handleSeePubs}
+                  className="white-shadow bg-[#2962FF] transition-all duration-500 md:text-lg flex cursor-pointer items-center justify-between border-2 border-white px-6 py-3 md:py-4 md:px-8 text-white font-medium rounded-full transition-all duration-300 ease-in-out overflow-hidden"
+                >
+                  <span
+                    className={`transition-all w-full md:w-fit-content text-left duration-600 ease-in-out ${isTransitioning ? "opacity-0 transform -translate-y-4" : "opacity-100 transform translate-y-0"}`}
+                  >
+                    {primaryActionButtonText}
+                  </span>
+                  <ChevronRight className="h-6 w-6 ml-2" />
+                </button>
 
-                    {/* Secondary Button */}
-                    <button
-                      onClick={handleContactUs}
-                      className="md:text-lg px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
-                    >
-                      {secondaryActionButtonText}
-                    </button>
-                  </>
-                )}
+                {/* Secondary Button */}
+                <button
+                  onClick={handleContactUs}
+                  className="md:text-lg px-6 py-3 bg-transparent text-white font-medium rounded-full transition-all duration-300 hover:bg-white hover:text-black"
+                >
+                  {secondaryActionButtonText}
+                </button>
               </div>
             </div>
           </div>
