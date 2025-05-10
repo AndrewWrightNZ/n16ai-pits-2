@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
+
+// Components
 import DynamicSunIcon from "../../../../../../_shared/components/dynamicSunIcon";
-import { formatSunPercentage } from "../../../../../../_shared/helpers";
+
+// Types
 import { SimplePubAreaWithSunPc } from "../../../../../../_shared/hooks/mapMarkers/useMapMarkers";
-import { formatAreaType } from "../../../../../lists/_shared";
+
+// Helpers
+import { formatSunPercentage } from "../../../../../../_shared/helpers";
 import { formatHumanizedAreaSize } from "../../../helpers";
+import { formatAreaType } from "../../../../../lists/_shared";
 
 interface PubAreaRowProps {
   area: SimplePubAreaWithSunPc;
@@ -78,7 +84,9 @@ const PubAreaRow = ({ area }: PubAreaRowProps) => {
   return (
     <div className="flex flex-row items-center justify-between bg-slate-50 p-3 rounded-md text-xs">
       <div className="flex flex-col justify-start items-start gap-2">
-        <p className="font-bold font-poppins">{formatAreaType(area.type)}</p>
+        <p className="font-bold font-poppins">
+          {area.name ? area.name : formatAreaType(area.type)}
+        </p>
 
         <p className={`text-slate-600`}>
           Size:{" "}

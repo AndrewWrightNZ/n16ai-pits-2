@@ -72,6 +72,7 @@ const useHeroMetrics = (): HeroMetricsResponse => {
       type: area.type,
       pc_in_sun: sunEvalLookup[area.id] || 0,
       floor_area: area.floor_area,
+      name: area.name,
     }));
 
     const bestSunPercent =

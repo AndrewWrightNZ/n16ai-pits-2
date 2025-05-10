@@ -11,6 +11,7 @@ import { AreaType, SunQuality } from "../../providers/FiltersProvider";
 export interface SimplePubAreaWithSunPc {
   id: number;
   type: string;
+  name: string;
   pc_in_sun: number;
   floor_area: number;
   pub_id?: number;
@@ -101,6 +102,7 @@ const useMapMarkers = (): MapMarkersResponse => {
           return {
             id: area.id,
             type: area.type,
+            name: area.name,
             pc_in_sun: sunPercentage,
             floor_area: area.floor_area,
           };

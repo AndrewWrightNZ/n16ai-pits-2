@@ -90,6 +90,7 @@ const useFilters = (): FiltersResponse => {
     pc_in_sun: sunEvalLookup[area.id] || 0,
     floor_area: area.floor_area,
     pub_id: area.pub_id,
+    name: area.name,
   }));
 
   const areaTypesToShowAfterFilteringBySunQuality = pubAreas.filter((area) => {
