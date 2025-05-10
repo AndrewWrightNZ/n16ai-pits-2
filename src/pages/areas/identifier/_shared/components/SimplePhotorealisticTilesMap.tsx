@@ -168,7 +168,7 @@ export default function SimplePhotorealisticTilesMap({
   return (
     <div className="relative w-full h-[850px] mx-auto relative overflow-hidden">
       <Canvas
-        shadows={enableShadows}
+        shadows={enableShadows || enablePhotorealisticShadows}
         camera={{
           fov: 25,
           near: 1,
@@ -180,10 +180,11 @@ export default function SimplePhotorealisticTilesMap({
           gl.setClearColor(new THREE.Color(skyColor));
           gl.setPixelRatio(window.devicePixelRatio);
 
-          gl.shadowMap.enabled = enableShadows;
-          gl.shadowMap.type = enableShadows
-            ? THREE.PCFSoftShadowMap
-            : THREE.PCFShadowMap;
+          gl.shadowMap.enabled = enableShadows || enablePhotorealisticShadows;
+          gl.shadowMap.type =
+            enableShadows || enablePhotorealisticShadows
+              ? THREE.PCFSoftShadowMap
+              : THREE.PCFShadowMap;
 
           // Keep the zoom for consistent view
           gl.domElement.style.transform = "scale(1.1)";

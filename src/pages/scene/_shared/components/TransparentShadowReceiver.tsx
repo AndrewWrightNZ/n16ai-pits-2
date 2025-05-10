@@ -67,10 +67,10 @@ export default function TransparentShadowReceiver({
       // This will allow us to see both the underlying material and the shadows
       const whiteMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        opacity: 0.2, // Low opacity to see the underlying material
+        opacity: 0.1, // Low opacity to see the underlying material
         transparent: true,
         side: THREE.DoubleSide,
-        roughness: 0.8,
+        roughness: 0.1,
         metalness: 0.1,
         depthWrite: false, // Prevent z-fighting
       });
