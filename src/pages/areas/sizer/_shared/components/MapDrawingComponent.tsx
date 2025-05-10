@@ -139,7 +139,6 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
     // Set center position (without any side effects)
     const setCenter = useCallback((lat: number, lng: number) => {
       if (!mapInstanceRef.current) {
-        console.warn("Map instance not available for setCenter");
         return;
       }
 
@@ -148,7 +147,6 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
         setTimeout(() => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.setCenter({ lat, lng });
-            console.log(`Map centered at lat: ${lat}, lng: ${lng}`);
           }
         }, 50);
       } catch (error) {
@@ -168,7 +166,6 @@ const MapDrawingComponent = forwardRef<MapDrawingRef, MapDrawingComponentProps>(
         setTimeout(() => {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.setZoom(zoom);
-            console.log(`Map zoom set to: ${zoom}`);
           }
         }, 50);
       } catch (error) {

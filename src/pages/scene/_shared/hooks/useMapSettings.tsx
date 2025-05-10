@@ -16,6 +16,7 @@ interface HookOperations {
   onSetIsLoading: (newIsLoading: boolean) => void;
   onSetLoadingProgress: (newProgress: number) => void;
   onSetShowWhiteTiles: (show: boolean) => void;
+  onSetShowShadowReceivingTiles: (show: boolean) => void;
 
   onSetTimeOfDay: (newTime: Date) => void;
   onSetLightRef: (lightRef: THREE.DirectionalLight) => void;
@@ -41,28 +42,7 @@ const useMapSettings = (): HookResponse => {
   //
 
   // Variables
-  const {
-    isLoading,
-    loadingProgress,
-
-    error,
-    tileCount,
-
-    isOrbiting,
-    timeOfDay,
-    timeSpeed,
-    formattedTime,
-    lightRef,
-
-    // Locations
-    currentLocation,
-
-    // Meta
-    copyrightInfo,
-
-    // New variable
-    showWhiteTiles,
-  } = internalState || {};
+  const { isLoading } = internalState || {};
 
   //
 
@@ -117,27 +97,16 @@ const useMapSettings = (): HookResponse => {
     updateInternalState({ showWhiteTiles: show });
   };
 
+  const onSetShowShadowReceivingTiles = (show: boolean) => {
+    updateInternalState({ showShadowReceivingTiles: show });
+  };
+
   return {
     data: {
+      ...internalState,
+
       // View
       isLoading,
-      loadingProgress,
-
-      error,
-      tileCount,
-
-      isOrbiting,
-      timeOfDay,
-      timeSpeed,
-      showWhiteTiles,
-      formattedTime,
-      lightRef,
-
-      // Locations
-      currentLocation,
-
-      // Meta
-      copyrightInfo,
     },
     operations: {
       // View
@@ -150,6 +119,7 @@ const useMapSettings = (): HookResponse => {
       onSetIsOrbiting,
       onSetTimeSpeed,
       onSetShowWhiteTiles,
+      onSetShowShadowReceivingTiles,
       onSetTimeOfDay,
       onSetLightRef,
 

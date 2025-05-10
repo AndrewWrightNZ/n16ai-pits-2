@@ -17,6 +17,7 @@ export interface MapSettingsState {
   timeOfDay: Date;
   timeSpeed: number;
   showWhiteTiles: boolean;
+  showShadowReceivingTiles: boolean;
 
   formattedTime: string;
 
@@ -53,6 +54,8 @@ const defaultState: MapSettingsState = {
   timeOfDay: new Date(),
   timeSpeed: 0,
   showWhiteTiles: true,
+  showShadowReceivingTiles: false,
+
   formattedTime: "12:00 PM",
 
   // Locations
