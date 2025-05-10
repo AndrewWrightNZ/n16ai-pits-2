@@ -22,15 +22,7 @@ import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Icons
-import {
-  Beaker,
-  ChevronRight,
-  ExternalLink,
-  Sparkles,
-  TestTube,
-  X,
-  Zap,
-} from "lucide-react";
+import { ChevronRight, ExternalLink, X, Zap } from "lucide-react";
 
 // Render pub content component
 const ViewPubDetails = () => {
