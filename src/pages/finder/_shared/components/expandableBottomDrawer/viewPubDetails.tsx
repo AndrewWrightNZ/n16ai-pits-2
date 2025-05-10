@@ -22,7 +22,15 @@ import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Icons
-import { ChevronRight, ExternalLink, X } from "lucide-react";
+import {
+  Beaker,
+  ChevronRight,
+  ExternalLink,
+  Sparkles,
+  TestTube,
+  X,
+  Zap,
+} from "lucide-react";
 
 // Render pub content component
 const ViewPubDetails = () => {
@@ -204,8 +212,12 @@ const ViewPubDetails = () => {
         <div className="flex flex-col items-center justify-center h-[60px]">
           <button
             onClick={onViewSunSimulation}
-            className="flex flex-row items-center justify-center bg-white border border-2 w-full h-[40px] cursor-pointer hover:opacity-60 transition-opacity duration-300  border-[#2962FF] p-1 rounded-md text-[#2962FF] font-semibold font-poppins text-sm"
+            className="relative flex flex-row items-center justify-center bg-white border border-2 w-full h-[40px] cursor-pointer hover:opacity-60 transition-opacity duration-300  border-[#2962FF] p-1 rounded-md text-[#2962FF] font-semibold font-poppins text-sm"
           >
+            <span className="flex flex-row items-center absolute -top-2 right-2 bg-[#FF5722] text-white text-[10px] px-1 py-1 rounded-md font-bold">
+              <Zap className="w-4 h-4 mr-2" />
+              BETA
+            </span>
             View live sun simulation <ChevronRight className="w-5 h-5 ml-2" />
           </button>
         </div>
