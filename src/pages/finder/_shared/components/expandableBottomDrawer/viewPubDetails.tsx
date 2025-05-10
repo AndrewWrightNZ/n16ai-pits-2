@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 // Hooks
 import usePubAreas from "../../../../../_shared/hooks/pubAreas/usePubAreas";
@@ -21,10 +22,12 @@ import { formatShortAddress } from "../../../../lists/pubs/_shared/helpers";
 import { formatSunPercentage } from "../../../../../_shared/helpers";
 
 // Icons
-import { ExternalLink, X } from "lucide-react";
+import { ChevronRight, ExternalLink, X } from "lucide-react";
 
 // Render pub content component
 const ViewPubDetails = () => {
+  //
+
   // Local state for content visibility
   const [isVisible, setIsVisible] = useState(true);
 
@@ -45,6 +48,8 @@ const ViewPubDetails = () => {
     data: { sunEvalsForAllPubAreas = [], selectedTimeslot = 0 },
   } = useSunEvals();
 
+  const navigate = useNavigate();
+
   // Handle close with animation
   const handleClose = () => {
     // Step 1: Hide content
@@ -63,6 +68,10 @@ const ViewPubDetails = () => {
         });
       }
     }, 200);
+  };
+
+  const onViewSunSimulation = () => {
+    navigate({ to: "/session" });
   };
 
   // Variables
@@ -159,7 +168,7 @@ const ViewPubDetails = () => {
         </div>
 
         {/* Best sun percentage summary */}
-        <div className="flex flex-col h-[calc(75vh-72px)] overflow-y-auto pt-4">
+        <div className="flex flex-col h-[calc(75vh-165px)] overflow-y-auto pt-4">
           <h4 className="text-xs font-semibold mb-2">Sun Quality</h4>
           <div className="grid grid-cols-2 gap-2 mb-6 text-xs">
             <div className="flex flex-col p-3 bg-slate-50 rounded-md gap-2">
@@ -190,6 +199,15 @@ const ViewPubDetails = () => {
           <PubAreasOverview pubAreas={pubAreas} />
 
           <LocationDetails />
+        </div>
+
+        <div className="flex flex-col items-center justify-center h-[60px]">
+          <button
+            onClick={onViewSunSimulation}
+            className="flex flex-row items-center justify-center bg-white border border-2 w-full h-[40px] cursor-pointer hover:opacity-60 transition-opacity duration-300  border-[#2962FF] p-1 rounded-md text-[#2962FF] font-semibold font-poppins text-sm"
+          >
+            View live sun simulation <ChevronRight className="w-5 h-5 ml-2" />
+          </button>
         </div>
       </div>
     </div>
