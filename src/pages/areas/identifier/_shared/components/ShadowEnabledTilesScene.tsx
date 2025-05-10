@@ -24,6 +24,7 @@ import useMapSettings from "../../../../scene/_shared/hooks/useMapSettings";
 
 // Components
 import WhiteTilesMaterial from "../../../../scene/_shared/components/WhiteTilesMaterial";
+import TransparentShadowReceiver from "../../../../scene/_shared/components/TransparentShadowReceiver";
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -311,15 +312,16 @@ const ShadowEnabledTilesScene = forwardRef<
   }, [showWhiteTiles, allowShadows]);
 
   // Update shadow receiving material when showShadowReceivingTiles changes
-  // useEffect(() => {
-  //   if (tilesRendererServiceRef.current) {
-  //     if (showShadowReceivingTiles && enablePhotorealisticShadows) {
-  //       tilesRendererServiceRef.current.setUseShadowReceivingMaterial(true);
-  //     } else {
-  //       tilesRendererServiceRef.current.setUseShadowReceivingMaterial(false);
-  //     }
-  //   }
-  // }, [showShadowReceivingTiles, enablePhotorealisticShadows]);
+  useEffect(() => {
+    if (tilesRendererServiceRef.current) {
+      if (showShadowReceivingTiles && enablePhotorealisticShadows) {
+        console.log("enabling shadow receiving material");
+        tilesRendererServiceRef.current.setUseShadowReceivingMaterial(true);
+      } else {
+        tilesRendererServiceRef.current.setUseShadowReceivingMaterial(false);
+      }
+    }
+  }, [showShadowReceivingTiles, enablePhotorealisticShadows]);
 
   // Initialize 3D Tiles
   useEffect(() => {
@@ -520,21 +522,36 @@ const ShadowEnabledTilesScene = forwardRef<
   const showWhiteMaterial =
     tilesLoaded && showWhiteTiles && allowShadows && getCurrentTilesRenderer();
 
+  const showTransparentShadowReceiver =
+    tilesLoaded &&
+    showShadowReceivingTiles &&
+    enablePhotorealisticShadows &&
+    getCurrentTilesRenderer();
+    
+  console.log("Shadow receiver conditions:", {
+    tilesLoaded,
+    showShadowReceivingTiles,
+    enablePhotorealisticShadows,
+    hasTilesRenderer: !!getCurrentTilesRenderer(),
+    showTransparentShadowReceiver
+  });
+
   return (
     <>
       {/* Simple lighting for better visibility */}
       <ambientLight intensity={0.3} color={new THREE.Color(0xffffff)} />
       <directionalLight
         position={sunPosition}
-        intensity={4.0}
+        intensity={4.5}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
         shadow-camera-far={1000}
         shadow-camera-left={-300}
         shadow-camera-right={300}
         shadow-camera-top={300}
         shadow-camera-bottom={-300}
+        shadow-bias={-0.0001}
       />
 
       {showWhiteMaterial && (
@@ -544,6 +561,15 @@ const ShadowEnabledTilesScene = forwardRef<
           enabled={true}
           brightness={0.8}
           roughness={0.9}
+          shadowIntensity={0.8}
+        />
+      )}
+
+      {showTransparentShadowReceiver && (
+        <TransparentShadowReceiver
+          tilesGroup={getCurrentTilesRenderer()!.group}
+          shadowOpacity={shadowOpacity}
+          enabled={true}
           shadowIntensity={0.8}
         />
       )}

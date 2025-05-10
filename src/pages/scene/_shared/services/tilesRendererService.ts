@@ -90,6 +90,8 @@ export class TilesRendererService {
 
   // Flag to enable white material replacement
   private useWhiteMaterial: boolean = false;
+  // Flag to enable transparent shadow-receiving material overlay
+  private useShadowReceivingMaterial: boolean = false;
 
   // Callback handlers
   private onLoadError: LoadErrorCallback | null = null;
@@ -118,6 +120,7 @@ export class TilesRendererService {
     this.scene = scene;
     this.apiKey = apiKey;
     this.useWhiteMaterial = useWhiteMaterial;
+    this.useShadowReceivingMaterial = false;
 
     // Store initial camera position and rotation for movement detection
     this.lastCameraPosition.copy(camera.position);
@@ -990,6 +993,19 @@ export class TilesRendererService {
         this.materialOverrideInterval = null;
       }
     }
+  }
+
+  /**
+   * Toggle the use of transparent shadow-receiving material overlay
+   * @param useShadowReceiving Whether to use the transparent shadow-receiving material
+   */
+  setUseShadowReceivingMaterial(useShadowReceiving: boolean): void {
+    if (this.useShadowReceivingMaterial === useShadowReceiving) return;
+
+    this.useShadowReceivingMaterial = useShadowReceiving;
+
+    // No need to modify the actual materials here as this is just a flag
+    // The actual overlay will be handled by the TransparentShadowReceiver component
   }
 
   /**
