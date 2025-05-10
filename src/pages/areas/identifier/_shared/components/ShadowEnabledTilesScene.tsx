@@ -83,8 +83,6 @@ const ShadowEnabledTilesScene = forwardRef<
     rotation: THREE.Euler;
   } | null>(null);
 
-  console.log("enablePhotorealisticShadows", enablePhotorealisticShadows);
-
   // Hooks
   const {
     data: {
@@ -273,9 +271,6 @@ const ShadowEnabledTilesScene = forwardRef<
     };
   }, []);
 
-  // console.log("North offset: ", northOffset);
-  // console.log("Height offset: ", heightOffset);
-
   // Callback for handling camera movement events
   const handleCameraChange = useCallback(() => {
     if (cameraRef.current && orbitControlsRef.current) {
@@ -315,7 +310,6 @@ const ShadowEnabledTilesScene = forwardRef<
   useEffect(() => {
     if (tilesRendererServiceRef.current) {
       if (showShadowReceivingTiles && enablePhotorealisticShadows) {
-        console.log("enabling shadow receiving material");
         tilesRendererServiceRef.current.setUseShadowReceivingMaterial(true);
       } else {
         tilesRendererServiceRef.current.setUseShadowReceivingMaterial(false);
@@ -527,14 +521,6 @@ const ShadowEnabledTilesScene = forwardRef<
     showShadowReceivingTiles &&
     enablePhotorealisticShadows &&
     getCurrentTilesRenderer();
-    
-  console.log("Shadow receiver conditions:", {
-    tilesLoaded,
-    showShadowReceivingTiles,
-    enablePhotorealisticShadows,
-    hasTilesRenderer: !!getCurrentTilesRenderer(),
-    showTransparentShadowReceiver
-  });
 
   return (
     <>

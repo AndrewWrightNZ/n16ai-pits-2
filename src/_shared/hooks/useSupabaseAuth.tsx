@@ -124,7 +124,6 @@ export const useSupabaseAuth = (): HookShape => {
     try {
       await client.auth.signOut();
       setUser(null);
-      console.log("Signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {

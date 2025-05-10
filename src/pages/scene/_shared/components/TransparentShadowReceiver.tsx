@@ -20,13 +20,6 @@ export default function TransparentShadowReceiver({
   const processedObjects = useRef<Set<string>>(new Set());
   const [isActive, setIsActive] = useState(enabled);
 
-  console.log("TransparentShadowReceiver props:", {
-    enabled,
-    shadowOpacity,
-    shadowIntensity,
-    hasGroup: !!tilesGroup,
-  });
-
   // Toggle shadow receiver mode
   useEffect(() => {
     setIsActive(enabled);
@@ -59,8 +52,6 @@ export default function TransparentShadowReceiver({
   const createShadowOverlay = (mesh: THREE.Mesh) => {
     // Skip if the mesh doesn't have geometry
     if (!mesh.geometry) return;
-
-    console.log("Creating shadow overlay for mesh:", mesh.uuid);
 
     try {
       // Use a semi-transparent white material that can receive shadows
@@ -123,8 +114,6 @@ export default function TransparentShadowReceiver({
       return;
     }
 
-    console.log("Processing object for shadow overlay:", object.uuid);
-
     processedObjects.current.add(object.uuid);
 
     if (object instanceof THREE.Mesh && object.material) {
@@ -182,10 +171,6 @@ export default function TransparentShadowReceiver({
         // Adjust opacity based on shadow settings
         material.opacity = Math.min(0.3, shadowIntensity * 0.3); // Cap at 0.3 to keep it subtle
         material.needsUpdate = true;
-        console.log(
-          "Updated white overlay material opacity to:",
-          material.opacity
-        );
       }
     });
   }, [shadowOpacity, shadowIntensity]);
