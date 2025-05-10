@@ -24,17 +24,7 @@ export const useSupabase = () => {
   const { data } = useSupabaseAuth();
   const { isAuthenticated, isAuthorizedUser } = data;
 
-  // IMPORTANT: For now, always use the anonymous client since it's working
-  // This is a temporary fix until we can properly debug the authenticated client
   const client = supabaseClient;
-
-  console.log("Supabase client status:", {
-    isAuthenticated,
-    isAuthorizedUser,
-    // We're always using the anonymous client for now
-    usingAuthenticatedClient: false,
-    clientType: "anonymous (forced)",
-  });
 
   return {
     client,

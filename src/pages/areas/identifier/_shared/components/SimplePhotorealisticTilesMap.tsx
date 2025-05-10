@@ -60,7 +60,7 @@ export default function SimplePhotorealisticTilesMap({
   } = useMapSettings();
 
   const {
-    data: { selectedPubArea, selectedPub },
+    data: { selectedPubArea },
     operations: { onSetSelectedPub },
   } = usePubAreas();
 
@@ -70,7 +70,11 @@ export default function SimplePhotorealisticTilesMap({
 
   // Variables
   const hideAllOverlays = ["create-mask", "simulator"].includes(pageName);
-  const enableShadows = ["simulator", "scene"].includes(pageName);
+  const enableShadows = ["simulator", "scene", "session"].includes(pageName);
+
+  const enablePhotorealistic = ["session"].includes(pageName);
+
+  console.log("enablePhotorealistic", enablePhotorealistic);
 
   // Function to update camera information
   const updateCameraInfo = () => {
@@ -112,28 +116,16 @@ export default function SimplePhotorealisticTilesMap({
 
   // Function to jump to pub location using lat/lng
   const handleJumpToPub = (pub: Pub) => {
-    console.log("handleJumpToPub", { pub });
     if (!pub.latitude || !pub.longitude) return;
-
-    console.log("selectedPub", { selectedPub });
 
     // Store the selected pub for later use
     onSetSelectedPub(pub);
-
-    console.log("onSetSelectedPub", { pub });
 
     // Get the tiles renderer service to position the camera
     if (tilesSceneRef.current) {
       // First, get the tiles service to make sure it's initialized
       const tilesService = tilesSceneRef.current.getTilesService();
       if (tilesService) {
-        console.log(
-          "Positioning camera for pub:",
-          pub.name,
-          pub.latitude,
-          pub.longitude
-        );
-
         // Use the setLatLonPosition method to center the map on the pub's lat/lng
         // This method is available on the TilesRendererService
         tilesService.setLatLonPosition(pub.latitude, pub.longitude);
@@ -174,95 +166,86 @@ export default function SimplePhotorealisticTilesMap({
   };
 
   return (
-    <div className="relative">
-      <div className="w-full h-[850px] mx-auto relative overflow-hidden">
-        <Canvas
-          shadows={enableShadows}
-          camera={{
-            fov: 25,
-            near: 1,
-            far: 400,
-            position: [0, 800, 0],
-          }}
-          onCreated={({ gl }) => {
-            // Black background
-            gl.setClearColor(new THREE.Color(skyColor));
-            gl.setPixelRatio(window.devicePixelRatio);
+    <div className="relative w-full h-[850px] mx-auto relative overflow-hidden">
+      <Canvas
+        shadows={enableShadows}
+        camera={{
+          fov: 25,
+          near: 1,
+          far: 400,
+          position: [0, 800, 0],
+        }}
+        onCreated={({ gl }) => {
+          // Black background
+          gl.setClearColor(new THREE.Color(skyColor));
+          gl.setPixelRatio(window.devicePixelRatio);
 
-            gl.shadowMap.enabled = enableShadows;
-            gl.shadowMap.type = enableShadows
-              ? THREE.PCFSoftShadowMap
-              : THREE.PCFShadowMap;
+          gl.shadowMap.enabled = enableShadows;
+          gl.shadowMap.type = enableShadows
+            ? THREE.PCFSoftShadowMap
+            : THREE.PCFShadowMap;
 
-            // Keep the zoom for consistent view
-            gl.domElement.style.transform = "scale(1.1)";
-            gl.domElement.style.transformOrigin = "center center";
-          }}
-        >
-          {/* Use the ShadowEnabledTilesScene for camera tracking */}
-          <ShadowEnabledTilesScene
-            ref={tilesSceneRef}
-            allowShadows={enableShadows}
+          // Keep the zoom for consistent view
+          gl.domElement.style.transform = "scale(1.1)";
+          gl.domElement.style.transformOrigin = "center center";
+        }}
+      >
+        {/* Use the ShadowEnabledTilesScene for camera tracking */}
+        <ShadowEnabledTilesScene
+          ref={tilesSceneRef}
+          allowShadows={enableShadows}
+        />
+
+        {enableShadows && (
+          <EffectComposer>
+            <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
+            {/* Slight contrast increase */}
+            <Vignette eskil={false} offset={0.15} darkness={vignetteDarkness} />
+          </EffectComposer>
+        )}
+      </Canvas>
+
+      {pageName === "scene" && (
+        <>
+          <ControlsPanel />
+          <SelectPubArea />
+        </>
+      )}
+
+      {/* Simplified location modal with pub jumping capability */}
+      {!hideAllOverlays && (
+        <DraggableLocationsModal
+          onJumpToPub={handleJumpToPub}
+          filterType={pageName}
+        />
+      )}
+
+      {!isLoading && showCameraPanel && pageName === "areas" && (
+        <CreatePubArea cameraInfo={cameraInfo} tilesSceneRef={tilesSceneRef} />
+      )}
+
+      {!isLoading && showCameraPanel && pageName === "labels" && (
+        <CreatePubLabels tilesSceneRef={tilesSceneRef} />
+      )}
+
+      {!hideAllOverlays && (
+        <div className="absolute bottom-1 left-1 z-10">
+          <img
+            src="https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_68x28dp.png"
+            alt="Google"
+            height="20"
+            className="h-5"
           />
+        </div>
+      )}
 
-          {enableShadows && (
-            <EffectComposer>
-              <BrightnessContrast brightness={brightnessValue} contrast={0.2} />
-              {/* Slight contrast increase */}
-              <Vignette
-                eskil={false}
-                offset={0.15}
-                darkness={vignetteDarkness}
-              />
-            </EffectComposer>
-          )}
-        </Canvas>
+      {!hideAllOverlays && copyrightInfo && (
+        <div className="absolute bottom-1 right-1 text-[10px] text-white bg-black/50 py-0.5 px-1 rounded-sm z-10">
+          {copyrightInfo}
+        </div>
+      )}
 
-        {pageName === "scene" && (
-          <>
-            <ControlsPanel />
-            <SelectPubArea />
-          </>
-        )}
-
-        {/* Simplified location modal with pub jumping capability */}
-        {!hideAllOverlays && (
-          <DraggableLocationsModal
-            onJumpToPub={handleJumpToPub}
-            filterType={pageName}
-          />
-        )}
-
-        {!isLoading && showCameraPanel && pageName === "areas" && (
-          <CreatePubArea
-            cameraInfo={cameraInfo}
-            tilesSceneRef={tilesSceneRef}
-          />
-        )}
-
-        {!isLoading && showCameraPanel && pageName === "labels" && (
-          <CreatePubLabels tilesSceneRef={tilesSceneRef} />
-        )}
-
-        {!hideAllOverlays && (
-          <div className="absolute bottom-1 left-1 z-10">
-            <img
-              src="https://www.gstatic.com/images/branding/googlelogo/1x/googlelogo_color_68x28dp.png"
-              alt="Google"
-              height="20"
-              className="h-5"
-            />
-          </div>
-        )}
-
-        {!hideAllOverlays && copyrightInfo && (
-          <div className="absolute bottom-1 right-1 text-[10px] text-white bg-black/50 py-0.5 px-1 rounded-sm z-10">
-            {copyrightInfo}
-          </div>
-        )}
-
-        {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />}
-      </div>
+      {!hideAllOverlays && <EnhancedMemoryMonitor refreshInterval={2000} />}
     </div>
   );
 }
