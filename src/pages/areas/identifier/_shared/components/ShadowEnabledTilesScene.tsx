@@ -51,12 +51,13 @@ export interface TilesSceneRef {
 // Main scene component
 interface EnhancedTilesSceneProps {
   allowShadows?: boolean;
+  enablePhotorealisticShadows?: boolean;
 }
 
 const ShadowEnabledTilesScene = forwardRef<
   TilesSceneRef,
   EnhancedTilesSceneProps
->(function TilesScene({ allowShadows }, ref) {
+>(function TilesScene({ allowShadows, enablePhotorealisticShadows }, ref) {
   //
 
   // State
@@ -81,6 +82,8 @@ const ShadowEnabledTilesScene = forwardRef<
     rotation: THREE.Euler;
   } | null>(null);
 
+  console.log("enablePhotorealisticShadows", enablePhotorealisticShadows);
+
   // Hooks
   const {
     data: {
@@ -89,6 +92,7 @@ const ShadowEnabledTilesScene = forwardRef<
       timeOfDay: rawTimeOfDay,
 
       showWhiteTiles,
+      showShadowReceivingTiles,
     },
     operations: {
       // Loading
@@ -98,6 +102,7 @@ const ShadowEnabledTilesScene = forwardRef<
       onSetTileCount,
 
       onSetShowWhiteTiles,
+      onSetShowShadowReceivingTiles,
 
       // View
       onSetCopyrightInfo,
@@ -112,6 +117,18 @@ const ShadowEnabledTilesScene = forwardRef<
       onSetShowWhiteTiles(true);
     }
   }, [allowShadows, showWhiteTiles, onSetShowWhiteTiles]);
+
+  useEffect(() => {
+    if (showShadowReceivingTiles && !enablePhotorealisticShadows) {
+      onSetShowShadowReceivingTiles(false);
+    } else if (!showShadowReceivingTiles && enablePhotorealisticShadows) {
+      onSetShowShadowReceivingTiles(true);
+    }
+  }, [
+    enablePhotorealisticShadows,
+    showShadowReceivingTiles,
+    onSetShowShadowReceivingTiles,
+  ]);
 
   // Calculate sun position based on time of day with north offset adjustment and seasonal variations
   const calculateSunPosition = useCallback(
@@ -221,11 +238,9 @@ const ShadowEnabledTilesScene = forwardRef<
       // Handle zoom with W/S keys (always enabled if allowZoomControls is true)
       if (allowZoomControls) {
         if (event.key.toLowerCase() === "w") {
-          console.log("W pressed - Zooming in");
           handleZoom(true); // Zoom in
           return;
         } else if (event.key.toLowerCase() === "s") {
-          console.log("S pressed - Zooming out");
           handleZoom(false); // Zoom out
           return;
         }
@@ -236,19 +251,14 @@ const ShadowEnabledTilesScene = forwardRef<
 
       // Adjust north offset with A/D keys (changed from W/S)
       if (event.key.toLowerCase() === "a") {
-        console.log("A pressed");
         setNorthOffset((prev) => prev + 0.1); // Increase by 0.1 radians (approx. 5.7 degrees)
       } else if (event.key.toLowerCase() === "d") {
-        console.log("D pressed");
         setNorthOffset((prev) => prev - 0.1); // Decrease by 0.1 radians
       }
-
       // Adjust height offset with E/Q keys (changed D to Q)
       else if (event.key.toLowerCase() === "e") {
-        console.log("E pressed");
         setHeightOffset((prev) => prev + 10); // Increase height by 10 units
       } else if (event.key.toLowerCase() === "q") {
-        console.log("Q pressed");
         setHeightOffset((prev) => prev - 10); // Decrease height by 10 units
       }
     };
@@ -299,6 +309,17 @@ const ShadowEnabledTilesScene = forwardRef<
       }
     }
   }, [showWhiteTiles, allowShadows]);
+
+  // Update shadow receiving material when showShadowReceivingTiles changes
+  // useEffect(() => {
+  //   if (tilesRendererServiceRef.current) {
+  //     if (showShadowReceivingTiles && enablePhotorealisticShadows) {
+  //       tilesRendererServiceRef.current.setUseShadowReceivingMaterial(true);
+  //     } else {
+  //       tilesRendererServiceRef.current.setUseShadowReceivingMaterial(false);
+  //     }
+  //   }
+  // }, [showShadowReceivingTiles, enablePhotorealisticShadows]);
 
   // Initialize 3D Tiles
   useEffect(() => {

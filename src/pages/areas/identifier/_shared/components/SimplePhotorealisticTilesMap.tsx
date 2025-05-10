@@ -70,11 +70,11 @@ export default function SimplePhotorealisticTilesMap({
 
   // Variables
   const hideAllOverlays = ["create-mask", "simulator"].includes(pageName);
-  const enableShadows = ["simulator", "scene", "session"].includes(pageName);
+  const enableShadows = ["simulator", "scene"].includes(pageName);
 
-  const enablePhotorealistic = ["session"].includes(pageName);
+  const enablePhotorealisticShadows = ["session"].includes(pageName);
 
-  console.log("enablePhotorealistic", enablePhotorealistic);
+  const showControls = ["scene", "session"].includes(pageName);
 
   // Function to update camera information
   const updateCameraInfo = () => {
@@ -194,6 +194,7 @@ export default function SimplePhotorealisticTilesMap({
         <ShadowEnabledTilesScene
           ref={tilesSceneRef}
           allowShadows={enableShadows}
+          enablePhotorealisticShadows={enablePhotorealisticShadows}
         />
 
         {enableShadows && (
@@ -205,7 +206,7 @@ export default function SimplePhotorealisticTilesMap({
         )}
       </Canvas>
 
-      {pageName === "scene" && (
+      {showControls && (
         <>
           <ControlsPanel />
           <SelectPubArea />
