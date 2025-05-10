@@ -135,7 +135,6 @@ const usePubs = (): HookShape => {
 
   const { mutate: handleSaveNewPub } = useMutation({
     mutationFn: async (draftPubOutline: DraftPubOutline) => {
-      console.log("Saving new pub:", draftPubOutline);
       const { data, error } = await supabaseClient
         .from("pub")
         .insert([draftPubOutline]);
@@ -143,12 +142,9 @@ const usePubs = (): HookShape => {
         console.error("Error saving new pub:", error);
         throw error;
       }
-      console.log("Saved new pub:", data);
       return data;
     },
   });
-
-  console.log("Pubs:", pubs);
 
   //
 
