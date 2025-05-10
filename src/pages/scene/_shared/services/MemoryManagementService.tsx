@@ -326,8 +326,6 @@ export class MemoryManagementService {
   private applyHighOptimization() {
     if (!this.tilesRenderer || !this.camera) return;
 
-    console.log("Applying HIGH memory optimization");
-
     // 1. Update tiles renderer settings
     if ("errorTarget" in this.tilesRenderer) {
       this.tilesRenderer.errorTarget =
